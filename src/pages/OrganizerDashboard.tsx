@@ -1,0 +1,293 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { Navbar } from '@/components/Navbar';
+import { SEOHead } from '@/components/SEOHead';
+import { CITIES, CATEGORIES } from '@/data/cities';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { Plus, Trash2, MapPin, X } from 'lucide-react';
+import { toast } from 'sonner';
+
+interface OrgEvent {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  status: string;
+  background_image_url: string;
+  category: string;
+  city: string | null;
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-yellow-500/20 text-yellow-300',
+  approved: 'bg-green-500/20 text-green-300',
+  rejected: 'bg-destructive/20 text-red-300',
+  deactivated: 'bg-muted text-muted-foreground',
+};
+
+const OrganizerDashboard = () => {
+  const { user, role, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [events, setEvents] = useState<OrgEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+
+  // Form state
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('community');
+  const [kidFriendly, setKidFriendly] = useState(false);
+  const [price, setPrice] = useState('');
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [citySearch, setCitySearch] = useState('');
+  const [selectedCity, setSelectedCity] = useState<typeof CITIES[0] | null>(null);
+  const [address, setAddress] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && (!user || role !== 'organizer')) {
+      navigate('/');
+    }
+  }, [authLoading, user, role]);
+
+  useEffect(() => {
+    if (user && role === 'organizer') fetchEvents();
+  }, [user, role]);
+
+  const fetchEvents = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('events')
+      .select('id, title, date, time, status, background_image_url, category, city')
+      .eq('created_by', user.id)
+      .order('target_date', { ascending: false });
+    setEvents((data as OrgEvent[]) || []);
+    setLoading(false);
+  };
+
+  const filteredCities = citySearch.length > 0 && !selectedCity
+    ? CITIES.filter(c => `${c.name}, ${c.state}`.toLowerCase().includes(citySearch.toLowerCase())).slice(0, 6)
+    : [];
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) { toast.error('Please upload JPG, PNG, or WebP'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = async () => {
+    if (!user || !title.trim() || !description.trim() || !startDate || !startTime || !endTime || !address.trim() || !imageFile) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('event-images').upload(fileName, imageFile);
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from('event-images').getPublicUrl(fileName);
+
+      const targetDate = new Date(startDate);
+      const [h, m] = startTime.split(':');
+      targetDate.setHours(parseInt(h) || 0, parseInt(m) || 0);
+
+      const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', user.id).single();
+
+      const { error } = await supabase.from('events').insert({
+        title: title.trim(),
+        description: description.trim(),
+        date: format(startDate, 'MMMM dd, yyyy'),
+        time: `${startTime} - ${endTime}`,
+        address: address.trim(),
+        background_image_url: publicUrl,
+        target_date: targetDate.toISOString(),
+        creator: profile?.display_name || user.email?.split('@')[0] || 'Organizer',
+        category,
+        kid_friendly: kidFriendly,
+        price: parseFloat(price) || 0,
+        latitude: selectedCity?.lat || null,
+        longitude: selectedCity?.lng || null,
+        city: selectedCity ? `${selectedCity.name}, ${selectedCity.state}` : null,
+      });
+
+      if (error) throw error;
+
+      toast.success('Event submitted for approval!');
+      setShowForm(false);
+      resetForm();
+      fetchEvents();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create event');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const resetForm = () => {
+    setTitle(''); setDescription(''); setCategory('community'); setKidFriendly(false);
+    setPrice(''); setStartDate(undefined); setStartTime(''); setEndTime('');
+    setCitySearch(''); setSelectedCity(null); setAddress('');
+    setImageFile(null); setImagePreview(null);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this event?')) return;
+    const { error } = await supabase.from('events').delete().eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Event deleted'); fetchEvents(); }
+  };
+
+  if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+
+  return (
+    <div className="min-h-screen bg-background">
+      <SEOHead title="Organizer Dashboard" description="Manage your events" />
+      <Navbar />
+      <div className="max-w-5xl mx-auto pt-28 pb-16 px-4 md:px-8">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold">My Events</h1>
+          <button onClick={() => setShowForm(!showForm)}
+            className="flex items-center gap-2 px-5 py-3 bg-foreground text-background text-xs font-semibold uppercase tracking-wider hover:opacity-90 transition-opacity">
+            {showForm ? <><X className="w-4 h-4" /> Cancel</> : <><Plus className="w-4 h-4" /> New Event</>}
+          </button>
+        </div>
+
+        {/* Create Event Form */}
+        {showForm && (
+          <div className="border border-border p-6 mb-10 animate-fade-in">
+            <h2 className="text-xl font-semibold mb-6">Create New Event</h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Title *</label>
+                  <input value={title} onChange={e => setTitle(e.target.value)} className="w-full border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:border-foreground" placeholder="Event title" />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Description *</label>
+                  <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4} className="w-full border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:border-foreground resize-none" placeholder="Describe your event" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Category</label>
+                    <select value={category} onChange={e => setCategory(e.target.value)} className="w-full border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:border-foreground">
+                      {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Price ($)</label>
+                    <input type="number" value={price} onChange={e => setPrice(e.target.value)} className="w-full border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:border-foreground" placeholder="0 = Free" />
+                  </div>
+                </div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={kidFriendly} onChange={e => setKidFriendly(e.target.checked)} className="w-4 h-4 accent-foreground" />
+                  <span className="text-sm">Kid-friendly event</span>
+                </label>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Date *</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className={cn("w-full border border-border bg-background px-3 py-2.5 text-sm text-left focus:outline-none", !startDate && "text-muted-foreground")}>
+                        {startDate ? format(startDate, 'PPP') : 'Select date'}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={startDate} onSelect={setStartDate} className="pointer-events-auto" /></PopoverContent>
+                  </Popover>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Start Time *</label>
+                    <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:border-foreground" />
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-1">End Time *</label>
+                    <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:border-foreground" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-1">City</label>
+                  <div className="relative">
+                    <input value={citySearch} onChange={e => { setCitySearch(e.target.value); setSelectedCity(null); }} className="w-full border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:border-foreground" placeholder="Search city" />
+                    {filteredCities.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 bg-background border border-border border-t-0 z-10 max-h-40 overflow-y-auto">
+                        {filteredCities.map(city => (
+                          <button key={`${city.name}-${city.state}`} onClick={() => { setSelectedCity(city); setCitySearch(`${city.name}, ${city.state}`); }}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-muted">{city.name}, {city.state}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Address *</label>
+                  <input value={address} onChange={e => setAddress(e.target.value)} className="w-full border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:border-foreground" placeholder="Full address" />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-1">Image *</label>
+                  {imagePreview && <img src={imagePreview} alt="Preview" className="w-full h-32 object-cover mb-2" />}
+                  <input type="file" accept="image/*" onChange={handleImageUpload} className="text-sm" />
+                </div>
+              </div>
+            </div>
+            <button onClick={handleSubmit} disabled={submitting}
+              className="mt-6 w-full py-3 bg-foreground text-background font-semibold text-sm uppercase tracking-wider hover:opacity-90 disabled:opacity-40">
+              {submitting ? 'Submitting...' : 'Submit for Approval'}
+            </button>
+          </div>
+        )}
+
+        {/* Events List */}
+        {events.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground">
+            No events yet. Create your first event!
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {events.map(event => (
+              <div key={event.id} className="border border-border group relative">
+                <div className="aspect-[4/3] bg-muted bg-cover bg-center" style={{ backgroundImage: `url(${event.background_image_url})` }} />
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 ${STATUS_COLORS[event.status] || 'bg-muted text-muted-foreground'}`}>
+                      {event.status}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground uppercase">{CATEGORIES.find(c => c.id === event.category)?.label || event.category}</span>
+                  </div>
+                  <h3 className="font-semibold text-sm mb-1 line-clamp-1">{event.title}</h3>
+                  <p className="text-xs text-muted-foreground">{event.date} · {event.time}</p>
+                  {event.city && <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><MapPin className="w-3 h-3" /> {event.city}</p>}
+                </div>
+                <button onClick={() => handleDelete(event.id)}
+                  className="absolute top-2 right-2 p-2 bg-background/80 border border-border opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default OrganizerDashboard;
