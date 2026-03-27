@@ -47,11 +47,19 @@ export type Database = {
         Row: {
           address: string
           background_image_url: string
+          category: string | null
+          city: string | null
           created_by: string
           creator: string
           date: string
           description: string
           id: string
+          kid_friendly: boolean | null
+          latitude: number | null
+          longitude: number | null
+          price: number | null
+          status: string | null
+          tags: string[] | null
           target_date: string
           time: string
           title: string
@@ -59,11 +67,19 @@ export type Database = {
         Insert: {
           address: string
           background_image_url: string
+          category?: string | null
+          city?: string | null
           created_by?: string
           creator: string
           date: string
           description: string
           id?: string
+          kid_friendly?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          price?: number | null
+          status?: string | null
+          tags?: string[] | null
           target_date: string
           time: string
           title: string
@@ -71,11 +87,19 @@ export type Database = {
         Update: {
           address?: string
           background_image_url?: string
+          category?: string | null
+          city?: string | null
           created_by?: string
           creator?: string
           date?: string
           description?: string
           id?: string
+          kid_friendly?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          price?: number | null
+          status?: string | null
+          tags?: string[] | null
           target_date?: string
           time?: string
           title?: string
@@ -101,6 +125,72 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          age_range: string | null
+          city: string | null
+          created_at: string
+          distance_range: number | null
+          has_kids: boolean | null
+          id: string
+          interests: string[] | null
+          latitude: number | null
+          longitude: number | null
+          onboarding_completed: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age_range?: string | null
+          city?: string | null
+          created_at?: string
+          distance_range?: number | null
+          has_kids?: boolean | null
+          id?: string
+          interests?: string[] | null
+          latitude?: number | null
+          longitude?: number | null
+          onboarding_completed?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age_range?: string | null
+          city?: string | null
+          created_at?: string
+          distance_range?: number | null
+          has_kids?: boolean | null
+          id?: string
+          interests?: string[] | null
+          latitude?: number | null
+          longitude?: number | null
+          onboarding_completed?: boolean | null
           updated_at?: string
           user_id?: string
         }
@@ -132,6 +222,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_distance: {
+        Args: { lat1: number; lat2: number; lon1: number; lon2: number }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -139,9 +233,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_has_no_role: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "organizer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -269,7 +364,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "organizer"],
     },
   },
 } as const
