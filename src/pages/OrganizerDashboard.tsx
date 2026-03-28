@@ -9,7 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Plus, Trash2, MapPin, X } from 'lucide-react';
+import { Plus, Trash2, MapPin, X, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface OrgEvent {
@@ -18,15 +18,24 @@ interface OrgEvent {
   date: string;
   time: string;
   status: string;
+  event_type: string;
+  event_status: string;
+  admin_remark: string | null;
   background_image_url: string;
   category: string;
   city: string | null;
 }
 
+interface ParticipantRow {
+  user_id: string;
+  status: string;
+  profiles: { display_name: string | null } | null;
+}
+
 const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-yellow-500/20 text-yellow-300',
-  approved: 'bg-green-500/20 text-green-300',
-  rejected: 'bg-destructive/20 text-red-300',
+  pending: 'bg-yellow-500/20 text-yellow-600',
+  approved: 'bg-green-500/20 text-green-600',
+  rejected: 'bg-destructive/20 text-red-600',
   deactivated: 'bg-muted text-muted-foreground',
 };
 
@@ -36,6 +45,8 @@ const OrganizerDashboard = () => {
   const [events, setEvents] = useState<OrgEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<OrgEvent | null>(null);
+  const [participants, setParticipants] = useState<ParticipantRow[]>([]);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -43,6 +54,7 @@ const OrganizerDashboard = () => {
   const [category, setCategory] = useState('community');
   const [kidFriendly, setKidFriendly] = useState(false);
   const [price, setPrice] = useState('');
+  const [eventType, setEventType] = useState<'standard' | 'preview'>('standard');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -54,9 +66,7 @@ const OrganizerDashboard = () => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && (!user || role !== 'organizer')) {
-      navigate('/');
-    }
+    if (!authLoading && (!user || role !== 'organizer')) navigate('/');
   }, [authLoading, user, role]);
 
   useEffect(() => {
@@ -67,11 +77,19 @@ const OrganizerDashboard = () => {
     if (!user) return;
     const { data } = await supabase
       .from('events')
-      .select('id, title, date, time, status, background_image_url, category, city')
+      .select('id, title, date, time, status, event_type, event_status, admin_remark, background_image_url, category, city')
       .eq('created_by', user.id)
       .order('target_date', { ascending: false });
-    setEvents((data as OrgEvent[]) || []);
+    setEvents((data as unknown as OrgEvent[]) || []);
     setLoading(false);
+  };
+
+  const fetchParticipants = async (eventId: string) => {
+    const { data } = await supabase
+      .from('event_participants')
+      .select('user_id, status, profiles:user_id(display_name)')
+      .eq('event_id', eventId);
+    setParticipants((data as unknown as ParticipantRow[]) || []);
   };
 
   const filteredCities = citySearch.length > 0 && !selectedCity
@@ -95,7 +113,6 @@ const OrganizerDashboard = () => {
       toast.error('Please fill in all required fields');
       return;
     }
-
     setSubmitting(true);
     try {
       const fileExt = imageFile.name.split('.').pop();
@@ -126,10 +143,12 @@ const OrganizerDashboard = () => {
         latitude: selectedCity?.lat || null,
         longitude: selectedCity?.lng || null,
         city: selectedCity ? `${selectedCity.name}, ${selectedCity.state}` : null,
+        event_type: eventType,
+        event_status: eventType === 'preview' ? 'collecting_interest' : 'confirmed',
+        status: 'pending', // approval status
       });
 
       if (error) throw error;
-
       toast.success('Event submitted for approval!');
       setShowForm(false);
       resetForm();
@@ -143,7 +162,7 @@ const OrganizerDashboard = () => {
 
   const resetForm = () => {
     setTitle(''); setDescription(''); setCategory('community'); setKidFriendly(false);
-    setPrice(''); setStartDate(undefined); setStartTime(''); setEndTime('');
+    setPrice(''); setEventType('standard'); setStartDate(undefined); setStartTime(''); setEndTime('');
     setCitySearch(''); setSelectedCity(null); setAddress('');
     setImageFile(null); setImagePreview(null);
   };
@@ -155,6 +174,15 @@ const OrganizerDashboard = () => {
     else { toast.success('Event deleted'); fetchEvents(); }
   };
 
+  const handleConvertToStandard = async (event: OrgEvent) => {
+    if (!confirm('Confirm & convert this Preview Event to a Standard Event? All participants and messages will be kept.')) return;
+    const { error } = await supabase.from('events')
+      .update({ event_type: 'standard', event_status: 'confirmed' })
+      .eq('id', event.id);
+    if (error) toast.error(error.message);
+    else { toast.success('Event converted to Standard!'); fetchEvents(); setSelectedEvent(null); }
+  };
+
   if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
   return (
@@ -164,7 +192,7 @@ const OrganizerDashboard = () => {
       <div className="max-w-5xl mx-auto pt-28 pb-16 px-4 md:px-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">My Events</h1>
-          <button onClick={() => setShowForm(!showForm)}
+          <button onClick={() => { setShowForm(!showForm); setSelectedEvent(null); }}
             className="flex items-center gap-2 px-5 py-3 bg-foreground text-background text-xs font-semibold uppercase tracking-wider hover:opacity-90 transition-opacity">
             {showForm ? <><X className="w-4 h-4" /> Cancel</> : <><Plus className="w-4 h-4" /> New Event</>}
           </button>
@@ -174,6 +202,24 @@ const OrganizerDashboard = () => {
         {showForm && (
           <div className="border border-border p-6 mb-10 animate-fade-in">
             <h2 className="text-xl font-semibold mb-6">Create New Event</h2>
+
+            {/* Event Type Selection */}
+            <div className="mb-6">
+              <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-2">Event Type</label>
+              <div className="flex gap-3">
+                <button onClick={() => setEventType('standard')}
+                  className={`flex-1 p-4 border text-left transition-colors ${eventType === 'standard' ? 'border-foreground bg-foreground/5' : 'border-border hover:border-foreground'}`}>
+                  <div className="text-sm font-semibold mb-1">Standard Event</div>
+                  <div className="text-xs text-muted-foreground">Regular confirmed event, simple listing.</div>
+                </button>
+                <button onClick={() => setEventType('preview')}
+                  className={`flex-1 p-4 border text-left transition-colors ${eventType === 'preview' ? 'border-foreground bg-foreground/5' : 'border-border hover:border-foreground'}`}>
+                  <div className="text-sm font-semibold mb-1">Preview Event</div>
+                  <div className="text-xs text-muted-foreground">Test interest first, confirm attendees, then convert.</div>
+                </button>
+              </div>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
@@ -256,28 +302,89 @@ const OrganizerDashboard = () => {
           </div>
         )}
 
+        {/* Selected Event Detail (Preview management) */}
+        {selectedEvent && (
+          <div className="border border-border p-6 mb-10 animate-fade-in">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">{selectedEvent.title}</h2>
+              <button onClick={() => setSelectedEvent(null)} className="p-2 hover:bg-muted"><X className="w-4 h-4" /></button>
+            </div>
+
+            <div className="flex flex-wrap gap-2 mb-4">
+              <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 ${STATUS_COLORS[selectedEvent.status] || 'bg-muted text-muted-foreground'}`}>
+                Approval: {selectedEvent.status}
+              </span>
+              <span className="text-[10px] uppercase font-semibold px-2 py-0.5 bg-blue-500/20 text-blue-600">
+                Type: {selectedEvent.event_type}
+              </span>
+              <span className="text-[10px] uppercase font-semibold px-2 py-0.5 bg-purple-500/20 text-purple-600">
+                Status: {selectedEvent.event_status}
+              </span>
+            </div>
+
+            {selectedEvent.admin_remark && (
+              <div className="p-3 bg-muted mb-4 text-sm">
+                <span className="font-medium">Admin Remark:</span> {selectedEvent.admin_remark}
+              </div>
+            )}
+
+            {/* Participant lists */}
+            <div className="space-y-3 mb-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Participants</h3>
+              {['interested', 'going', 'not_going'].map(status => {
+                const list = participants.filter(p => p.status === status);
+                if (list.length === 0) return null;
+                return (
+                  <div key={status}>
+                    <div className="text-xs font-medium capitalize mb-1">{status.replace('_', ' ')} ({list.length})</div>
+                    <div className="flex flex-wrap gap-1">
+                      {list.map(p => (
+                        <span key={p.user_id} className="text-[10px] px-2 py-0.5 border border-border">{p.profiles?.display_name || 'User'}</span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              {participants.length === 0 && <p className="text-xs text-muted-foreground">No participants yet</p>}
+            </div>
+
+            {/* Convert button for preview events */}
+            {selectedEvent.event_type === 'preview' && selectedEvent.event_status === 'collecting_interest' && (
+              <button onClick={() => handleConvertToStandard(selectedEvent)}
+                className="flex items-center gap-2 px-5 py-3 bg-foreground text-background text-xs font-semibold uppercase tracking-wider hover:opacity-90">
+                <ArrowRight className="w-4 h-4" /> Confirm & Convert to Standard Event
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Events List */}
         {events.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            No events yet. Create your first event!
-          </div>
+          <div className="text-center py-16 text-muted-foreground">No events yet. Create your first event!</div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {events.map(event => (
-              <div key={event.id} className="border border-border group relative">
+              <div key={event.id} className="border border-border group relative cursor-pointer"
+                onClick={() => { setSelectedEvent(event); setShowForm(false); fetchParticipants(event.id); }}>
                 <div className="aspect-[4/3] bg-muted bg-cover bg-center" style={{ backgroundImage: `url(${event.background_image_url})` }} />
                 <div className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 ${STATUS_COLORS[event.status] || 'bg-muted text-muted-foreground'}`}>
                       {event.status}
                     </span>
+                    {event.event_type === 'preview' && (
+                      <span className="text-[10px] uppercase font-semibold px-2 py-0.5 bg-blue-500/20 text-blue-600">preview</span>
+                    )}
                     <span className="text-[10px] text-muted-foreground uppercase">{CATEGORIES.find(c => c.id === event.category)?.label || event.category}</span>
                   </div>
                   <h3 className="font-semibold text-sm mb-1 line-clamp-1">{event.title}</h3>
                   <p className="text-xs text-muted-foreground">{event.date} · {event.time}</p>
                   {event.city && <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><MapPin className="w-3 h-3" /> {event.city}</p>}
+                  {event.admin_remark && (
+                    <p className="text-xs text-muted-foreground mt-2 italic">Remark: {event.admin_remark}</p>
+                  )}
                 </div>
-                <button onClick={() => handleDelete(event.id)}
+                <button onClick={(e) => { e.stopPropagation(); handleDelete(event.id); }}
                   className="absolute top-2 right-2 p-2 bg-background/80 border border-border opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground">
                   <Trash2 className="w-3 h-3" />
                 </button>

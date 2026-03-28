@@ -5,11 +5,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { CalendarIcon, MapPin, Filter } from 'lucide-react';
+import { CalendarIcon, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CATEGORIES } from '@/data/cities';
 import { SEOHead } from '@/components/SEOHead';
+import { EventParticipationCounts } from '@/components/EventParticipation';
 
 interface Event {
   id: string;
@@ -25,6 +26,7 @@ interface Event {
   latitude: number | null;
   longitude: number | null;
   city: string | null;
+  event_type: string;
 }
 
 interface UserPrefs {
@@ -38,7 +40,7 @@ interface UserPrefs {
 
 const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
   const toRad = (v: number) => (v * Math.PI) / 180;
-  const R = 3959; // miles
+  const R = 3959;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
@@ -63,11 +65,18 @@ const EventCard = ({ event }: { event: Event }) => {
           <div className="text-[11px] font-medium leading-none">{event.time}</div>
         </div>
       </div>
-      {event.kid_friendly && (
-        <span className="absolute top-4 right-4 bg-background border border-foreground px-2 h-[23px] flex items-center text-[10px] font-medium uppercase">
-          👶 Kid-Friendly
-        </span>
-      )}
+      <div className="absolute top-4 right-4 flex flex-col gap-1">
+        {event.kid_friendly && (
+          <span className="bg-background border border-foreground px-2 h-[23px] flex items-center text-[10px] font-medium uppercase">
+            👶 Kid-Friendly
+          </span>
+        )}
+        {event.event_type === 'preview' && (
+          <span className="bg-blue-500/20 border border-blue-500/30 px-2 h-[23px] flex items-center text-[10px] font-medium uppercase text-blue-600">
+            Preview
+          </span>
+        )}
+      </div>
       <div className="flex items-center gap-2 mb-1">
         <span className="text-[10px] uppercase font-medium text-muted-foreground">{catLabel}</span>
         {event.price > 0 && <span className="text-[10px] font-semibold text-foreground">${event.price}</span>}
@@ -77,6 +86,9 @@ const EventCard = ({ event }: { event: Event }) => {
       <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
         <MapPin className="w-3 h-3" /> {event.city || event.address}
       </p>
+      <div className="mt-1">
+        <EventParticipationCounts eventId={event.id} />
+      </div>
     </div>
   );
 };
@@ -89,13 +101,9 @@ const Discover = () => {
   const [loading, setLoading] = useState(true);
   const [prefs, setPrefs] = useState<UserPrefs | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
 
-  // Redirect end users who haven't completed onboarding
   useEffect(() => {
-    if (user && role === 'user' && onboardingCompleted === false) {
-      navigate('/onboarding');
-    }
+    if (user && role === 'user' && onboardingCompleted === false) navigate('/onboarding');
   }, [user, role, onboardingCompleted]);
 
   useEffect(() => {
@@ -119,11 +127,10 @@ const Discover = () => {
   const fetchEvents = async () => {
     const { data, error } = await supabase
       .from('events')
-      .select('id, title, date, time, background_image_url, target_date, address, category, kid_friendly, price, latitude, longitude, city')
+      .select('id, title, date, time, background_image_url, target_date, address, category, kid_friendly, price, latitude, longitude, city, event_type')
       .eq('status', 'approved')
       .order('target_date', { ascending: true });
-
-    if (!error) setEvents((data as Event[]) || []);
+    if (!error) setEvents((data as unknown as Event[]) || []);
     setLoading(false);
   };
 
@@ -134,31 +141,18 @@ const Discover = () => {
   const filteredEvents = useMemo(() => {
     const now = Date.now();
     const oneHour = 3600000;
-
     return events.filter(event => {
       const target = new Date(event.target_date).getTime();
       if (target < now - oneHour) return false;
-
-      // Date filter
       if (date) {
         const eventDate = new Date(event.target_date);
         if (eventDate.toDateString() !== date.toDateString()) return false;
       }
-
-      // Category filter
       if (selectedCategories.length > 0 && !selectedCategories.includes(event.category)) return false;
-
-      // Distance filter (for logged-in end users with preferences)
       if (prefs?.latitude && prefs?.longitude && event.latitude && event.longitude) {
         const dist = haversineDistance(prefs.latitude, prefs.longitude, event.latitude, event.longitude);
         if (dist > (prefs.distance_range || 100)) return false;
       }
-
-      // Kid-friendly filter
-      if (prefs?.has_kids && !event.kid_friendly) {
-        // Don't filter out non-kid-friendly events, just prioritize kid-friendly ones
-      }
-
       return true;
     });
   }, [events, date, selectedCategories, prefs]);
@@ -168,12 +162,9 @@ const Discover = () => {
       <SEOHead title="Discover Events" description="Explore events near you filtered by your interests and location." />
       <Navbar />
 
-      {/* Header */}
       <section className="pt-28 md:pt-36 pb-6 px-4 md:px-8">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-            Discover Events
-          </h1>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Discover Events</h1>
           {prefs?.city && (
             <p className="text-muted-foreground flex items-center gap-2 mb-6">
               <MapPin className="w-4 h-4" /> Showing events near {prefs.city} (within {prefs.distance_range} miles)
@@ -182,11 +173,9 @@ const Discover = () => {
         </div>
       </section>
 
-      {/* Filters */}
       <section className="px-4 md:px-8 pb-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-wrap items-center gap-2 mb-4">
-            {/* Date picker */}
             <Popover>
               <PopoverTrigger asChild>
                 <button className={cn("h-9 px-3 text-xs font-medium uppercase tracking-wider border border-border flex items-center gap-2 hover:border-foreground transition-colors", date && "border-foreground bg-foreground text-background")}>
@@ -198,21 +187,17 @@ const Discover = () => {
                 <Calendar mode="single" selected={date} onSelect={setDate} className="pointer-events-auto" />
               </PopoverContent>
             </Popover>
-
             {date && (
               <button onClick={() => setDate(undefined)} className="h-9 px-3 text-xs font-medium uppercase border border-border hover:border-foreground transition-colors">
                 Clear date
               </button>
             )}
-
-            {/* Category filters */}
             {CATEGORIES.map(cat => (
               <button key={cat.id} onClick={() => toggleCategory(cat.id)}
                 className={`h-9 px-3 text-xs font-medium uppercase tracking-wider border transition-colors ${selectedCategories.includes(cat.id) ? 'border-foreground bg-foreground text-background' : 'border-border hover:border-foreground'}`}>
                 {cat.emoji} {cat.label}
               </button>
             ))}
-
             {selectedCategories.length > 0 && (
               <button onClick={() => setSelectedCategories([])} className="h-9 px-3 text-xs font-medium uppercase border border-border hover:border-foreground transition-colors">
                 Clear filters
@@ -222,7 +207,6 @@ const Discover = () => {
         </div>
       </section>
 
-      {/* Events Grid */}
       <section className="px-4 md:px-8 pb-16">
         <div className="max-w-6xl mx-auto">
           {loading ? (
