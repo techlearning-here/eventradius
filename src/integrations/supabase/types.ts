@@ -14,6 +14,73 @@ export type Database = {
   }
   public: {
     Tables: {
+      event_messages: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          message_text: string
+          sender_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          message_text: string
+          sender_user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          message_text?: string
+          sender_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_messages_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_participants: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_participants_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_registrations: {
         Row: {
           event_id: string
@@ -46,6 +113,7 @@ export type Database = {
       events: {
         Row: {
           address: string
+          admin_remark: string | null
           background_image_url: string
           category: string | null
           city: string | null
@@ -53,6 +121,8 @@ export type Database = {
           creator: string
           date: string
           description: string
+          event_status: string
+          event_type: string
           id: string
           kid_friendly: boolean | null
           latitude: number | null
@@ -66,6 +136,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          admin_remark?: string | null
           background_image_url: string
           category?: string | null
           city?: string | null
@@ -73,6 +144,8 @@ export type Database = {
           creator: string
           date: string
           description: string
+          event_status?: string
+          event_type?: string
           id?: string
           kid_friendly?: boolean | null
           latitude?: number | null
@@ -86,6 +159,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          admin_remark?: string | null
           background_image_url?: string
           category?: string | null
           city?: string | null
@@ -93,6 +167,8 @@ export type Database = {
           creator?: string
           date?: string
           description?: string
+          event_status?: string
+          event_type?: string
           id?: string
           kid_friendly?: boolean | null
           latitude?: number | null
