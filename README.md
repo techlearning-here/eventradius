@@ -127,3 +127,53 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## 🚀 FastAPI Backend
+
+This project includes a FastAPI-based backend that serves as the API layer between the React frontend and Supabase database.
+
+### Backend Features
+- **FastAPI Framework**: Modern Python web framework with automatic OpenAPI documentation
+- **Supabase Integration**: PostgreSQL database with real-time capabilities
+- **JWT Authentication**: Secure token-based authentication
+- **CORS Configuration**: Cross-origin resource sharing for frontend-backend communication
+- **Comprehensive API**: Full CRUD operations for events, users, and participation
+
+### Running the Backend
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+
+2. Create and activate virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Configure environment variables:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your Supabase credentials
+   ```
+
+5. Start the development server:
+   ```bash
+   python -m uvicorn main:app --reload --port 8000
+   ```
+
+### API Documentation
+Once the backend is running:
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
+- **Health Check**: `http://localhost:8000/health`
+
+### Frontend Integration
+The frontend is configured to use the backend API via the `VITE_BACKEND_URL` environment variable. All REST calls from the frontend are routed through the backend, which then communicates with Supabase.
+
+For detailed backend documentation, see [backend/README.md](backend/README.md).
