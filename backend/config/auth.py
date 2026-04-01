@@ -106,6 +106,14 @@ def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(securi
     """FastAPI dependency to get current admin user"""
     return auth_service.require_admin(credentials)
 
+def require_auth(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """FastAPI dependency to require authentication (alias for get_current_user)"""
+    return auth_service.require_auth(credentials)
+
+def require_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """FastAPI dependency to require admin role (alias for get_current_admin)"""
+    return auth_service.require_admin(credentials)
+
 def optional_auth(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security, use_cache=False)) -> Optional[Dict[str, Any]]:
     """Optional authentication dependency - returns user if authenticated, None otherwise"""
     try:
