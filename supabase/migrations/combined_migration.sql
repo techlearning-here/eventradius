@@ -144,7 +144,7 @@ END $$;
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies 
-    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Event images upload (authenticated)'
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Event images upload (authenticated)"
   ) THEN
     CREATE POLICY "Event images upload (authenticated)"
     ON storage.objects
@@ -157,7 +157,7 @@ END $$;
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies 
-    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Event images update (authenticated)'
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = "Event images update (authenticated)"
   ) THEN
     CREATE POLICY "Event images update (authenticated)"
     ON storage.objects
@@ -187,7 +187,7 @@ END $$;
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies 
-    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Event images upload (authenticated)'
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Event images upload (authenticated)"
   ) THEN
     CREATE POLICY "Event images upload (authenticated)"
     ON storage.objects
@@ -200,7 +200,7 @@ END $$;
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies 
-    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Event images update (authenticated)'
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = "Event images update (authenticated)"
   ) THEN
     CREATE POLICY "Event images update (authenticated)"
     ON storage.objects
@@ -677,3 +677,9 @@ CREATE TRIGGER update_event_participants_updated_at
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
+--- Migration: 20260328002056_add_is_public_column.sql ---
+-- Add is_public column to events table
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS is_public boolean DEFAULT true;
+
+-- Update existing events to be public by default
+UPDATE public.events SET is_public = true WHERE is_public IS NULL;

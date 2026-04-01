@@ -33,7 +33,7 @@ backend/
 ## 🔧 Setup Instructions
 
 ### 1. Prerequisites
-- Python 3.13+ (tested with Python 3.14)
+- Python 3.12
 - pip package manager
 - Supabase account with database
 
@@ -181,7 +181,7 @@ gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8000
 
 ## 📝 Notes
 
-- The backend uses Python 3.14 which may have compatibility issues with some packages. If you encounter issues, consider using Python 3.13.
+- The backend is standardized on Python 3.12 for local development and CI compatibility.
 - The `is_public` column referenced in the code doesn't exist in the current database schema. You can either add it or modify the code to remove the filter.
 - Email validation requires the `email-validator` package which is included in requirements.txt.
 
