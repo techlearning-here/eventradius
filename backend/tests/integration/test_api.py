@@ -2,9 +2,10 @@
 Integration tests for API endpoints.
 """
 
-from unittest.mock import Mock, patch
-from fastapi.testclient import TestClient
 from datetime import datetime, timedelta
+from unittest.mock import Mock, patch
+
+from fastapi.testclient import TestClient
 
 from main import app
 

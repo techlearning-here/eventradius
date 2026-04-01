@@ -2,18 +2,19 @@
 Unit tests for database utilities.
 """
 
-import pytest
-from unittest.mock import Mock, patch
 import os
+from unittest.mock import Mock, patch
+
+import pytest
 
 from config.database import (
     SupabaseClient,
-    get_table,
-    insert_record,
-    update_record,
     delete_record,
     fetch_records,
     fetch_single_record,
+    get_table,
+    insert_record,
+    update_record,
 )
 
 

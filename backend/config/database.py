@@ -2,11 +2,12 @@
 Supabase database connection and utilities.
 """
 
-from supabase import create_client, Client
-import os
-from dotenv import load_dotenv
-from typing import Optional, Dict, Any
 import logging
+import os
+from typing import Any, Dict, Optional
+
+from dotenv import load_dotenv
+from supabase import Client, create_client
 
 load_dotenv()
 

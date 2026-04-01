@@ -2,20 +2,21 @@
 Unit tests for authentication utilities.
 """
 
-import pytest
-from unittest.mock import Mock, patch
-import jwt
 from datetime import datetime, timedelta
+from unittest.mock import Mock, patch
+
+import jwt
+import pytest
+from fastapi import HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
 
 from config.auth import (
     AuthService,
     OptionalHTTPBearer,
     optional_auth,
-    require_auth,
     require_admin,
+    require_auth,
 )
-from fastapi import HTTPException
-from fastapi.security import HTTPAuthorizationCredentials
 
 
 class TestOptionalHTTPBearer:

@@ -2,8 +2,8 @@
 Test to verify fixes made to the backend code.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

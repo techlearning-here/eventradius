@@ -2,14 +2,15 @@
 User-related API endpoints.
 """
 
-from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Optional
-from pydantic import BaseModel, EmailStr
 import logging
+from datetime import datetime
+from typing import Optional
 
-from config.database import fetch_single_record, get_table
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, EmailStr
+
 from config.auth import get_current_user
+from config.database import fetch_single_record, get_table
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/users", tags=["users"])

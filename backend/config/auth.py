@@ -2,14 +2,15 @@
 Authentication and authorization utilities for Supabase.
 """
 
-from fastapi import HTTPException, status, Depends, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from supabase import Client
-from typing import Optional, Dict, Any
-import jwt
-import os
-from dotenv import load_dotenv
 import logging
+import os
+from typing import Any, Dict, Optional
+
+import jwt
+from dotenv import load_dotenv
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from supabase import Client
 
 from config.database import SupabaseClient
 

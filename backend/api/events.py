@@ -2,20 +2,21 @@
 Event-related API endpoints.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from typing import List, Optional
-from pydantic import BaseModel, Field
 import logging
+from typing import List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
+
+from config.auth import get_current_user, optional_auth
 from config.database import (
+    delete_record,
     fetch_records,
     fetch_single_record,
+    get_table,
     insert_record,
     update_record,
-    delete_record,
-    get_table,
 )
-from config.auth import get_current_user, optional_auth
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/events", tags=["events"])
