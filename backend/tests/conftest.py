@@ -2,6 +2,7 @@
 Pytest configuration file for backend tests.
 Adds the parent directory to sys.path so imports work correctly.
 """
+
 import sys
 from pathlib import Path
 

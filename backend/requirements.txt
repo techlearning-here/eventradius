@@ -10,6 +10,9 @@ pydantic==2.12.5
 pydantic-settings==2.13.1
 email-validator==2.2.0
 
+# Dev / formatting
+black==26.3.1
+
 # Testing dependencies
 pytest==8.3.4
 pytest-asyncio==0.24.0
