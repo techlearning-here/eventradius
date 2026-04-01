@@ -100,14 +100,32 @@ auth_service = AuthService(supabase_client)
 # Convenience dependencies
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """FastAPI dependency to get current user"""
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return auth_service.require_auth(credentials)
 
 def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """FastAPI dependency to get current admin user"""
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return auth_service.require_admin(credentials)
 
 def require_auth(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """FastAPI dependency to require authentication (alias for get_current_user)"""
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return auth_service.require_auth(credentials)
 
 def require_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):

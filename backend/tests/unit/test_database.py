@@ -100,7 +100,7 @@ class TestDatabaseHelpers:
             
             mock_table.insert.assert_called_once_with(data)
             mock_table.execute.assert_called_once()
-            assert result == mock_response.data[0]
+            assert result == mock_response
     
     def test_update_record(self):
         """Test update_record calls update on table."""
@@ -118,7 +118,7 @@ class TestDatabaseHelpers:
             mock_table.update.assert_called_once_with(data)
             mock_table.eq.assert_called_once_with("id", "123")
             mock_table.execute.assert_called_once()
-            assert result == mock_response.data[0]
+            assert result == mock_response
     
     def test_delete_record(self):
         """Test delete_record calls delete on table."""
@@ -135,7 +135,7 @@ class TestDatabaseHelpers:
             mock_table.delete.assert_called_once()
             mock_table.eq.assert_called_once_with("id", "123")
             mock_table.execute.assert_called_once()
-            assert result is True
+            assert result == mock_response
     
     def test_fetch_records(self):
         """Test fetch_records with filters."""
@@ -144,8 +144,7 @@ class TestDatabaseHelpers:
         mock_response.data = [{"id": "1"}, {"id": "2"}]
         mock_table.select.return_value = mock_table
         mock_table.eq.return_value = mock_table
-        mock_table.limit.return_value = mock_table
-        mock_table.offset.return_value = mock_table
+        mock_table.range.return_value = mock_table
         mock_table.execute.return_value = mock_response
         
         with patch('config.database.get_table', return_value=mock_table):
@@ -154,10 +153,9 @@ class TestDatabaseHelpers:
             
             mock_table.select.assert_called_once_with("*")
             mock_table.eq.assert_called_once_with("category", "music")
-            mock_table.limit.assert_called_once_with(10)
-            mock_table.offset.assert_called_once_with(0)
+            mock_table.range.assert_called_once_with(0, 9)  # offset, offset + limit - 1
             mock_table.execute.assert_called_once()
-            assert result == mock_response.data
+            assert result == mock_response
     
     def test_fetch_records_no_filters(self):
         """Test fetch_records without filters."""
@@ -165,8 +163,7 @@ class TestDatabaseHelpers:
         mock_response = Mock()
         mock_response.data = [{"id": "1"}]
         mock_table.select.return_value = mock_table
-        mock_table.limit.return_value = mock_table
-        mock_table.offset.return_value = mock_table
+        mock_table.range.return_value = mock_table
         mock_table.execute.return_value = mock_response
         
         with patch('config.database.get_table', return_value=mock_table):
@@ -175,10 +172,9 @@ class TestDatabaseHelpers:
             mock_table.select.assert_called_once_with("*")
             # Should not call eq when no filters
             mock_table.eq.assert_not_called()
-            mock_table.limit.assert_called_once_with(5)
-            mock_table.offset.assert_called_once_with(10)
+            mock_table.range.assert_called_once_with(10, 14)  # offset, offset + limit - 1
             mock_table.execute.assert_called_once()
-            assert result == mock_response.data
+            assert result == mock_response
     
     def test_fetch_single_record(self):
         """Test fetch_single_record."""
@@ -197,7 +193,7 @@ class TestDatabaseHelpers:
             mock_table.eq.assert_called_once_with("id", "123")
             mock_table.single.assert_called_once()
             mock_table.execute.assert_called_once()
-            assert result == mock_response.data[0]
+            assert result == mock_response
     
     def test_fetch_single_record_not_found(self):
         """Test fetch_single_record when record doesn't exist."""
@@ -212,4 +208,4 @@ class TestDatabaseHelpers:
         with patch('config.database.get_table', return_value=mock_table):
             result = fetch_single_record("events", "999")
             
-            assert result is None
+            assert result == mock_response

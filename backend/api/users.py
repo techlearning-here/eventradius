@@ -1,6 +1,7 @@
 """
 User-related API endpoints.
 """
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr
@@ -168,6 +169,3 @@ async def get_user_events(user: dict = Depends(get_current_user)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch user events"
         )
-
-# Import datetime for default values
-from datetime import datetime
