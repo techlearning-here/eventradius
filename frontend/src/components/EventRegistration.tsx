@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorMessage } from '@/lib/utils';
 
 interface EventRegistrationProps {
   eventId: string;
@@ -128,10 +129,10 @@ export const EventRegistration: React.FC<EventRegistrationProps> = ({
           description: 'You have successfully registered for this event'
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message,
+        description: getErrorMessage(error),
         variant: 'destructive'
       });
     } finally {

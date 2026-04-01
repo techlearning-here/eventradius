@@ -3,7 +3,7 @@ Unit tests for database utilities.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 import os
 
 from config.database import (

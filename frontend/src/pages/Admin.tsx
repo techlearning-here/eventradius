@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { SEOHead } from '@/components/SEOHead';
+import { getErrorMessage } from '@/lib/utils';
 
 // Input validation schema
 const eventSchema = z.object({
@@ -172,10 +173,10 @@ const Admin = () => {
         title: 'Success',
         description: 'Image uploaded successfully',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message,
+        description: getErrorMessage(error),
         variant: 'destructive',
       });
     } finally {

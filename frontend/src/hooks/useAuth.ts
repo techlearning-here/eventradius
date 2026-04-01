@@ -34,7 +34,7 @@ export const useAuth = () => {
     return data?.onboarding_completed ?? null;
   };
 
-  const ensureRole = async (userId: string, metadata: Record<string, any>) => {
+  const ensureRole = async (userId: string, metadata: User['user_metadata']) => {
     const existingRole = await fetchRole(userId);
     if (existingRole) return existingRole;
     

@@ -8,7 +8,7 @@ import { CITIES, CATEGORIES } from '@/data/cities';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn, getErrorMessage } from '@/lib/utils';
 import { Plus, Trash2, MapPin, X, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -153,8 +153,8 @@ const OrganizerDashboard = () => {
       setShowForm(false);
       resetForm();
       fetchEvents();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to create event');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || 'Failed to create event');
     } finally {
       setSubmitting(false);
     }

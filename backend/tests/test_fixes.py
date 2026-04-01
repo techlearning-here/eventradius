@@ -20,9 +20,7 @@ def test_datetime_import_fix():
     except ImportError as e:
         # Supabase dependency issue is expected
         if "storage3" in str(e) or "supabase" in str(e):
-            print(
-                "WARN: users.py import failed due to supabase dependency (expected on Windows)"
-            )
+            print("WARN: users.py import failed (supabase deps; expected on Windows)")
             return True  # This is expected due to missing Visual C++ build tools
         print(f"FAIL: Failed to import users.py: {e}")
         return False
@@ -42,9 +40,7 @@ def test_events_module_import():
     except ImportError as e:
         # Supabase dependency issue is expected
         if "storage3" in str(e) or "supabase" in str(e):
-            print(
-                "WARN: events.py import failed due to supabase dependency (expected on Windows)"
-            )
+            print("WARN: events.py import failed (supabase deps; expected on Windows)")
             return True  # This is expected due to missing Visual C++ build tools
         print(f"FAIL: Failed to import events.py: {e}")
         return False
@@ -64,9 +60,7 @@ def test_main_module_import():
     except ImportError as e:
         # Supabase dependency issue is expected
         if "storage3" in str(e) or "supabase" in str(e):
-            print(
-                "WARN: main.py import failed due to supabase dependency (expected on Windows)"
-            )
+            print("WARN: main.py import failed (supabase deps; expected on Windows)")
             return True  # This is expected due to missing Visual C++ build tools
         print(f"FAIL: Failed to import main.py: {e}")
         return False

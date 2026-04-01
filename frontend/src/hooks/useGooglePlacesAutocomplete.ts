@@ -12,6 +12,26 @@ type AutocompleteInstance = {
   getPlace: () => PlaceResult;
 };
 
+type GoogleMapsWindow = Window & {
+  google?: {
+    maps: {
+      places: {
+        Autocomplete: new (
+          input: HTMLInputElement,
+          opts?: { types?: string[]; fields?: string[] },
+        ) => AutocompleteInstance;
+      };
+      event: {
+        clearInstanceListeners: (instance: AutocompleteInstance) => void;
+      };
+    };
+  };
+};
+
+function getGoogleWindow(): GoogleMapsWindow {
+  return window as GoogleMapsWindow;
+}
+
 export const useGooglePlacesAutocomplete = (inputRef: React.RefObject<HTMLInputElement>) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const autocompleteRef = useRef<AutocompleteInstance | null>(null);
@@ -25,7 +45,7 @@ export const useGooglePlacesAutocomplete = (inputRef: React.RefObject<HTMLInputE
     }
 
     // Check if Google Maps script is already loaded
-    if ((window as any).google?.maps?.places) {
+    if (getGoogleWindow().google?.maps?.places) {
       setIsLoaded(true);
       return;
     }
@@ -48,20 +68,20 @@ export const useGooglePlacesAutocomplete = (inputRef: React.RefObject<HTMLInputE
   }, []);
 
   useEffect(() => {
-    if (!isLoaded || !inputRef.current || !(window as any).google) return;
+    const g = getGoogleWindow().google;
+    if (!isLoaded || !inputRef.current || !g) return;
 
     // Initialize autocomplete
-    const google = (window as any).google;
-    autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
+    autocompleteRef.current = new g.maps.places.Autocomplete(inputRef.current, {
       types: ['establishment', 'geocode'],
       fields: ['formatted_address', 'name', 'geometry'],
     });
 
     // Cleanup
     return () => {
-      if (autocompleteRef.current && (window as any).google) {
-        const google = (window as any).google;
-        google.maps.event.clearInstanceListeners(autocompleteRef.current);
+      const gw = getGoogleWindow().google;
+      if (autocompleteRef.current && gw) {
+        gw.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
     };
   }, [isLoaded, inputRef]);

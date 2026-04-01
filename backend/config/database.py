@@ -41,7 +41,7 @@ class SupabaseClient:
         try:
             client = cls.get_client()
             # Simple query to test connection
-            response = client.table("events").select("*").limit(1).execute()
+            client.table("events").select("*").limit(1).execute()
             logger.info("Supabase connection test successful")
             return True
         except Exception as e:

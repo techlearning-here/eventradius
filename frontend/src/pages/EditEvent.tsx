@@ -14,6 +14,11 @@ import { SEOHead } from '@/components/SEOHead';
 import { Trash2 } from 'lucide-react';
 import { z } from 'zod';
 
+type EventRegistrationRow = {
+  registered_at: string;
+  profiles: { display_name?: string | null } | null;
+};
+
 const eventSchema = z.object({
   eventName: z.string().trim().min(1, 'Event name is required').max(200, 'Event name must be less than 200 characters'),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Start time must be in HH:MM format (e.g., 15:00)'),
@@ -153,7 +158,8 @@ const EditEvent = () => {
       if (error) throw error;
 
       if (data) {
-        const formattedRegistrants = data.map((reg: any) => ({
+        const rows = data as EventRegistrationRow[];
+        const formattedRegistrants = rows.map((reg) => ({
           display_name: reg.profiles?.display_name || 'Anonymous',
           registered_at: reg.registered_at
         }));

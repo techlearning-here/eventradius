@@ -6,6 +6,7 @@ import { CITIES, CATEGORIES, AGE_RANGES, DISTANCE_OPTIONS } from '@/data/cities'
 import { SEOHead } from '@/components/SEOHead';
 import { MapPin, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/utils';
 
 const Onboarding = () => {
   const { user, fetchOnboardingStatus } = useAuth();
@@ -54,8 +55,8 @@ const Onboarding = () => {
       await fetchOnboardingStatus(user.id);
       toast.success('Preferences saved!');
       navigate('/discover');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to save preferences');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err) || 'Failed to save preferences');
     } finally {
       setSaving(false);
     }

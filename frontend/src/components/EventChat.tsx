@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/utils';
 
 interface Message {
   id: string;
@@ -87,8 +88,8 @@ export const EventChat = ({ eventId, eventCreatorId, eventStatus }: Props) => {
       if (error) throw error;
       setNewMessage('');
       await fetchMessages();
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to send message');
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e) || 'Failed to send message');
     } finally {
       setSending(false);
     }

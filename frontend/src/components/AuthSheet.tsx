@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Users, Megaphone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorMessage } from '@/lib/utils';
 
 interface AuthSheetProps {
   isOpen: boolean;
@@ -48,8 +49,8 @@ export const AuthSheet: React.FC<AuthSheetProps> = ({ isOpen, onClose, defaultRo
         toast({ title: 'Welcome back!', description: 'Signed in successfully.' });
         onClose();
       }
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({ title: 'Error', description: getErrorMessage(error), variant: 'destructive' });
     } finally {
       setLoading(false);
     }

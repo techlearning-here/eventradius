@@ -11,6 +11,8 @@ import os
 from dotenv import load_dotenv
 import logging
 
+from config.database import SupabaseClient
+
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -41,9 +43,8 @@ class AuthService:
     def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
         """Verify JWT token and return payload"""
         try:
-            # In production, you would verify with Supabase's JWT secret
-            # For simplicity, we'll decode without verification for now
-            # In a real app, use: jwt.decode(token, self.jwt_secret, algorithms=["HS256"])
+            # In production, verify with Supabase's JWT secret; for now decode
+            # without verification. Use jwt.decode(..., algorithms=["HS256"]) in prod.
             payload = jwt.decode(token, options={"verify_signature": False})
             return payload
         except jwt.ExpiredSignatureError:
@@ -102,11 +103,25 @@ class AuthService:
         return user
 
 
-# Initialize auth service
-from config.database import SupabaseClient
+_auth_service_instance: Optional[AuthService] = None
 
-supabase_client = SupabaseClient.get_client()
-auth_service = AuthService(supabase_client)
+
+def _get_auth_service() -> AuthService:
+    """Build AuthService on first use; import does not require Supabase env."""
+    global _auth_service_instance
+    if _auth_service_instance is None:
+        _auth_service_instance = AuthService(SupabaseClient.get_client())
+    return _auth_service_instance
+
+
+class _AuthServiceProxy:
+    """Delegate to AuthService; supports patch('config.auth.auth_service', ...)."""
+
+    def __getattr__(self, name: str):
+        return getattr(_get_auth_service(), name)
+
+
+auth_service = _AuthServiceProxy()
 
 
 # Convenience dependencies
@@ -153,7 +168,7 @@ def optional_auth(
         security, use_cache=False
     )
 ) -> Optional[Dict[str, Any]]:
-    """Optional authentication dependency - returns user if authenticated, None otherwise"""
+    """Optional auth: return user dict if authenticated, else None."""
     try:
         if credentials is None:
             return None

@@ -4,11 +4,11 @@ User-related API endpoints.
 
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List, Optional
+from typing import Optional
 from pydantic import BaseModel, EmailStr
 import logging
 
-from config.database import fetch_records, fetch_single_record, get_table
+from config.database import fetch_single_record, get_table
 from config.auth import get_current_user
 
 logger = logging.getLogger(__name__)

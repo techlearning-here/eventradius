@@ -34,6 +34,11 @@ interface AdminUser {
   role?: string;
 }
 
+interface UserRoleRow {
+  user_id: string;
+  role: string;
+}
+
 const AdminDashboard = () => {
   const { user, role, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
@@ -65,9 +70,10 @@ const AdminDashboard = () => {
   const fetchUsers = async () => {
     const { data: profiles } = await supabase.from('profiles').select('*');
     const { data: roles } = await supabase.from('user_roles').select('*');
+    const roleList = (roles ?? []) as UserRoleRow[];
     const merged = (profiles || []).map(p => ({
       ...p,
-      role: (roles || []).find((r: any) => r.user_id === p.user_id)?.role || 'user',
+      role: roleList.find((r) => r.user_id === p.user_id)?.role || 'user',
     }));
     setUsers(merged);
   };

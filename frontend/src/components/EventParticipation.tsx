@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ThumbsUp, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/utils';
 
 type ParticipationStatus = 'interested' | 'going' | 'not_going';
 
@@ -77,8 +78,8 @@ export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
         setCurrentStatus(status);
       }
       await fetchCounts();
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to update');
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e) || 'Failed to update');
     } finally {
       setLoading(false);
     }

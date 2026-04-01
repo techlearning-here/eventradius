@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { SEOHead } from '@/components/SEOHead';
+import { getErrorMessage } from '@/lib/utils';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -65,10 +66,10 @@ const Auth = () => {
           description: 'Account created successfully',
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message,
+        description: getErrorMessage(error),
         variant: 'destructive',
       });
     } finally {

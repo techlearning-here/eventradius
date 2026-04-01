@@ -2,14 +2,11 @@
 Integration tests for API endpoints.
 """
 
-import pytest
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
-import json
 from datetime import datetime, timedelta
 
 from main import app
-from config.database import SupabaseClient
 
 
 class TestHealthEndpoint:
@@ -374,10 +371,10 @@ class TestEventsAPI:
                         ]
                         mock_update.return_value = update_response
                         with patch("api.events.get_table") as mock_get_table:
-                            # Mock get_table for checking existing participation and counting participants
+                            # Mock get_table for participation checks and counts
                             mock_table = Mock()
 
-                            # First call: check existing participation (should return empty)
+                            # First call: existing participation (empty)
                             mock_select1 = Mock()
                             mock_eq1 = Mock()
                             mock_eq2 = Mock()
@@ -396,11 +393,10 @@ class TestEventsAPI:
                             mock_eq1.eq.return_value = mock_eq2
                             mock_eq2.execute.return_value = mock_execute1
 
-                            # For second call, we need to handle .select("*", count="exact")
-                            # Mock will return different object for select with count parameter
+                            # Second call uses .select("*", count="exact")
                             mock_table.select.side_effect = [
-                                mock_select1,  # First call: select("*")
-                                mock_select2,  # Second call: select("*", count="exact")
+                                mock_select1,
+                                mock_select2,
                             ]
                             mock_select2.eq.return_value = mock_eq3
                             mock_eq3.execute.return_value = mock_execute2
@@ -433,10 +429,10 @@ class TestEventsAPI:
                 fetch_response.data = mock_event
                 mock_fetch.return_value = fetch_response
                 with patch("api.events.get_table") as mock_get_table:
-                    # Mock get_table for checking existing participation and counting participants
+                    # Mock get_table for participation checks and counts
                     mock_table = Mock()
 
-                    # First call: check existing participation (should return empty)
+                    # First call: existing participation (empty)
                     mock_select1 = Mock()
                     mock_eq1 = Mock()
                     mock_eq2 = Mock()
@@ -455,11 +451,10 @@ class TestEventsAPI:
                     mock_eq1.eq.return_value = mock_eq2
                     mock_eq2.execute.return_value = mock_execute1
 
-                    # For second call, we need to handle .select("*", count="exact")
-                    # Mock will return different object for select with count parameter
+                    # Second call uses .select("*", count="exact")
                     mock_table.select.side_effect = [
-                        mock_select1,  # First call: select("*")
-                        mock_select2,  # Second call: select("*", count="exact")
+                        mock_select1,
+                        mock_select2,
                     ]
                     mock_select2.eq.return_value = mock_eq3
                     mock_eq3.execute.return_value = mock_execute2
@@ -577,8 +572,6 @@ class TestUsersAPI:
         with patch("config.auth.auth_service.require_auth", return_value=mock_user):
             with patch("api.users.get_table") as mock_get_table:
                 # Mock get_table for events and event_participants
-                mock_events_table = Mock()
-                mock_participants_table = Mock()
 
                 # First call: get_table("events") for created events
                 mock_select1 = Mock()
@@ -593,8 +586,7 @@ class TestUsersAPI:
                 mock_execute2 = Mock()
                 mock_execute2.data = []  # No participation
 
-                # Third call: get_table("events") for participating events (won't be called since no participation)
-                # We need to mock it anyway in case it's called
+                # Third: events for participating (may be skipped if none)
                 mock_select3 = Mock()
                 mock_in = Mock()
                 mock_order2 = Mock()
@@ -633,7 +625,7 @@ class TestUsersAPI:
 
                 assert response.status_code == 200
                 data = response.json()
-                # The endpoint returns a dictionary with "created" and "participating" keys
+                # Response has "created" and "participating" lists
                 assert "created" in data
                 assert "participating" in data
                 # We have one created event

@@ -7,6 +7,7 @@ import { Navbar } from '@/components/Navbar';
 import { SEOHead } from '@/components/SEOHead';
 import { MapPin, Check, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/utils';
 
 const Settings = () => {
   const { user, role } = useAuth();
@@ -72,8 +73,8 @@ const Settings = () => {
 
       if (error) throw error;
       toast.success('Preferences updated!');
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setSaving(false);
     }

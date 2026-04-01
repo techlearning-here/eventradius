@@ -5,7 +5,6 @@ Event-related API endpoints.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import List, Optional
 from pydantic import BaseModel, Field
-from datetime import datetime
 import logging
 
 from config.database import (
@@ -88,7 +87,7 @@ async def get_events(
         # If user is not authenticated, we would filter by is_public
         # but the column doesn't exist in the current schema
         # For now, show all events regardless of authentication
-        # TODO: Add is_public column to events table or implement proper visibility logic
+        # TODO: Add is_public column or implement proper visibility logic
 
         response = fetch_records("events", filters, limit, offset)
 
