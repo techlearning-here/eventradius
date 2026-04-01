@@ -8,11 +8,12 @@ import { MapPin, Calendar, Users, Zap } from 'lucide-react';
 const Landing = () => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authRole, setAuthRole] = useState<'user' | 'organizer'>('user');
-  const { user, role } = useAuth();
+  const { user, role, hasOrganizerRole, setActiveRole } = useAuth();
   const navigate = useNavigate();
 
   const handleDiscover = () => {
     if (user) {
+      void setActiveRole('user');
       navigate('/discover');
     } else {
       setAuthRole('user');
@@ -21,8 +22,11 @@ const Landing = () => {
   };
 
   const handlePostEvents = () => {
-    if (user && role === 'organizer') {
+    if (user && hasOrganizerRole) {
+      void setActiveRole('organizer');
       navigate('/organizer');
+    } else if (user && !hasOrganizerRole) {
+      navigate('/settings');
     } else {
       setAuthRole('organizer');
       setIsAuthOpen(true);

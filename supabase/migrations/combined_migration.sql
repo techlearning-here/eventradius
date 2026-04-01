@@ -676,3 +676,20 @@ CREATE POLICY "Authenticated users can insert messages" ON public.event_messages
 CREATE TRIGGER update_event_participants_updated_at
   BEFORE UPDATE ON public.event_participants
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+--- Migration: 20260401120000_user_second_role_policy.sql ---
+CREATE POLICY "Users can add complementary user or organizer role"
+ON public.user_roles
+FOR INSERT
+TO authenticated
+WITH CHECK (
+  auth.uid() = user_id
+  AND role IN ('user', 'organizer')
+  AND NOT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = auth.uid() AND ur.role = user_roles.role
+  )
+  AND (
+    SELECT COUNT(*)::int FROM public.user_roles ur WHERE ur.user_id = auth.uid()
+  ) = 1
+);

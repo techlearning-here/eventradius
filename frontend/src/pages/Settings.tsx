@@ -5,12 +5,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { CITIES, CATEGORIES, AGE_RANGES, DISTANCE_OPTIONS } from '@/data/cities';
 import { Navbar } from '@/components/Navbar';
 import { SEOHead } from '@/components/SEOHead';
-import { MapPin, Check, Save } from 'lucide-react';
+import { MapPin, Check, Save, Megaphone, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/utils';
 
 const Settings = () => {
-  const { user, role } = useAuth();
+  const { user, hasOrganizerRole, hasUserRole, addOrganizerRole, addUserRole } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -22,7 +22,10 @@ const Settings = () => {
   const [distanceRange, setDistanceRange] = useState(25);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
     const fetchPrefs = async () => {
       const { data } = await supabase
         .from('user_preferences')
@@ -44,7 +47,25 @@ const Settings = () => {
       setLoading(false);
     };
     fetchPrefs();
-  }, [user]);
+  }, [user, navigate]);
+
+  const handleAddOrganizer = async () => {
+    const { error } = await addOrganizerRole();
+    if (error) toast.error(getErrorMessage(error));
+    else {
+      toast.success('You can now post events. Switch to Organize in the nav.');
+      navigate('/organizer');
+    }
+  };
+
+  const handleAddUserProfile = async () => {
+    const { error } = await addUserRole();
+    if (error) toast.error(getErrorMessage(error));
+    else {
+      toast.success('Discovery preferences enabled.');
+      navigate('/onboarding');
+    }
+  };
 
   const filteredCities = citySearch.length > 0 && !selectedCity
     ? CITIES.filter(c => `${c.name}, ${c.state}`.toLowerCase().includes(citySearch.toLowerCase())).slice(0, 8)
@@ -89,6 +110,44 @@ const Settings = () => {
       <div className="max-w-2xl mx-auto pt-28 pb-16 px-4">
         <h1 className="text-3xl font-bold mb-8">Settings & Preferences</h1>
 
+        {!hasOrganizerRole && (
+          <section className="mb-10 p-4 border border-border bg-muted/30">
+            <h2 className="text-sm font-semibold uppercase tracking-wider mb-2 flex items-center gap-2">
+              <Megaphone className="w-4 h-4" /> Post events
+            </h2>
+            <p className="text-sm text-muted-foreground mb-3">
+              Add organizer access to create and manage events (you keep discovery preferences).
+            </p>
+            <button
+              type="button"
+              onClick={handleAddOrganizer}
+              className="text-xs font-medium uppercase px-4 py-2 border border-foreground hover:bg-foreground hover:text-background transition-colors"
+            >
+              Enable organizer
+            </button>
+          </section>
+        )}
+
+        {!hasUserRole && (
+          <section className="mb-10 p-4 border border-border bg-muted/30">
+            <h2 className="text-sm font-semibold uppercase tracking-wider mb-2 flex items-center gap-2">
+              <Users className="w-4 h-4" /> Discover events
+            </h2>
+            <p className="text-sm text-muted-foreground mb-3">
+              Add a discovery profile with location and interests (you can still organize events).
+            </p>
+            <button
+              type="button"
+              onClick={handleAddUserProfile}
+              className="text-xs font-medium uppercase px-4 py-2 border border-foreground hover:bg-foreground hover:text-background transition-colors"
+            >
+              Enable discovery
+            </button>
+          </section>
+        )}
+
+        {hasUserRole && (
+          <>
         {/* Age */}
         <section className="mb-8">
           <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-3">Age Range</label>
@@ -170,6 +229,8 @@ const Settings = () => {
           className="w-full py-4 bg-foreground text-background font-semibold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-40">
           <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save Preferences'}
         </button>
+          </>
+        )}
       </div>
     </div>
   );

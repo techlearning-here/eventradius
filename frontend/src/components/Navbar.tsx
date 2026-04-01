@@ -4,9 +4,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Zap } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { AuthSheet } from './AuthSheet';
+import { RoleSwitcher } from './RoleSwitcher';
 
 export const Navbar: React.FC = () => {
-  const { user, role, signOut } = useAuth();
+  const { user, roles, signOut, setActiveRole, canSwitchRole } = useAuth();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -17,13 +18,13 @@ export const Navbar: React.FC = () => {
     ];
 
     if (user) {
-      if (role === 'organizer') {
+      if (roles.includes('organizer')) {
         links.push({ label: 'Dashboard', to: '/organizer' });
       }
-      if (role === 'user') {
+      if (roles.includes('user')) {
         links.push({ label: 'Settings', to: '/settings' });
       }
-      if (role === 'admin') {
+      if (roles.includes('admin')) {
         links.push({ label: 'Admin', to: '/admin-dashboard' });
       }
       links.push({ label: 'Sign Out', onClick: signOut });
@@ -45,10 +46,19 @@ export const Navbar: React.FC = () => {
 
         {/* Desktop */}
         <div className="hidden md:flex items-center">
+          {user && canSwitchRole && <RoleSwitcher />}
           {links.map((link, i) => (
             link.to ? (
-              <Link key={link.label} to={link.to}
-                className="relative overflow-hidden bg-background text-foreground h-[34px] px-3 flex items-center text-[11px] font-medium uppercase border border-l-0 border-foreground leading-none group">
+              <Link
+                key={link.label}
+                to={link.to}
+                onClick={() => {
+                  if (!canSwitchRole) return;
+                  if (link.to === '/discover') void setActiveRole('user');
+                  if (link.to === '/organizer') void setActiveRole('organizer');
+                }}
+                className="relative overflow-hidden bg-background text-foreground h-[34px] px-3 flex items-center text-[11px] font-medium uppercase border border-l-0 border-foreground leading-none group"
+              >
                 <span className="relative z-10">{link.label}</span>
                 <span className="absolute inset-0 bg-[hsl(295,100%,73%)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
               </Link>
@@ -79,10 +89,23 @@ export const Navbar: React.FC = () => {
             </button>
           </div>
           <div className="flex-1 flex flex-col bg-background">
+            {user && canSwitchRole && (
+              <div className="flex justify-center py-6 border-b border-border">
+                <RoleSwitcher />
+              </div>
+            )}
             {links.map(link => (
               link.to ? (
-                <Link key={link.label} to={link.to} onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex-1 flex items-center justify-center text-foreground text-[17px] font-medium uppercase border-b border-border tracking-[-0.34px]">
+                <Link
+                  key={link.label}
+                  to={link.to}
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (canSwitchRole && link.to === '/discover') void setActiveRole('user');
+                    if (canSwitchRole && link.to === '/organizer') void setActiveRole('organizer');
+                  }}
+                  className="flex-1 flex items-center justify-center text-foreground text-[17px] font-medium uppercase border-b border-border tracking-[-0.34px]"
+                >
                   {link.label}
                 </Link>
               ) : (
