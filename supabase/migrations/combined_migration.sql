@@ -144,7 +144,7 @@ END $$;
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies 
-    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Event images upload (authenticated)"
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Event images upload (authenticated)'
   ) THEN
     CREATE POLICY "Event images upload (authenticated)"
     ON storage.objects
@@ -157,7 +157,7 @@ END $$;
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies 
-    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = "Event images update (authenticated)"
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Event images update (authenticated)'
   ) THEN
     CREATE POLICY "Event images update (authenticated)"
     ON storage.objects
@@ -187,7 +187,7 @@ END $$;
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies 
-    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Event images upload (authenticated)"
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Event images upload (authenticated)'
   ) THEN
     CREATE POLICY "Event images upload (authenticated)"
     ON storage.objects
@@ -200,7 +200,7 @@ END $$;
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies 
-    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = "Event images update (authenticated)"
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Event images update (authenticated)'
   ) THEN
     CREATE POLICY "Event images update (authenticated)"
     ON storage.objects
@@ -634,9 +634,10 @@ $$;
 
 --- Migration: 20260328002055_457ff0bd-5eff-4eb5-be6c-8cd2b4d39935.sql ---
 
--- Add event_type and event_status columns to events
+-- Add event_type, event_status, is_public, and admin_remark columns to events
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS event_type text NOT NULL DEFAULT 'standard';
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS event_status text NOT NULL DEFAULT 'confirmed';
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS is_public boolean DEFAULT true;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS admin_remark text;
 
 -- Create event_participants table
@@ -675,11 +676,3 @@ CREATE POLICY "Authenticated users can insert messages" ON public.event_messages
 CREATE TRIGGER update_event_participants_updated_at
   BEFORE UPDATE ON public.event_participants
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-
---- Migration: 20260328002056_add_is_public_column.sql ---
--- Add is_public column to events table
-ALTER TABLE public.events ADD COLUMN IF NOT EXISTS is_public boolean DEFAULT true;
-
--- Update existing events to be public by default
-UPDATE public.events SET is_public = true WHERE is_public IS NULL;
