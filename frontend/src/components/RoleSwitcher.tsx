@@ -1,12 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 
 /**
  * Shown when the account has both user and organizer roles.
  * Switches UI mode; preference stored in localStorage.
  */
 export const RoleSwitcher = () => {
-  const { canSwitchRole, role, setActiveRole } = useAuth();
+  const { canSwitchRole, role, setActiveRole } = useAuthWithBackend();
   const navigate = useNavigate();
 
   if (!canSwitchRole) return null;

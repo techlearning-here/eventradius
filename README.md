@@ -177,3 +177,6 @@ Once the backend is running:
 The frontend is configured to use the backend API via the `VITE_BACKEND_URL` environment variable. All REST calls from the frontend are routed through the backend, which then communicates with Supabase.
 
 For detailed backend documentation, see [backend/README.md](backend/README.md).
+
+
+

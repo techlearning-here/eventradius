@@ -8,6 +8,9 @@ import "./index.css";
 
 const queryClient = new QueryClient();
 
+// Add dark class to HTML element for EventPinger theme
+document.documentElement.classList.add('dark');
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <HelmetProvider>

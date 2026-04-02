@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { Navbar } from '@/components/Navbar';
 import { SEOHead } from '@/components/SEOHead';
 import { CATEGORIES } from '@/data/cities';
@@ -40,7 +40,7 @@ interface UserRoleRow {
 }
 
 const AdminDashboard = () => {
-  const { user, role, loading: authLoading, signOut } = useAuth();
+  const { user, role, loading: authLoading, signOut } = useAuthWithBackend();
   const navigate = useNavigate();
   const [tab, setTab] = useState<'events' | 'users'>('events');
   const [events, setEvents] = useState<AdminEvent[]>([]);

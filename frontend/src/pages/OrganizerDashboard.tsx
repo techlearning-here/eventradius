@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { Navbar } from '@/components/Navbar';
 import { SEOHead } from '@/components/SEOHead';
-import { CITIES, CATEGORIES } from '@/data/cities';
+import { CATEGORIES, CITIES } from '@/data/cities';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
@@ -40,7 +40,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const OrganizerDashboard = () => {
-  const { user, role, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading } = useAuthWithBackend();
   const navigate = useNavigate();
   const [events, setEvents] = useState<OrgEvent[]>([]);
   const [loading, setLoading] = useState(true);

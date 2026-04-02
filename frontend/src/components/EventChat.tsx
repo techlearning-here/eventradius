@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/utils';
@@ -19,7 +19,7 @@ interface Props {
 }
 
 export const EventChat = ({ eventId, eventCreatorId, eventStatus }: Props) => {
-  const { user } = useAuth();
+  const { user } = useAuthWithBackend();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);

@@ -4,30 +4,16 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
+import { useEvents } from '@/hooks/useEvents';
 import { CalendarIcon, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CATEGORIES } from '@/data/cities';
 import { SEOHead } from '@/components/SEOHead';
 import { EventParticipationCounts } from '@/components/EventParticipation';
+import { type Event } from '@/integrations/backend/api';
 
-interface Event {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  background_image_url: string;
-  target_date: string;
-  address: string;
-  category: string;
-  kid_friendly: boolean;
-  price: number;
-  latitude: number | null;
-  longitude: number | null;
-  city: string | null;
-  event_type: string;
-}
 
 interface UserPrefs {
   interests: string[];
@@ -55,36 +41,38 @@ const EventCard = ({ event }: { event: Event }) => {
     <div className="relative cursor-pointer group" onClick={() => navigate(`/event/${event.id}`)}>
       <div className="overflow-hidden mb-3">
         <div className="aspect-square bg-muted bg-cover bg-center transition-transform duration-500 ease-out group-hover:scale-110"
-          style={{ backgroundImage: `url(${event.background_image_url})` }} />
+          style={{ backgroundImage: `url(${event.image_url || '/placeholder.svg'})` }} />
       </div>
       <div className="absolute top-4 left-4 flex flex-col gap-0">
-        <div className="bg-background border border-foreground px-3 h-[23px] flex items-center">
-          <div className="text-[11px] font-medium uppercase leading-none">{event.date}</div>
-        </div>
-        <div className="bg-background border border-t-0 border-foreground px-3 h-[23px] flex items-center">
-          <div className="text-[11px] font-medium leading-none">{event.time}</div>
-        </div>
+        {event.start_time && (
+          <div className="bg-background border border-foreground px-3 h-[23px] flex items-center">
+            <div className="text-[11px] font-medium uppercase leading-none">
+              {format(new Date(event.start_time), 'MMM d')}
+            </div>
+          </div>
+        )}
+        {event.start_time && (
+          <div className="bg-background border border-t-0 border-foreground px-3 h-[23px] flex items-center">
+            <div className="text-[11px] font-medium leading-none">
+              {format(new Date(event.start_time), 'h:mm a')}
+            </div>
+          </div>
+        )}
       </div>
       <div className="absolute top-4 right-4 flex flex-col gap-1">
-        {event.kid_friendly && (
-          <span className="bg-background border border-foreground px-2 h-[23px] flex items-center text-[10px] font-medium uppercase">
-            👶 Kid-Friendly
-          </span>
-        )}
-        {event.event_type === 'preview' && (
-          <span className="bg-blue-500/20 border border-blue-500/30 px-2 h-[23px] flex items-center text-[10px] font-medium uppercase text-blue-600">
-            Preview
+        {!event.is_public && (
+          <span className="bg-blue-500/20 border border-blue-500/30 px-2 h-[23px] flex items-center text-[10px] font-medium uppercase text-blue-400">
+            Private
           </span>
         )}
       </div>
       <div className="flex items-center gap-2 mb-1">
         <span className="text-[10px] uppercase font-medium text-muted-foreground">{catLabel}</span>
-        {event.price > 0 && <span className="text-[10px] font-semibold text-foreground">${event.price}</span>}
-        {event.price === 0 && <span className="text-[10px] font-semibold text-green-600">FREE</span>}
+        <span className="text-[10px] font-semibold text-green-400">FREE</span>
       </div>
-      <h3 className="text-lg font-medium">{event.title}</h3>
-      <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-        <MapPin className="w-3 h-3" /> {event.city || event.address}
+      <h3 className="text-lg font-medium text-foreground">{event.title}</h3>
+      <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1 text-foreground/80">
+        <MapPin className="w-3 h-3" /> {event.location || 'Online'}
       </p>
       <div className="mt-1">
         <EventParticipationCounts eventId={event.id} />
@@ -94,20 +82,18 @@ const EventCard = ({ event }: { event: Event }) => {
 };
 
 const Discover = () => {
-  const { user, role, onboardingCompleted } = useAuth();
+  const { user, role, onboardingCompleted } = useAuthWithBackend();
   const navigate = useNavigate();
   const [date, setDate] = useState<Date | undefined>(undefined);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { events, loading, error, refetch } = useEvents();
   const [prefs, setPrefs] = useState<UserPrefs | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   useEffect(() => {
     if (user && role === 'user' && onboardingCompleted === false) navigate('/onboarding');
-  }, [user, role, onboardingCompleted]);
+  }, [user, role, onboardingCompleted, navigate]);
 
   useEffect(() => {
-    fetchEvents();
     if (user && role === 'user') fetchPrefs();
   }, [user, role]);
 
@@ -124,15 +110,6 @@ const Discover = () => {
     }
   };
 
-  const fetchEvents = async () => {
-    const { data, error } = await supabase
-      .from('events')
-      .select('id, title, date, time, background_image_url, target_date, address, category, kid_friendly, price, latitude, longitude, city, event_type')
-      .eq('status', 'approved')
-      .order('target_date', { ascending: true });
-    if (!error) setEvents((data as unknown as Event[]) || []);
-    setLoading(false);
-  };
 
   const toggleCategory = (id: string) => {
     setSelectedCategories(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
@@ -142,20 +119,17 @@ const Discover = () => {
     const now = Date.now();
     const oneHour = 3600000;
     return events.filter(event => {
-      const target = new Date(event.target_date).getTime();
+      const target = new Date(event.start_time || event.created_at).getTime();
       if (target < now - oneHour) return false;
       if (date) {
-        const eventDate = new Date(event.target_date);
+        const eventDate = new Date(event.start_time || event.created_at);
         if (eventDate.toDateString() !== date.toDateString()) return false;
       }
-      if (selectedCategories.length > 0 && !selectedCategories.includes(event.category)) return false;
-      if (prefs?.latitude && prefs?.longitude && event.latitude && event.longitude) {
-        const dist = haversineDistance(prefs.latitude, prefs.longitude, event.latitude, event.longitude);
-        if (dist > (prefs.distance_range || 100)) return false;
-      }
+      if (selectedCategories.length > 0 && !selectedCategories.includes(event.category || '')) return false;
+      // Note: Backend API doesn't provide lat/lng, so distance filtering is not available yet
       return true;
     });
-  }, [events, date, selectedCategories, prefs]);
+  }, [events, date, selectedCategories]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -211,6 +185,14 @@ const Discover = () => {
         <div className="max-w-6xl mx-auto">
           {loading ? (
             <div className="text-center py-16 text-muted-foreground">Loading events...</div>
+          ) : error ? (
+            <div className="text-center py-16">
+              <p className="text-red-500 mb-2">Error loading events</p>
+              <p className="text-sm text-muted-foreground">{error}</p>
+              <button onClick={refetch} className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">
+                Try Again
+              </button>
+            </div>
           ) : filteredEvents.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-muted-foreground mb-2">No events found</p>

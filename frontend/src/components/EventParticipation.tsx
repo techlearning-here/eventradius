@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { ThumbsUp, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/utils';
@@ -13,7 +13,7 @@ interface Props {
 }
 
 export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
-  const { user } = useAuth();
+  const { user } = useAuthWithBackend();
   const [currentStatus, setCurrentStatus] = useState<ParticipationStatus | null>(null);
   const [counts, setCounts] = useState({ interested: 0, going: 0 });
   const [loading, setLoading] = useState(false);

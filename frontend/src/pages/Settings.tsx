@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { CITIES, CATEGORIES, AGE_RANGES, DISTANCE_OPTIONS } from '@/data/cities';
 import { Navbar } from '@/components/Navbar';
 import { SEOHead } from '@/components/SEOHead';
 import { MapPin, Check, Save, Megaphone, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/utils';
+import { apiClient } from '@/integrations/backend/api';
 
 const Settings = () => {
-  const { user, hasOrganizerRole, hasUserRole, addOrganizerRole, addUserRole } = useAuth();
+  const { user, userProfile, hasOrganizerRole, hasUserRole, addOrganizerRole, addUserRole, updateUserProfile } = useAuthWithBackend();
   const navigate = useNavigate();
+  const [fullName, setFullName] = useState('');
+  const [bio, setBio] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [ageRange, setAgeRange] = useState('');
@@ -26,28 +29,35 @@ const Settings = () => {
       navigate('/auth');
       return;
     }
+    
+    // Set profile data from backend
+    if (userProfile) {
+      setFullName(userProfile.full_name || '');
+      setBio(userProfile.bio || '');
+    }
+    
     const fetchPrefs = async () => {
-      const { data } = await supabase
-        .from('user_preferences')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      try {
+        const data = await apiClient.getUserPreferences();
 
-      if (data) {
-        setAgeRange(data.age_range || '');
-        setHasKids(data.has_kids || false);
-        setInterests((data.interests as string[]) || []);
-        setDistanceRange(data.distance_range || 25);
-        if (data.city) {
-          setCitySearch(data.city);
-          const match = CITIES.find(c => `${c.name}, ${c.state}` === data.city);
-          if (match) setSelectedCity(match);
+        if (data && Object.keys(data).length > 0) {
+          setAgeRange(data.age_range || '');
+          setHasKids(data.has_kids || false);
+          setInterests((data.interests as string[]) || []);
+          setDistanceRange(data.distance_range || 25);
+          if (data.city) {
+            setCitySearch(data.city);
+            const match = CITIES.find(c => `${c.name}, ${c.state}` === data.city);
+            if (match) setSelectedCity(match);
+          }
         }
+      } catch (error) {
+        console.error('Error fetching preferences:', error);
       }
       setLoading(false);
     };
     fetchPrefs();
-  }, [user, navigate]);
+  }, [user, userProfile, navigate]);
 
   const handleAddOrganizer = async () => {
     const { error } = await addOrganizerRole();
@@ -79,21 +89,26 @@ const Settings = () => {
     if (!user) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('user_preferences')
-        .update({
-          age_range: ageRange || null,
-          has_kids: hasKids,
-          interests,
-          city: selectedCity ? `${selectedCity.name}, ${selectedCity.state}` : null,
-          latitude: selectedCity?.lat || null,
-          longitude: selectedCity?.lng || null,
-          distance_range: distanceRange,
-        })
-        .eq('user_id', user.id);
+      // Update user profile via backend API
+      const { error: profileError } = await updateUserProfile({
+        full_name: fullName || undefined,
+        bio: bio || undefined,
+      });
 
-      if (error) throw error;
-      toast.success('Preferences updated!');
+      if (profileError) throw profileError;
+
+      // Update preferences via backend API
+      await apiClient.updateUserPreferences({
+        age_range: ageRange || null,
+        has_kids: hasKids,
+        interests,
+        city: selectedCity ? `${selectedCity.name}, ${selectedCity.state}` : null,
+        latitude: selectedCity?.lat || null,
+        longitude: selectedCity?.lng || null,
+        distance_range: distanceRange,
+      });
+
+      toast.success('Profile and preferences updated!');
     } catch (err: unknown) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -108,7 +123,7 @@ const Settings = () => {
       <SEOHead title="Settings" description="Update your event discovery preferences" />
       <Navbar />
       <div className="max-w-2xl mx-auto pt-28 pb-16 px-4">
-        <h1 className="text-3xl font-bold mb-8">Settings & Preferences</h1>
+        <h1 className="text-3xl font-bold mb-8 text-foreground">Settings & Preferences</h1>
 
         {!hasOrganizerRole && (
           <section className="mb-10 p-4 border border-border bg-muted/30">
@@ -148,6 +163,35 @@ const Settings = () => {
 
         {hasUserRole && (
           <>
+        {/* Profile Section */}
+        <section className="mb-10">
+          <h2 className="text-lg font-semibold mb-4">Profile Information</h2>
+          
+          {/* Full Name */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium mb-2">Full Name</label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Enter your full name"
+              className="w-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground"
+            />
+          </div>
+
+          {/* Bio */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium mb-2">Bio</label>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="Tell us about yourself"
+              rows={3}
+              className="w-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground resize-none"
+            />
+          </div>
+        </section>
+
         {/* Age */}
         <section className="mb-8">
           <label className="block text-xs uppercase tracking-wider text-muted-foreground mb-3">Age Range</label>
@@ -227,7 +271,7 @@ const Settings = () => {
 
         <button onClick={handleSave} disabled={saving}
           className="w-full py-4 bg-foreground text-background font-semibold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-40">
-          <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save Preferences'}
+          <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save Profile & Preferences'}
         </button>
           </>
         )}

@@ -379,3 +379,39 @@ async def leave_event(event_id: str, user: dict = Depends(get_current_user)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to leave event",
         )
+
+
+# Admin endpoints
+@router.put("/{event_id}/status")
+async def update_event_status(
+    event_id: str, 
+    status: str, 
+    admin_remark: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Update event status (admin only).
+    """
+    # TODO: Add admin role check
+    try:
+        update_data = {"status": status}
+        if admin_remark:
+            update_data["admin_remark"] = admin_remark
+            
+        response = update_record("events", event_id, update_data)
+        
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Event not found"
+            )
+        
+        return {"message": f"Event {status} successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating event status {event_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update event status",
+        )

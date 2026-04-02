@@ -12,6 +12,9 @@ import { User } from '@supabase/supabase-js';
 import { AuthSheet } from '@/components/AuthSheet';
 import { SEOHead } from '@/components/SEOHead';
 import { z } from 'zod';
+import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
+import { useEventActions } from '@/hooks/useEvents';
+import { type EventCreate } from '@/integrations/backend/api';
 
 const eventSchema = z.object({
   eventName: z.string().trim().min(1, 'Event name is required').max(200, 'Event name must be less than 200 characters'),
@@ -22,6 +25,8 @@ const eventSchema = z.object({
 });
 
 const CreateEvent = () => {
+  const { user } = useAuthWithBackend();
+  const { createEvent } = useEventActions();
   const [eventName, setEventName] = useState('');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [startTime, setStartTime] = useState('');
@@ -31,7 +36,6 @@ const CreateEvent = () => {
   const [description, setDescription] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [user, setUser] = useState<User | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   
@@ -43,14 +47,12 @@ const CreateEvent = () => {
   useEffect(() => {
     // Check auth state
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user || null);
       if (!session?.user) {
         setShowAuthModal(true);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null);
       if (session?.user) {
         setShowAuthModal(false);
       } else {
@@ -162,42 +164,24 @@ const CreateEvent = () => {
         .from('event-images')
         .getPublicUrl(filePath);
 
-      // Create target_date from start date and time
-      const targetDate = new Date(startDate);
-      const [hours, minutes] = startTime.split(':');
-      targetDate.setHours(parseInt(hours) || 0, parseInt(minutes) || 0);
+      // Create event data for backend API
+      const eventData: EventCreate = {
+        title: eventName,
+        description: description,
+        location: location,
+        start_time: startDateTime.toISOString(),
+        end_time: endDateTime.toISOString(),
+        image_url: publicUrl,
+        is_public: true,
+      };
 
-      // Format date and time strings
-      const dateStr = format(startDate, 'MMMM dd, yyyy');
-      const timeStr = `${startTime} - ${endTime}`;
-
-      // Get creator name from profile or fallback to email
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('display_name')
-        .eq('user_id', user.id)
-        .single();
-
-      const creatorName = profile?.display_name || user.email?.split('@')[0] || 'Anonymous';
-
-      // Insert event into database
-      const { error: insertError } = await supabase
-        .from('events')
-        .insert({
-          title: eventName,
-          description: description,
-          date: dateStr,
-          time: timeStr,
-          address: location,
-          background_image_url: publicUrl,
-          target_date: targetDate.toISOString(),
-          creator: creatorName,
-        });
-
-      if (insertError) throw insertError;
-
-      toast.success('Event created successfully!');
-      navigate('/my-events');
+      // Create event using backend API
+      const newEvent = await createEvent(eventData);
+      
+      if (newEvent) {
+        toast.success('Event created successfully!');
+        navigate('/my-events');
+      }
     } catch (error) {
       if (import.meta.env.DEV) console.error('Error creating event:', error);
       toast.error('Failed to create event. Please try again.');

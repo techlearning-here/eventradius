@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { CITIES, CATEGORIES, AGE_RANGES, DISTANCE_OPTIONS } from '@/data/cities';
 import { SEOHead } from '@/components/SEOHead';
 import { MapPin, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/utils';
+import { apiClient } from '@/integrations/backend/api';
 
 const Onboarding = () => {
-  const { user, fetchOnboardingStatus } = useAuth();
+  const { user, fetchOnboardingStatus } = useAuthWithBackend();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [ageRange, setAgeRange] = useState('');
@@ -36,21 +37,16 @@ const Onboarding = () => {
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('user_preferences')
-        .update({
-          age_range: ageRange || null,
-          has_kids: hasKids,
-          interests,
-          city: `${selectedCity.name}, ${selectedCity.state}`,
-          latitude: selectedCity.lat,
-          longitude: selectedCity.lng,
-          distance_range: distanceRange,
-          onboarding_completed: true,
-        })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      await apiClient.updateUserPreferences({
+        age_range: ageRange || null,
+        has_kids: hasKids,
+        interests,
+        city: `${selectedCity.name}, ${selectedCity.state}`,
+        latitude: selectedCity.lat,
+        longitude: selectedCity.lng,
+        distance_range: distanceRange,
+        onboarding_completed: true,
+      });
 
       await fetchOnboardingStatus(user.id);
       toast.success('Preferences saved!');

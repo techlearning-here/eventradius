@@ -6,14 +6,12 @@ import { User } from '@supabase/supabase-js';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SEOHead } from '@/components/SEOHead';
+import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
+import { useUserEvents } from '@/hooks/useUserEvents';
+import { useEventActions } from '@/hooks/useEvents';
+import { type Event } from '@/integrations/backend/api';
+import { format } from 'date-fns';
 
-interface Event {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  background_image_url: string;
-}
 
 const EventCard = ({ 
   event, 
@@ -41,36 +39,43 @@ const EventCard = ({
       <div className="overflow-hidden mb-3">
         <div 
           className="aspect-[4/3] bg-gray-300 bg-cover bg-center transition-transform duration-500 ease-out group-hover:scale-110"
-          style={{ backgroundImage: `url(${event.background_image_url})` }}
+          style={{ backgroundImage: `url(${event.image_url || '/placeholder.svg'})` }}
         ></div>
       </div>
       <div className="absolute top-4 left-4 flex flex-col gap-0">
-        <div className="bg-white border border-black px-3 h-[23px] flex items-center">
-          <div className="text-[11px] font-medium uppercase leading-none">{event.date}</div>
-        </div>
-        <div className="bg-white border border-t-0 border-black px-3 h-[23px] flex items-center">
-          <div className="text-[11px] font-medium leading-none">{event.time}</div>
-        </div>
+        {event.start_time && (
+          <div className="bg-foreground border border-foreground/20 px-3 h-[23px] flex items-center">
+            <div className="text-[11px] font-medium uppercase leading-none">
+              {format(new Date(event.start_time), 'MMM d')}
+            </div>
+          </div>
+        )}
+        {event.start_time && (
+          <div className="bg-foreground border border-t-0 border-foreground/20 px-3 h-[23px] flex items-center">
+            <div className="text-[11px] font-medium leading-none">
+              {format(new Date(event.start_time), 'h:mm a')}
+            </div>
+          </div>
+        )}
       </div>
       {isCreated && (
         <button
           onClick={handleDelete}
-          className="absolute top-4 right-4 bg-white border border-black p-2 hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors opacity-0 group-hover:opacity-100"
+          className="absolute top-4 right-4 bg-foreground border border-foreground/20 p-2 hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors opacity-0 group-hover:opacity-100"
           aria-label="Delete event"
         >
           <Trash2 className="w-4 h-4" />
         </button>
       )}
-      <h3 className="text-base font-medium">{event.title}</h3>
+      <h3 className="text-base font-medium text-foreground">{event.title}</h3>
     </div>
   );
 };
 
 const MyEvents = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [createdEvents, setCreatedEvents] = useState<Event[]>([]);
-  const [registeredEvents, setRegisteredEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuthWithBackend();
+  const { createdEvents, participatingEvents, loading, error, refetch } = useUserEvents();
+  const { deleteEvent } = useEventActions();
   const [activeTab, setActiveTab] = useState<'created' | 'registered'>('created');
   const [slideStyle, setSlideStyle] = useState({ width: 0, transform: 'translateX(0)' });
   const createdRef = useRef<HTMLButtonElement>(null);
@@ -84,7 +89,6 @@ const MyEvents = () => {
         navigate('/');
         return;
       }
-      setUser(session.user);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -92,17 +96,11 @@ const MyEvents = () => {
         navigate('/');
         return;
       }
-      setUser(session.user);
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  useEffect(() => {
-    if (user) {
-      fetchMyEvents();
-    }
-  }, [user]);
 
   useEffect(() => {
     const updateSlidePosition = () => {
@@ -122,70 +120,23 @@ const MyEvents = () => {
     updateSlidePosition();
     window.addEventListener('resize', updateSlidePosition);
     return () => window.removeEventListener('resize', updateSlidePosition);
-  }, [activeTab, createdEvents.length, registeredEvents.length]);
+  }, [activeTab, createdEvents.length, participatingEvents.length]);
 
-  const fetchMyEvents = async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    try {
-      // Fetch created events
-      const { data: created, error: createdError } = await supabase
-        .from('events')
-        .select('id, title, date, time, background_image_url')
-        .eq('created_by', user.id)
-        .order('target_date', { ascending: true });
-
-      if (createdError) throw createdError;
-      setCreatedEvents(created || []);
-
-      // Fetch registered events
-      const { data: registrations, error: regError } = await supabase
-        .from('event_registrations')
-        .select(`
-          event_id,
-          events (
-            id,
-            title,
-            date,
-            time,
-            background_image_url
-          )
-        `)
-        .eq('user_id', user.id);
-
-      if (regError) throw regError;
-      
-      const registeredEventsData = registrations
-        ?.map(r => r.events)
-        .filter(Boolean) as Event[] || [];
-      
-      setRegisteredEvents(registeredEventsData);
-    } catch (error) {
-      if (import.meta.env.DEV) console.error('Error fetching events:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDeleteEvent = async (eventId: string) => {
     try {
-      const { error } = await supabase
-        .from('events')
-        .delete()
-        .eq('id', eventId);
-
-      if (error) throw error;
-
-      toast.success('Event deleted successfully');
-      fetchMyEvents();
+      const success = await deleteEvent(eventId);
+      if (success) {
+        toast.success('Event deleted successfully');
+        refetch();
+      }
     } catch (error) {
       if (import.meta.env.DEV) console.error('Error deleting event:', error);
       toast.error('Failed to delete event');
     }
   };
 
-  const displayedEvents = activeTab === 'created' ? createdEvents : registeredEvents;
+  const displayedEvents = activeTab === 'created' ? createdEvents : participatingEvents;
 
   return (
     <>
@@ -195,12 +146,12 @@ const MyEvents = () => {
       />
       <link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
       
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-background">
         <Navbar />
         
         <div className="pt-32 pb-20 px-4 md:px-8">
           <div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium leading-tight mb-8">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium leading-tight mb-8 text-foreground">
               My Events
             </h1>
 
@@ -227,7 +178,7 @@ const MyEvents = () => {
                 onClick={() => setActiveTab('registered')}
                 className="relative z-10 px-6 py-3 text-[11px] font-medium uppercase text-black border border-l-0 border-black transition-colors max-sm:flex-1 bg-transparent"
               >
-                Registered ({registeredEvents.length})
+                Registered ({participatingEvents.length})
               </button>
             </div>
 
@@ -235,6 +186,14 @@ const MyEvents = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
               {loading ? (
                 <div className="col-span-full text-center py-12">Loading events...</div>
+              ) : error ? (
+                <div className="col-span-full text-center py-12">
+                  <p className="text-red-500 mb-2">Error loading events</p>
+                  <p className="text-sm text-muted-foreground">{error}</p>
+                  <button onClick={refetch} className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">
+                    Try Again
+                  </button>
+                </div>
               ) : displayedEvents.length === 0 ? (
                 <div className="col-span-full text-center py-12">
                   {activeTab === 'created' 

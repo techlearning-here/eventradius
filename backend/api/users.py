@@ -179,3 +179,130 @@ async def get_user_events(user: dict = Depends(get_current_user)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch user events",
         )
+
+
+# User roles endpoints
+@router.get("/me/roles")
+async def get_user_roles(user: dict = Depends(get_current_user)):
+    """
+    Get current user's roles.
+    """
+    try:
+        response = (
+            get_table("user_roles")
+            .select("role")
+            .eq("user_id", user["id"])
+            .execute()
+        )
+        
+        roles = [r["role"] for r in response.data] if response.data else []
+        return {"roles": roles}
+    except Exception as e:
+        logger.error(f"Error fetching user roles: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch user roles",
+        )
+
+
+@router.post("/me/roles")
+async def add_user_role(role: str, user: dict = Depends(get_current_user)):
+    """
+    Add a role to the current user.
+    """
+    try:
+        # Check if role already exists
+        existing = (
+            get_table("user_roles")
+            .select("*")
+            .eq("user_id", user["id"])
+            .eq("role", role)
+            .execute()
+        )
+        
+        if existing.data:
+            return {"message": "Role already exists"}
+        
+        # Add role
+        insert_record("user_roles", {"user_id": user["id"], "role": role})
+        return {"message": "Role added successfully"}
+    except Exception as e:
+        logger.error(f"Error adding user role: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to add user role",
+        )
+
+
+# User preferences endpoints
+@router.get("/me/preferences")
+async def get_user_preferences(user: dict = Depends(get_current_user)):
+    """
+    Get current user's preferences.
+    """
+    try:
+        response = fetch_single_record("user_preferences", user["id"])
+        return response.data or {}
+    except Exception as e:
+        logger.error(f"Error fetching user preferences: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch user preferences",
+        )
+
+
+@router.put("/me/preferences")
+async def update_user_preferences(preferences: dict, user: dict = Depends(get_current_user)):
+    """
+    Update current user's preferences.
+    """
+    try:
+        # Check if preferences exist
+        existing = fetch_single_record("user_preferences", user["id"])
+        
+        if existing.data:
+            # Update existing
+            update_record("user_preferences", user["id"], preferences)
+        else:
+            # Create new
+            insert_record("user_preferences", {"user_id": user["id"], **preferences})
+        
+        return {"message": "Preferences updated successfully"}
+    except Exception as e:
+        logger.error(f"Error updating user preferences: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user preferences",
+        )
+
+
+# Admin endpoints
+@router.get("/admin/users")
+async def get_all_users(user: dict = Depends(get_current_user)):
+    """
+    Get all users with their profiles and roles (admin only).
+    """
+    # TODO: Add admin role check
+    try:
+        profiles_response = get_table("profiles").select("*").execute()
+        roles_response = get_table("user_roles").select("*").execute()
+        
+        profiles = profiles_response.data or []
+        roles = roles_response.data or []
+        
+        # Merge profiles with roles
+        merged = []
+        for profile in profiles:
+            user_roles = [r["role"] for r in roles if r["user_id"] == profile["id"]]
+            merged.append({
+                ...profile,
+                roles: user_roles
+            })
+        
+        return merged
+    except Exception as e:
+        logger.error(f"Error fetching all users: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch users",
+        )

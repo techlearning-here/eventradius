@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { Zap } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { AuthSheet } from './AuthSheet';
 import { RoleSwitcher } from './RoleSwitcher';
 
 export const Navbar: React.FC = () => {
-  const { user, roles, signOut, setActiveRole, canSwitchRole } = useAuth();
+  const { user, roles, signOut, setActiveRole, canSwitchRole } = useAuthWithBackend();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
