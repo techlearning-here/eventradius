@@ -24,6 +24,7 @@ origins = [
     "http://localhost:3000",
     "http://localhost:8080",
     "https://eventpinger.vercel.app",
+    "https://eventradius.vercel.app",
 ]
 
 app.add_middleware(
