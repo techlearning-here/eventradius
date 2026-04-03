@@ -263,11 +263,73 @@ git push --no-verify
 
 ### Troubleshooting:
 If hooks fail, fix the issues they report:
-- **Formatting errors**: Run `black .` (backend) or let hooks auto-fix
-- **Lint errors**: Address the specific linting issues
+
+#### **Backend Issues:**
+- **Black formatting errors**: Run `black .` or let hooks auto-fix
+- **Flake8 linting**: 
+  - Long lines (>88 chars): Break long strings/log messages
+  - Unused imports: Remove unused imports
+  - Method chains: Break long chained calls into variables
+- **Test warnings**: Use `assert` instead of `return` in pytest functions
+
+#### **Frontend Issues:**
+- **ESLint errors**: 
+  - Replace `require()` with ES6 imports
+  - Replace `any` types with proper TypeScript types
+  - Fix React hooks dependency arrays
+- **TypeScript errors**: Add proper type annotations
+
+#### **Security Issues:**
 - **Secret detection**: Remove any leaked credentials immediately
+  - Check `.env.example` files for real credentials
+  - Never commit actual API keys or tokens
+  - Use placeholder values in example files
+
+#### **Common Failure Patterns We've Fixed:**
+```bash
+# ❌ Avoid: Long lines in logs
+logger.info(f"Updated OAuth profile for user {user['id']} with provider {profile.provider}")
+
+# ✅ Use: Line breaks
+logger.info(
+    f"Updated OAuth profile for user {user['id']} "
+    f"with provider {profile.provider}"
+)
+
+# ❌ Avoid: Unused imports
+from config.database import fetch_single_record, get_table, insert_record, update_record
+
+# ✅ Use: Only needed imports
+from config.database import fetch_single_record, get_table, insert_record
+
+# ❌ Avoid: Long method chains
+mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(data=[])
+
+# ✅ Use: Break into variables
+select_chain = mock_table.select.return_value.eq.return_value.eq.return_value
+select_chain.execute.return_value = MagicMock(data=[])
+
+# ❌ Avoid: pytest return values
+def test_something():
+    return True  # Causes warnings
+
+# ✅ Use: assert statements
+def test_something():
+    assert True  # Proper pytest pattern
+```
 
 These hooks save time by catching issues locally before they reach CI/CD pipelines.
+
+## 📋 Quick Reference
+
+For a comprehensive guide to common issues and solutions, see **[CHEAT_SHEET.md](CHEAT_SHEET.md)** - it contains all the failure patterns we've encountered and their fixes.
+
+### Most Common Issues:
+- **Long lines** (>88 chars) → Break with f-string concatenation
+- **Unused imports** → Remove unused import statements  
+- **ESLint errors** → Use ES6 imports, proper TypeScript types
+- **Secret leaks** → Never commit real credentials, use placeholders
+- **Test warnings** → Use `assert` instead of `return` in pytest
 
 
 
