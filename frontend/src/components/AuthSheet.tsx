@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Users, Megaphone } from 'lucide-react';
+import { X, Users, Megaphone, Chrome } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getErrorMessage } from '@/lib/utils';
+import { signInWithGoogle } from '@/lib/auth';
 
 interface AuthSheetProps {
   isOpen: boolean;
@@ -52,6 +53,17 @@ export const AuthSheet: React.FC<AuthSheetProps> = ({ isOpen, onClose, defaultRo
     } catch (error: unknown) {
       toast({ title: 'Error', description: getErrorMessage(error), variant: 'destructive' });
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      await signInWithGoogle();
+      // The redirect will handle the rest, so we don't need to close the sheet here
+    } catch (error: unknown) {
+      toast({ title: 'Error', description: getErrorMessage(error), variant: 'destructive' });
       setLoading(false);
     }
   };
@@ -127,6 +139,25 @@ export const AuthSheet: React.FC<AuthSheetProps> = ({ isOpen, onClose, defaultRo
               {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
             </button>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-white/20" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-[hsl(0,0%,10%)] px-2 text-gray-400">Or continue with</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            className="w-full bg-white text-black font-medium py-3 px-6 uppercase text-sm hover:bg-gray-100 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <Chrome className="w-4 h-4" />
+            {loading ? 'Please wait...' : 'Continue with Google'}
+          </button>
 
           <div className="mt-6 text-center">
             <button onClick={() => setIsSignUp(!isSignUp)} className="text-gray-400 hover:text-white transition-colors text-sm">

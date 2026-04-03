@@ -90,7 +90,11 @@ const Discover = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    if (user && role === 'user' && onboardingCompleted === false) navigate('/onboarding');
+    console.log('Discover redirect check:', { user: !!user, role, onboardingCompleted });
+    if (user && role === 'user' && onboardingCompleted === false) {
+      console.log('Redirecting to onboarding...');
+      navigate('/onboarding');
+    }
   }, [user, role, onboardingCompleted, navigate]);
 
   useEffect(() => {

@@ -32,8 +32,11 @@ export const useAuthWithBackend = () => {
   const fetchOnboardingStatus = useCallback(async (userId: string) => {
     try {
       const preferences = await apiClient.getUserPreferences();
-      setOnboardingCompleted(preferences.onboarding_completed ?? null);
-      return preferences.onboarding_completed ?? null;
+      console.log('Raw preferences from API:', preferences);
+      console.log('onboarding_completed value:', preferences?.onboarding_completed);
+      const completed = (preferences?.onboarding_completed as boolean | null) ?? null;
+      setOnboardingCompleted(completed);
+      return completed;
     } catch (error) {
       console.error('Error fetching onboarding status:', error);
       setOnboardingCompleted(null);

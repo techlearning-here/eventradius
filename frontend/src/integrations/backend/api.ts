@@ -194,7 +194,7 @@ class ApiClient {
   async addUserRole(role: string): Promise<{ message: string }> {
     return this.request<{ message: string }>('/api/users/me/roles', {
       method: 'POST',
-      body: JSON.stringify(role),
+      body: JSON.stringify({ role }),
     });
   }
 
@@ -226,6 +226,50 @@ class ApiClient {
   // Health check
   async healthCheck(): Promise<{ status: string; database?: string }> {
     return this.request<{ status: string; database?: string }>('/health');
+  }
+
+  // OAuth endpoints
+  async createOrUpdateOAuthProfile(profile: {
+    provider: string;
+    provider_id: string;
+    full_name?: string;
+    avatar_url?: string;
+  }): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/api/auth/oauth/profile', {
+      method: 'POST',
+      body: JSON.stringify(profile),
+    });
+  }
+
+  async getOAuthProfile(): Promise<{
+    id: string;
+    user_id: string;
+    provider: string;
+    provider_id: string;
+    full_name?: string;
+    avatar_url?: string;
+    created_at: string;
+    updated_at: string;
+  }> {
+    return this.request<any>('/api/auth/oauth/profile');
+  }
+
+  async linkOAuthAccount(profile: {
+    provider: string;
+    provider_id: string;
+    full_name?: string;
+    avatar_url?: string;
+  }): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/api/auth/oauth/link', {
+      method: 'POST',
+      body: JSON.stringify(profile),
+    });
+  }
+
+  async unlinkOAuthAccount(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/api/auth/oauth/unlink', {
+      method: 'DELETE',
+    });
   }
 }
 

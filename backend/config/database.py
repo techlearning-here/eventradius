@@ -59,14 +59,20 @@ def get_table(table_name: str):
 
 def insert_record(table_name: str, data: Dict[str, Any]):
     """Insert a record into a table"""
+    logger.info(f"Inserting record into {table_name}: {data}")
     table = get_table(table_name)
-    return table.insert(data).execute()
+    result = table.insert(data).execute()
+    logger.info(f"Insert result for {table_name}: {result}")
+    return result
 
 
 def update_record(table_name: str, record_id: str, data: Dict[str, Any]):
     """Update a record in a table"""
+    logger.info(f"Updating record {record_id} in {table_name}: {data}")
     table = get_table(table_name)
-    return table.update(data).eq("id", record_id).execute()
+    result = table.update(data).eq("id", record_id).execute()
+    logger.info(f"Update result for {table_name}: {result}")
+    return result
 
 
 def delete_record(table_name: str, record_id: str):
@@ -94,5 +100,17 @@ def fetch_records(
 
 def fetch_single_record(table_name: str, record_id: str):
     """Fetch a single record by ID"""
+    logger.info(f"Fetching single record {record_id} from {table_name}")
     table = get_table(table_name)
-    return table.select("*").eq("id", record_id).single().execute()
+    try:
+        result = table.select("*").eq("id", record_id).single().execute()
+        logger.info(f"Fetch result for {table_name}: {result}")
+        return result
+    except Exception as e:
+        # If no records found, return a result with empty data
+        if "PGRST116" in str(e) or "The result contains 0 rows" in str(e):
+            logger.info(f"No record found for {record_id} in {table_name}")
+            return type('Result', (), {'data': None})()
+        else:
+            logger.error(f"Error fetching single record from {table_name}: {e}")
+            raise

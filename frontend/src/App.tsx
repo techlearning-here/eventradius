@@ -6,6 +6,8 @@ import Landing from "./pages/Landing";
 import Discover from "./pages/Discover";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
+import TestOAuth from "./pages/TestOAuth";
 import Onboarding from "./pages/Onboarding";
 import Settings from "./pages/Settings";
 import OrganizerDashboard from "./pages/OrganizerDashboard";
@@ -15,6 +17,7 @@ import MyEvents from "./pages/MyEvents";
 import CreateEvent from "./pages/CreateEvent";
 import EditEvent from "./pages/EditEvent";
 import NotFound from "./pages/NotFound";
+import { DebugAuth } from "@/components/DebugAuth";
 
 const App = () => (
   <TooltipProvider>
@@ -32,10 +35,13 @@ const App = () => (
       <Route path="/organizer" element={<OrganizerDashboard />} />
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/test-oauth" element={<TestOAuth />} />
       <Route path="/admin" element={<Admin />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
+    <DebugAuth />
   </TooltipProvider>
 );
 

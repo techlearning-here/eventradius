@@ -37,10 +37,12 @@ app.add_middleware(
 # Import routers
 from api.events import router as events_router
 from api.users import router as users_router
+from api.auth import router as auth_router
 
 # Include routers
 app.include_router(events_router)
 app.include_router(users_router)
+app.include_router(auth_router)
 
 # Health check endpoint
 @app.get("/")
