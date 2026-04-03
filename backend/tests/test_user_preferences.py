@@ -194,7 +194,9 @@ class TestUserPreferences:
         assert call_args[1]["onboarding_completed"] is True
         assert call_args[1]["city"] == "Chicago, IL"
 
-    @pytest.mark.skip(reason="Temporarily disabled - KeyError: 'count', needs investigation")
+    @pytest.mark.skip(
+        reason="Temporarily disabled - KeyError: 'count', needs investigation"
+    )
     @patch("config.database.get_table")
     def test_debug_preferences_endpoint(self, mock_get_table, authenticated_client):
         """Test the debug preferences endpoint"""
@@ -272,7 +274,9 @@ class TestUserRoles:
         assert response.status_code == 200
         assert response.json()["message"] == "Role already exists"
 
-    @pytest.mark.skip(reason="Temporarily disabled - 422 instead of 400, needs investigation")
+    @pytest.mark.skip(
+        reason="Temporarily disabled - 422 instead of 400, needs investigation"
+    )
     def test_add_user_role_invalid_request(self, authenticated_client):
         """Test adding role with invalid request"""
         response = authenticated_client.post("/api/users/me/roles", json={})
