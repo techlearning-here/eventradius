@@ -1,0 +1,29 @@
+# <type>(<scope>): <subject>
+#
+# <body>
+#
+# <footer>
+
+# Type should be one of the following:
+# * feat (new feature)
+# * fix (bug fix)
+# * docs (documentation)
+# * style (formatting, missing semi colons, etc; no code change)
+# * refactor (refactoring production code)
+# * test (adding tests, refactoring test; no production code change)
+# * chore (updating build tasks, package manager configs, etc; no production code change)
+
+# Scope is just the scope of the change. Something like (admin) or (teacher).
+#
+# Body should explain what and why vs. how.
+#
+# Footer should contain any JIRA issue references or issue numbers.
+#
+# Example:
+# feat(auth): add OAuth login functionality
+#
+# Added Google OAuth integration with secure token handling and
+# proper error states. This addresses user feedback for easier
+# authentication options.
+#
+# Closes #123

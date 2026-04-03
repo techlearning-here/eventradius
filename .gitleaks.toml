@@ -1,0 +1,56 @@
+title = "gitleaks config"
+
+# Extend the default Gitleaks rules with custom ones
+[extend]
+useDefault = true
+
+# Custom rules for this project
+[[rules]]
+description = "Google OAuth Client ID"
+id = "google-oauth-client-id"
+regex = '''821647385670-[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com'''
+keywords = ["googleusercontent", "oauth", "client"]
+
+[[rules]]
+description = "Google OAuth Client Secret"
+id = "google-oauth-client-secret"
+regex = '''GOCSPX-[a-zA-Z0-9_-]{32}'''
+keywords = ["GOCSPX", "oauth", "secret"]
+
+[[rules]]
+description = "Supabase Keys"
+id = "supabase-keys"
+regex = '''(eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+|[^/]\.supabase\.[a-z]+\.[a-zA-Z0-9_-]{20,})'''
+keywords = ["supabase", "eyJ", "anon", "service"]
+
+[[rules]]
+description = "Generic API Keys"
+id = "generic-api-keys"
+regex = '''(?i)(api[_-]?key|apikey|secret|token)\s*[:=]\s*['\"]?([a-zA-Z0-9_-]{20,})['\"]?'''
+keywords = ["api", "key", "secret", "token"]
+
+# Allowlist for known false positives
+[allowlist]
+description = "Global allowlist"
+paths = [
+    '''^\.git/''',
+    '''^node_modules/''',
+    '''^venv/''',
+    '''^__pycache__/''',
+    '''\.log$''',
+    '''\.env\.example$''',
+    '''package-lock\.json$''',
+    '''yarn\.lock$''',
+    '''\.md$''',
+]
+
+# Allow specific patterns in certain files
+[[allowlist]]
+description = "Allow example files"
+paths = ['''\.env\.example$''']
+regexes = ['''GOOGLE_CLIENT_ID=$''', '''GOOGLE_CLIENT_SECRET=$''']
+
+[[allowlist]]
+description = "Allow documentation"
+paths = ['''\.md$''']
+regexes = ['''your-[a-z-]+-here''']

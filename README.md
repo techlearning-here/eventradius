@@ -178,5 +178,92 @@ The frontend is configured to use the backend API via the `VITE_BACKEND_URL` env
 
 For detailed backend documentation, see [backend/README.md](backend/README.md).
 
+## � Quick Start
+
+### One-command setup (Recommended):
+```bash
+# Clone and setup everything automatically
+git clone <YOUR_GIT_URL> eventradius
+cd eventradius
+./setup-dev.sh
+```
+
+### Manual setup:
+```bash
+# Clone the repository
+git clone <YOUR_GIT_URL> eventradius
+cd eventradius
+
+# Backend setup
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+pre-commit install
+
+# Frontend setup  
+cd ../frontend
+npm install
+
+# Return to root
+cd ..
+```
+
+### Environment Setup:
+```bash
+# Copy environment templates
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+
+# Edit .env files with your actual credentials
+# NEVER commit real credentials to the repository!
+```
+
+## �🛡️ Pre-commit Checks
+
+To avoid CI failures and security issues, this project includes pre-commit hooks that automatically run before each push. These hooks catch common issues early:
+
+### What's Checked:
+- **Backend**: Black code formatting, Python linting, secret detection
+- **Frontend**: ESLint, TypeScript errors, secret detection  
+- **Security**: Scans for leaked API keys, tokens, and credentials
+- **Git**: Prevents pushing large files, ensures proper line endings
+
+### Installation:
+```bash
+# Install pre-commit hooks (run once)
+pip install pre-commit
+pre-commit install
+
+# Or install from requirements
+pip install -r requirements.txt  # Includes pre-commit
+pre-commit install
+```
+
+### Manual Usage:
+```bash
+# Run all checks manually
+pre-commit run --all-files
+
+# Run specific hook
+pre-commit run black
+pre-commit run eslint
+pre-commit run detect-secrets
+```
+
+### Bypassing Hooks (Not Recommended):
+```bash
+# Only skip if absolutely necessary
+git push --no-verify
+```
+
+### Troubleshooting:
+If hooks fail, fix the issues they report:
+- **Formatting errors**: Run `black .` (backend) or let hooks auto-fix
+- **Lint errors**: Address the specific linting issues
+- **Secret detection**: Remove any leaked credentials immediately
+
+These hooks save time by catching issues locally before they reach CI/CD pipelines.
+
 
 
