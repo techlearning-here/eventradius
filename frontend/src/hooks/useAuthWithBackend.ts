@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { User } from '@supabase/supabase-js';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { apiClient, type UserProfile } from '@/integrations/backend/api';
 
@@ -22,6 +23,7 @@ function pickEffectiveRole(
 }
 
 export const useAuthWithBackend = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [activeRoleUi, setActiveRoleUi] = useState<'user' | 'organizer' | null>(null);
@@ -225,20 +227,23 @@ export const useAuthWithBackend = () => {
       if (session?.user) {
         await loadSession(session.user);
       } else {
+        // User signed out or session expired - redirect to landing page
         setUser(null);
         setRoles([]);
         setActiveRoleUi(null);
         setOnboardingCompleted(null);
         setUserProfile(null);
+        navigate('/');
       }
     });
 
     init();
     return () => subscription.unsubscribe();
-  }, [loadSession]);
+  }, [loadSession, navigate]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    // The onAuthStateChange listener will handle the redirect
   };
 
   return {

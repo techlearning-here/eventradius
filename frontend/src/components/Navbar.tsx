@@ -5,6 +5,7 @@ import { Zap } from 'lucide-react';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { AuthSheet } from './AuthSheet';
 import { RoleSwitcher } from './RoleSwitcher';
+import { AccountDetails } from './AccountDetails';
 
 export const Navbar: React.FC = () => {
   const { user, roles, signOut, setActiveRole, canSwitchRole, role } = useAuthWithBackend();
@@ -16,13 +17,17 @@ export const Navbar: React.FC = () => {
     const links: { label: string; to?: string; onClick?: () => void }[] = [];
 
     if (user) {
-      // Role-based navigation
+      // Role-based navigation (excluding signout)
       if (role === 'user' || !role) {
         links.push({ label: 'Discover Events', to: '/discover' });
       }
       
       if (role === 'organizer') {
         links.push({ label: 'My Events', to: '/organizer' });
+      }
+      
+      // Create Event - available to organizer and admin roles
+      if (role === 'organizer' || roles.includes('admin')) {
         links.push({ label: 'Create Event', to: '/create-event' });
       }
       
@@ -32,8 +37,6 @@ export const Navbar: React.FC = () => {
       if (roles.includes('admin')) {
         links.push({ label: 'Admin', to: '/admin-dashboard' });
       }
-      
-      links.push({ label: 'Sign Out', onClick: signOut });
     } else {
       links.push({ label: 'Discover Events', to: '/discover' });
       links.push({ label: 'Sign In', onClick: () => setIsAuthOpen(true) });
@@ -64,10 +67,18 @@ export const Navbar: React.FC = () => {
                   if (link.to === '/discover') void setActiveRole('user');
                   if (link.to === '/organizer') void setActiveRole('organizer');
                 }}
-                className="relative overflow-hidden bg-background text-foreground h-[34px] px-3 flex items-center text-[11px] font-medium uppercase border border-l-0 border-foreground leading-none group"
+                className={`relative overflow-hidden bg-background text-foreground h-[34px] px-3 flex items-center text-[11px] font-medium uppercase border border-l-0 border-foreground leading-none group ${
+                  link.label === 'Create Event' 
+                    ? 'bg-green-500 text-white border-green-500' 
+                    : ''
+                }`}
               >
                 <span className="relative z-10">{link.label}</span>
-                <span className="absolute inset-0 bg-[hsl(295,100%,73%)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+                <span className={`absolute inset-0 ${
+                  link.label === 'Create Event' 
+                    ? 'bg-green-600' 
+                    : 'bg-[hsl(295,100%,73%)]'
+                } translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out`} />
               </Link>
             ) : (
               <button key={link.label} onClick={link.onClick}
@@ -86,6 +97,13 @@ export const Navbar: React.FC = () => {
           <span className="absolute inset-0 bg-[hsl(295,100%,73%)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
         </button>
       </nav>
+
+      {/* Account Details - Fixed Right Side */}
+      {user && (
+        <div className="fixed top-8 right-4 md:right-8 z-[2000]">
+          <AccountDetails />
+        </div>
+      )}
 
       {/* Mobile Full Screen Menu */}
       {isMobileMenuOpen && (
@@ -111,7 +129,11 @@ export const Navbar: React.FC = () => {
                     if (canSwitchRole && link.to === '/discover') void setActiveRole('user');
                     if (canSwitchRole && link.to === '/organizer') void setActiveRole('organizer');
                   }}
-                  className="flex-1 flex items-center justify-center text-foreground text-[17px] font-medium uppercase border-b border-border tracking-[-0.34px]"
+                  className={`flex-1 flex items-center justify-center text-[17px] font-medium uppercase border-b border-border tracking-[-0.34px] ${
+                    link.label === 'Create Event'
+                      ? 'text-green-500'
+                      : 'text-foreground'
+                  }`}
                 >
                   {link.label}
                 </Link>
