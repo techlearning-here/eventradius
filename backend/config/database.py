@@ -25,11 +25,14 @@ class SupabaseClient:
         if cls._instance is None:
             supabase_url = os.getenv("SUPABASE_URL")
             # Use service role key for backend operations
-            supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
+            supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv(
+                "SUPABASE_KEY"
+            )
 
             if not supabase_url or not supabase_key:
                 raise ValueError(
-                    "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment variables"
+                    "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set "
+                    "in environment variables"
                 )
 
             cls._instance = create_client(supabase_url, supabase_key)

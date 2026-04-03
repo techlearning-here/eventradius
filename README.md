@@ -241,11 +241,69 @@ pre-commit install
 # Linux: wget https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64
 # Or: https://github.com/gitleaks/gitleaks#install
 
-# Or use the automated setup script
+# Unix/Mac/Linux: Use the automated setup script
+./setup-dev.sh
+
+# Windows: Use the automated batch script OR install manually
+run-checks.bat
+```
+
+### Automated Setup (Choose your platform):
+
+**macOS:**
+```bash
 ./setup-dev.sh
 ```
 
+**Linux:**
+```bash
+./setup-dev.sh
+```
+
+**Windows:**
+```batch
+run-checks.bat
+```
+
+### Manual Installation (if automated scripts fail):
+
+**All Platforms:**
+```bash
+# Install pre-commit
+pip install pre-commit
+
+# Install pre-commit hooks
+pre-commit install
+```
+
+**Windows Additional:**
+```batch
+# Install gitleaks for security scanning
+# Download from: https://github.com/gitleaks/gitleaks/releases
+# Extract and add to PATH, or use chocolatey:
+choco install gitleaks
+```
+
+**macOS Additional:**
+```bash
+# Install gitleaks (recommended)
+brew install gitleaks
+
+# Alternative: Download binary
+# https://github.com/gitleaks/gitleaks/releases
+```
+
+**Linux Additional:**
+```bash
+# Download gitleaks binary
+wget https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64
+chmod +x gitleaks-linux-amd64
+sudo mv gitleaks-linux-amd64 /usr/local/bin/gitleaks
+```
+
 ### Manual Usage:
+
+**macOS & Linux:**
 ```bash
 # Run all checks manually
 pre-commit run --all-files
@@ -254,6 +312,56 @@ pre-commit run --all-files
 pre-commit run black
 pre-commit run eslint
 pre-commit run detect-secrets
+```
+
+**Windows:**
+```batch
+REM Run all checks manually
+pre-commit run --all-files
+
+REM Run specific hooks
+pre-commit run black
+pre-commit run flake8
+pre-commit run isort
+pre-commit run eslint
+pre-commit run detect-secrets
+pre-commit run gitleaks
+
+REM Quick checks for common issues
+pre-commit run trailing-whitespace
+pre-commit run end-of-file-fixer
+pre-commit run check-yaml
+pre-commit run check-json
+```
+
+### Windows Batch Script (save as run-checks.bat):
+```batch
+@echo off
+echo Running pre-commit checks...
+
+REM Install pre-commit if not present
+where pre-commit >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo Installing pre-commit...
+    pip install pre-commit
+)
+
+REM Run all checks
+echo Running all pre-commit checks...
+pre-commit run --all-files
+
+REM Check results
+if %ERRORLEVEL% EQU 0 (
+    echo All checks passed!
+) else (
+    echo Some checks failed. Please fix the issues above.
+    echo You can run individual checks:
+    echo   pre-commit run black
+    echo   pre-commit run eslint
+    echo   pre-commit run detect-secrets
+)
+
+pause
 ```
 
 ### Bypassing Hooks (Not Recommended):

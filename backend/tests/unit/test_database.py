@@ -47,7 +47,8 @@ class TestSupabaseClient:
 
         with patch.dict(os.environ, {}, clear=True):
             with pytest.raises(
-                ValueError, match="SUPABASE_URL and SUPABASE_KEY must be set"
+                ValueError,
+                match="SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set",
             ):
                 SupabaseClient.get_client()
 

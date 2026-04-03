@@ -73,7 +73,13 @@ JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
 
 ### 5. Run the Development Server
+**Important: Always activate virtual environment first**
 ```bash
+# Windows
+venv\Scripts\activate
+# Mac/Linux
+source venv/bin/activate
+
 python -m uvicorn main:app --reload --port 8000
 ```
 
