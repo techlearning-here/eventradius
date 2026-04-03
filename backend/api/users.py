@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 
 from config.auth import get_current_user
-from config.database import fetch_single_record, get_table, insert_record, update_record
+from config.database import fetch_single_record, get_table, insert_record
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/users", tags=["users"])

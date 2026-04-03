@@ -69,7 +69,8 @@ async def create_or_update_oauth_profile(
             ).execute()
 
             logger.info(
-                f"Updated OAuth profile for user {user['id']} with provider {profile.provider}"
+                f"Updated OAuth profile for user {user['id']} "
+                f"with provider {profile.provider}"
             )
 
         else:
@@ -85,7 +86,8 @@ async def create_or_update_oauth_profile(
             supabase.table("profiles").insert(profile_data).execute()
 
             logger.info(
-                f"Created OAuth profile for user {user['id']} with provider {profile.provider}"
+                f"Created OAuth profile for user {user['id']} "
+                f"with provider {profile.provider}"
             )
 
         return {"message": "Profile created/updated successfully"}

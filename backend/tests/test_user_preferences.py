@@ -5,7 +5,6 @@ Tests for user preferences API endpoints
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
-import json
 
 from main import app
 from config.auth import get_current_user
@@ -228,7 +227,10 @@ class TestUserRoles:
         """Test adding a new role to user"""
         # Mock no existing role
         mock_table = MagicMock()
-        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(
+        select_chain = (
+            mock_table.select.return_value.eq.return_value.eq.return_value
+        )
+        select_chain.execute.return_value = MagicMock(
             data=[]
         )
         mock_get_table.return_value = mock_table
@@ -252,7 +254,10 @@ class TestUserRoles:
         """Test adding an existing role to user"""
         # Mock existing role
         mock_table = MagicMock()
-        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(
+        select_chain = (
+            mock_table.select.return_value.eq.return_value.eq.return_value
+        )
+        select_chain.execute.return_value = MagicMock(
             data=[{"user_id": "test-user-id", "role": "user"}]
         )
         mock_get_table.return_value = mock_table
