@@ -75,7 +75,9 @@ async def update_current_user_profile(
     Update current user's profile.
     """
     try:
-        update_data = {k: v for k, v in user_update.dict().items() if v is not None}
+        update_data = {
+            k: v for k, v in user_update.model_dump().items() if v is not None
+        }
 
         if not update_data:
             # Return current profile
@@ -189,12 +191,9 @@ async def get_user_roles(user: dict = Depends(get_current_user)):
     """
     try:
         response = (
-            get_table("user_roles")
-            .select("role")
-            .eq("user_id", user["id"])
-            .execute()
+            get_table("user_roles").select("role").eq("user_id", user["id"]).execute()
         )
-        
+
         roles = [r["role"] for r in response.data] if response.data else []
         return {"roles": roles}
     except Exception as e:
@@ -219,10 +218,10 @@ async def add_user_role(role: str, user: dict = Depends(get_current_user)):
             .eq("role", role)
             .execute()
         )
-        
+
         if existing.data:
             return {"message": "Role already exists"}
-        
+
         # Add role
         insert_record("user_roles", {"user_id": user["id"], "role": role})
         return {"message": "Role added successfully"}
@@ -252,21 +251,23 @@ async def get_user_preferences(user: dict = Depends(get_current_user)):
 
 
 @router.put("/me/preferences")
-async def update_user_preferences(preferences: dict, user: dict = Depends(get_current_user)):
+async def update_user_preferences(
+    preferences: dict, user: dict = Depends(get_current_user)
+):
     """
     Update current user's preferences.
     """
     try:
         # Check if preferences exist
         existing = fetch_single_record("user_preferences", user["id"])
-        
+
         if existing.data:
             # Update existing
             update_record("user_preferences", user["id"], preferences)
         else:
             # Create new
             insert_record("user_preferences", {"user_id": user["id"], **preferences})
-        
+
         return {"message": "Preferences updated successfully"}
     except Exception as e:
         logger.error(f"Error updating user preferences: {e}")
@@ -286,19 +287,16 @@ async def get_all_users(user: dict = Depends(get_current_user)):
     try:
         profiles_response = get_table("profiles").select("*").execute()
         roles_response = get_table("user_roles").select("*").execute()
-        
+
         profiles = profiles_response.data or []
         roles = roles_response.data or []
-        
+
         # Merge profiles with roles
         merged = []
         for profile in profiles:
             user_roles = [r["role"] for r in roles if r["user_id"] == profile["id"]]
-            merged.append({
-                ...profile,
-                roles: user_roles
-            })
-        
+            merged.append({**profile, "roles": user_roles})
+
         return merged
     except Exception as e:
         logger.error(f"Error fetching all users: {e}")

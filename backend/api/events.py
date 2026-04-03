@@ -6,7 +6,7 @@ import logging
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from config.auth import get_current_user, optional_auth
 from config.database import (
@@ -58,8 +58,7 @@ class EventResponse(EventBase):
     updated_at: str
     current_participants: Optional[int] = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Event endpoints
@@ -167,7 +166,7 @@ async def create_event(event: EventCreate, user: dict = Depends(get_current_user
     Requires authentication.
     """
     try:
-        event_data = event.dict()
+        event_data = event.model_dump()
         event_data["organizer_id"] = user["id"]
 
         response = insert_record("events", event_data)
@@ -216,7 +215,9 @@ async def update_event(
             )
 
         # Prepare update data
-        update_data = {k: v for k, v in event_update.dict().items() if v is not None}
+        update_data = {
+            k: v for k, v in event_update.model_dump().items() if v is not None
+        }
 
         if not update_data:
             return existing_event
@@ -384,10 +385,10 @@ async def leave_event(event_id: str, user: dict = Depends(get_current_user)):
 # Admin endpoints
 @router.put("/{event_id}/status")
 async def update_event_status(
-    event_id: str, 
-    status: str, 
+    event_id: str,
+    status: str,
     admin_remark: Optional[str] = None,
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     """
     Update event status (admin only).
@@ -397,15 +398,14 @@ async def update_event_status(
         update_data = {"status": status}
         if admin_remark:
             update_data["admin_remark"] = admin_remark
-            
+
         response = update_record("events", event_id, update_data)
-        
+
         if not response.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, 
-                detail="Event not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
             )
-        
+
         return {"message": f"Event {status} successfully"}
     except HTTPException:
         raise
