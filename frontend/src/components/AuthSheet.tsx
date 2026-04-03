@@ -71,7 +71,7 @@ export const AuthSheet: React.FC<AuthSheetProps> = ({ isOpen, onClose, defaultRo
             {isSignUp ? 'Create Account' : 'Sign In'}
           </h2>
           <p className="text-gray-400 text-sm mb-8">
-            {isSignUp ? 'Join Event Pinger to discover or post events' : 'Welcome back!'}
+            {isSignUp ? 'Join Event radius to discover or post events' : 'Welcome back!'}
           </p>
 
           {/* Role selection (signup only) */}

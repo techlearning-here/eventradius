@@ -1,10 +1,10 @@
 /**
- * Backend API client for EventPinger.
+ * Backend API client for Event radius.
  * This client replaces direct Supabase calls with backend API calls.
  */
 import { supabase } from '@/integrations/supabase/client';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://eventradius-api.onrender.com';
 
 export interface ApiResponse<T = unknown> {
   data?: T;

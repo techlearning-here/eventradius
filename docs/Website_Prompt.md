@@ -1,5 +1,5 @@
 
-Build a responsive web application called "Event Pinger" with three user roles: Organizer, End User, and Admin. Only Organizers can post events; End Users can discover events based on demographics and preferences configured at signup; Admins manage and moderate the platform. end user can switch to the role of Organizer and organizor can also discover the events based on there preferences
+Build a responsive web application called "Event Radius" with three user roles: Organizer, End User, and Admin. Only Organizers can post events; End Users can discover events based on demographics and preferences configured at signup; Admins manage and moderate the platform. end user can switch to the role of Organizer and organizor can also discover the events based on there preferences
 
 Admin has site level access + organizers feature access
 Organizor has add event previlage and end users feature access
@@ -85,7 +85,7 @@ Use a relational schema with Users (including role), UserPreferences, Events, an
 Implement correct distance‑based filtering so only events within the user’s chosen radius are shown.
 
 
-Extend the existing Event Pinger web application with the following features:
+Extend the existing Event Radius web application with the following features:
 
 Two event types: Standard Event and Preview Event, with Preview → Standard conversion
 
@@ -95,7 +95,7 @@ Participation buttons and interest/going counts for all events
 
 Admin login with event approval, remarks, and logout
 
-Please modify the current Event Pinger codebase and schema rather than creating a new project.
+Please modify the current Event Radius codebase and schema rather than creating a new project.
 
 1. Event types: Standard vs Preview
 Data model
@@ -396,7 +396,7 @@ Show the event’s approvalStatus and adminRemark, e.g.:
 Rejected events remain visible to the Organizer (with the remark), but not to End Users.
 
 6. General notes
-Keep all UI mobile‑first and consistent with the existing Event Pinger design.
+Keep all UI mobile‑first and consistent with the existing Event Radius design.
 
 Ensure the following flows work end‑to‑end:
 
