@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { Navbar } from '@/components/Navbar';
+import { RoleSwitcher } from '@/components/RoleSwitcher';
 import { SEOHead } from '@/components/SEOHead';
 import { CATEGORIES, CITIES } from '@/data/cities';
 import { Calendar } from '@/components/ui/calendar';
@@ -187,15 +188,21 @@ const OrganizerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <SEOHead title="Organizer Dashboard" description="Manage your events" />
+      <SEOHead title="Event Publisher - Manage Events" description="Create, edit, and manage your events" />
       <Navbar />
+      <RoleSwitcher />
       <div className="max-w-5xl mx-auto pt-28 pb-16 px-4 md:px-8">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">My Events</h1>
-          <button onClick={() => { setShowForm(!showForm); setSelectedEvent(null); }}
-            className="flex items-center gap-2 px-5 py-3 bg-foreground text-background text-xs font-semibold uppercase tracking-wider hover:opacity-90 transition-opacity">
-            {showForm ? <><X className="w-4 h-4" /> Cancel</> : <><Plus className="w-4 h-4" /> New Event</>}
-          </button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Event Publisher</h1>
+            <p className="text-muted-foreground text-sm">Create, edit, and manage your events</p>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => { setShowForm(!showForm); setSelectedEvent(null); }}
+              className="flex items-center gap-2 px-5 py-3 bg-foreground text-background text-xs font-semibold uppercase tracking-wider hover:opacity-90 transition-opacity">
+              {showForm ? <><X className="w-4 h-4" /> Cancel</> : <><Plus className="w-4 h-4" /> Create Event</>}
+            </button>
+          </div>
         </div>
 
         {/* Create Event Form */}

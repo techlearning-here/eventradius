@@ -7,28 +7,35 @@ import { AuthSheet } from './AuthSheet';
 import { RoleSwitcher } from './RoleSwitcher';
 
 export const Navbar: React.FC = () => {
-  const { user, roles, signOut, setActiveRole, canSwitchRole } = useAuthWithBackend();
+  const { user, roles, signOut, setActiveRole, canSwitchRole, role } = useAuthWithBackend();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   const navLinks = () => {
-    const links: { label: string; to?: string; onClick?: () => void }[] = [
-      { label: 'Discover', to: '/discover' },
-    ];
+    const links: { label: string; to?: string; onClick?: () => void }[] = [];
 
     if (user) {
-      if (roles.includes('organizer')) {
-        links.push({ label: 'Dashboard', to: '/organizer' });
+      // Role-based navigation
+      if (role === 'user' || !role) {
+        links.push({ label: 'Discover Events', to: '/discover' });
       }
-      if (roles.includes('user')) {
-        links.push({ label: 'Settings', to: '/settings' });
+      
+      if (role === 'organizer') {
+        links.push({ label: 'My Events', to: '/organizer' });
+        links.push({ label: 'Create Event', to: '/create-event' });
       }
+      
+      // Always available
+      links.push({ label: 'Settings', to: '/settings' });
+      
       if (roles.includes('admin')) {
         links.push({ label: 'Admin', to: '/admin-dashboard' });
       }
+      
       links.push({ label: 'Sign Out', onClick: signOut });
     } else {
+      links.push({ label: 'Discover Events', to: '/discover' });
       links.push({ label: 'Sign In', onClick: () => setIsAuthOpen(true) });
     }
     return links;

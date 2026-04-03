@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Navbar } from '@/components/Navbar';
+import { RoleSwitcher } from '@/components/RoleSwitcher';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNavigate } from 'react-router-dom';
@@ -137,8 +138,9 @@ const Discover = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <SEOHead title="Discover Events" description="Explore events near you filtered by your interests and location." />
+      <SEOHead title="Event Discoverer - Find Events" description="Explore events near you filtered by your interests and location." />
       <Navbar />
+      <RoleSwitcher />
 
       <section className="pt-28 md:pt-36 pb-6 px-4 md:px-8">
         <div className="max-w-6xl mx-auto">

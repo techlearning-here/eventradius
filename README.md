@@ -4,39 +4,40 @@ A modern, full-stack event management platform built with React, TypeScript, and
 
 ## 🌟 Features
 
-### Event Management
-- **Create Events**: Easy-to-use form with image upload, date/time selection, and location integration
-- **Edit Events**: Update your events anytime with full editing capabilities
-- **Delete Events**: Remove events you've created with confirmation dialog
-- **Event Discovery**: Browse all upcoming events in a beautiful card layout
-- **Event Details**: Rich event pages with countdown timers, location maps, and registration
+### ✅ **Tested & Confirmed Working**
+- **Google OAuth Login**: ✅ Tested with proper callback handling on Vercel deployment
+- **Onboarding Flow**: ✅ Complete flow tested with preferences saving and user creation
+- **User Profile Creation**: ✅ Automatic profile generation after OAuth signup
+- **Session Management**: ✅ Persistent authentication across browser sessions
+- **Event Discovery Page**: ✅ Events list loads and displays properly
+- **Protected Routes**: ✅ Authentication redirects working correctly
+- **Role Switching System**: ✅ Enhanced Event Discoverer ↔ Event Publisher toggle with:
+  - Visual loading feedback during role switches
+  - Role-based navigation items in navbar
+  - Clear UI distinction between modes
+  - Persistent role state across sessions
 
-### User Authentication
-- **Secure Sign Up/Login**: Email and password authentication with automatic email confirmation
-- **User Profiles**: Automatic profile creation with display names
-- **Protected Routes**: Secure admin and event management pages
-- **Session Management**: Persistent authentication across sessions
+### 🧪 **Implemented - Needs Testing**
+- **Email/Password Auth**: Code implemented but not tested in production
+- **Event Creation**: Full form built but not tested end-to-end
+- **Event Editing**: Edit interface exists but not tested
+- **Event Deletion**: Delete functionality exists but not tested
+- **Event Details**: Detail pages built but not tested with real events
+- **Event Registration**: Registration system exists but not tested
+- **Location & Maps Integration**: Google Maps autocomplete implemented but not tested
+- **Image Upload**: Upload functionality exists but not tested
+- **Admin Dashboard**: Admin interface built but not tested
+- **Organizer Dashboard**: Organizer tools implemented but not tested
+- **User Management**: Management interfaces exist but not tested
+- **Event Chat**: Chat components built but not tested
+- **User Preferences**: Preference system works (tested in onboarding) but full preference management not tested
 
-### Location Integration
-- **Google Maps Autocomplete**: Search and select locations with autocomplete suggestions
-- **Interactive Maps**: Embedded Google Maps on event detail pages
-- **Get Directions**: Direct links to Google Maps for navigation
-
-### Image Management
-- **Image Upload**: Drag-and-drop or click to upload event images
-- **File Validation**: Automatic validation for file type (JPG, PNG, GIF, WebP) and size (max 5MB)
-- **Secure Storage**: Images stored securely in cloud storage
-
-### Admin Features
-- **Admin Dashboard**: Manage all events from a centralized dashboard
-- **Event Moderation**: View, edit, or delete any event
-- **User Management**: Access to user profiles and event data
-
-### SEO Optimized
-- **Meta Tags**: Proper title, description, and keywords for each page
-- **Semantic HTML**: Structured markup for better search engine visibility
-- **Open Graph Tags**: Social media preview optimization
-- **Responsive Design**: Mobile-first design that works on all devices
+### 🚧 **In Development**
+- **Event Participants**: Participant counting and management (partially implemented)
+- **Real-time Updates**: Live event status and chat improvements
+- **Push Notifications**: Event reminders and updates
+- **Payment Integration**: Ticket sales and event monetization
+- **Social Features**: Event sharing, following, and social discovery
 
 ## Project info
 
