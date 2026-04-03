@@ -202,7 +202,9 @@ class TestUserPreferences:
                 "city": "Test City",
             }
         ]
-        mock_table.select.return_value.eq.return_value.execute.return_value = mock_result
+        mock_table.select.return_value.eq.return_value.execute.return_value = (
+            mock_result
+        )
         mock_get_table.return_value = mock_table
 
         response = authenticated_client.get("/api/users/debug/preferences")
@@ -227,12 +229,8 @@ class TestUserRoles:
         """Test adding a new role to user"""
         # Mock no existing role
         mock_table = MagicMock()
-        select_chain = (
-            mock_table.select.return_value.eq.return_value.eq.return_value
-        )
-        select_chain.execute.return_value = MagicMock(
-            data=[]
-        )
+        select_chain = mock_table.select.return_value.eq.return_value.eq.return_value
+        select_chain.execute.return_value = MagicMock(data=[])
         mock_get_table.return_value = mock_table
 
         response = authenticated_client.post(
@@ -254,9 +252,7 @@ class TestUserRoles:
         """Test adding an existing role to user"""
         # Mock existing role
         mock_table = MagicMock()
-        select_chain = (
-            mock_table.select.return_value.eq.return_value.eq.return_value
-        )
+        select_chain = mock_table.select.return_value.eq.return_value.eq.return_value
         select_chain.execute.return_value = MagicMock(
             data=[{"user_id": "test-user-id", "role": "user"}]
         )
