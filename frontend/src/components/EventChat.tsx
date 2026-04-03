@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { Send } from 'lucide-react';
@@ -27,12 +27,7 @@ export const EventChat = ({ eventId, eventCreatorId, eventStatus }: Props) => {
 
   const isReadOnly = eventStatus === 'completed';
 
-  useEffect(() => {
-    fetchMessages();
-    if (user) checkCanPost();
-  }, [eventId, user]);
-
-  const checkCanPost = async () => {
+  const checkCanPost = useCallback(async () => {
     if (!user) return;
     // Organizer can always post
     if (user.id === eventCreatorId) {
@@ -47,9 +42,9 @@ export const EventChat = ({ eventId, eventCreatorId, eventStatus }: Props) => {
       .eq('user_id', user.id)
       .maybeSingle();
     setCanPost(data?.status === 'going');
-  };
+  }, [user, eventId, eventCreatorId]);
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     const { data } = await supabase
       .from('event_messages')
       .select('id, message_text, created_at, sender_user_id')
@@ -74,7 +69,12 @@ export const EventChat = ({ eventId, eventCreatorId, eventStatus }: Props) => {
       created_at: m.created_at,
       sender_name: nameMap[m.sender_user_id] || 'User',
     })));
-  };
+  }, [eventId]);
+
+  useEffect(() => {
+    fetchMessages();
+    if (user) checkCanPost();
+  }, [eventId, user, fetchMessages, checkCanPost]);
 
   const handleSend = async () => {
     if (!user || !newMessage.trim() || isReadOnly) return;

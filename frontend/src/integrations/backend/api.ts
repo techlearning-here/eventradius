@@ -59,6 +59,14 @@ export interface UserUpdate {
   bio?: string;
 }
 
+export interface UserPreferences {
+  [key: string]: unknown;
+}
+
+export interface UserWithRoles extends UserProfile {
+  roles: string[];
+}
+
 // API client class
 class ApiClient {
   private baseUrl: string;
@@ -191,11 +199,11 @@ class ApiClient {
   }
 
   // User preferences endpoints
-  async getUserPreferences(): Promise<any> {
-    return this.request<any>('/api/users/me/preferences');
+  async getUserPreferences(): Promise<UserPreferences> {
+    return this.request<UserPreferences>('/api/users/me/preferences');
   }
 
-  async updateUserPreferences(preferences: any): Promise<{ message: string }> {
+  async updateUserPreferences(preferences: UserPreferences): Promise<{ message: string }> {
     return this.request<{ message: string }>('/api/users/me/preferences', {
       method: 'PUT',
       body: JSON.stringify(preferences),
@@ -203,8 +211,8 @@ class ApiClient {
   }
 
   // Admin endpoints
-  async getAllUsers(): Promise<any[]> {
-    return this.request<any[]>('/api/users/admin/users');
+  async getAllUsers(): Promise<UserWithRoles[]> {
+    return this.request<UserWithRoles[]>('/api/users/admin/users');
   }
 
   async updateEventStatus(eventId: string, status: string, adminRemark?: string): Promise<{ message: string }> {

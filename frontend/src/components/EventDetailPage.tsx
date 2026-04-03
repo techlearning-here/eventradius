@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from './Navbar';
@@ -37,12 +37,7 @@ export const EventDetailPage: React.FC = () => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
-  useEffect(() => {
-    fetchEvent();
-    checkRegistration();
-  }, [id]);
-
-  const fetchEvent = async () => {
+  const fetchEvent = useCallback(async () => {
     const { data, error } = id
       ? await supabase.from('events').select('*').eq('id', id).maybeSingle()
       : await supabase.from('events').select('*').limit(1).maybeSingle();
@@ -56,9 +51,9 @@ export const EventDetailPage: React.FC = () => {
       setEvent(data as unknown as Event);
     }
     setLoading(false);
-  };
+  }, [id]);
 
-  const checkRegistration = async () => {
+  const checkRegistration = useCallback(async () => {
     if (!id) return;
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
@@ -69,7 +64,12 @@ export const EventDetailPage: React.FC = () => {
       .eq('event_id', id)
       .maybeSingle();
     setIsRegistered(!!data);
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchEvent();
+    checkRegistration();
+  }, [id, fetchEvent, checkRegistration]);
 
   const handleGetDirections = () => {
     if (event) {
