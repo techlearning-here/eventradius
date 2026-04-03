@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { useEvents } from '@/hooks/useEvents';
-import { CalendarIcon, MapPin } from 'lucide-react';
+import { CalendarIcon, MapPin, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CATEGORIES } from '@/data/cities';
@@ -137,86 +137,99 @@ const Discover = () => {
   }, [events, date, selectedCategories]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <SEOHead title="Event Discoverer - Find Events" description="Explore events near you filtered by your interests and location." />
-      <Navbar />
-      <RoleSwitcher />
+    <>
+      <div className="min-h-screen bg-background">
+        <SEOHead title="Event Discoverer - Find Events" description="Explore events near you filtered by your interests and location." />
+        <Navbar />
+        <RoleSwitcher />
 
-      <section className="pt-28 md:pt-36 pb-6 px-4 md:px-8">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Discover Events</h1>
-          {prefs?.city && (
-            <p className="text-muted-foreground flex items-center gap-2 mb-6">
-              <MapPin className="w-4 h-4" /> Showing events near {prefs.city} (within {prefs.distance_range} miles)
-            </p>
-          )}
-        </div>
-      </section>
-
-      <section className="px-4 md:px-8 pb-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <Popover>
-              <PopoverTrigger asChild>
-                <button className={cn("h-9 px-3 text-xs font-medium uppercase tracking-wider border border-border flex items-center gap-2 hover:border-foreground transition-colors", date && "border-foreground bg-foreground text-background")}>
-                  <CalendarIcon className="w-3 h-3" />
-                  {date ? format(date, 'MMM d') : 'Date'}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={date} onSelect={setDate} className="pointer-events-auto" />
-              </PopoverContent>
-            </Popover>
-            {date && (
-              <button onClick={() => setDate(undefined)} className="h-9 px-3 text-xs font-medium uppercase border border-border hover:border-foreground transition-colors">
-                Clear date
-              </button>
-            )}
-            {CATEGORIES.map(cat => (
-              <button key={cat.id} onClick={() => toggleCategory(cat.id)}
-                className={`h-9 px-3 text-xs font-medium uppercase tracking-wider border transition-colors ${selectedCategories.includes(cat.id) ? 'border-foreground bg-foreground text-background' : 'border-border hover:border-foreground'}`}>
-                {cat.emoji} {cat.label}
-              </button>
-            ))}
-            {selectedCategories.length > 0 && (
-              <button onClick={() => setSelectedCategories([])} className="h-9 px-3 text-xs font-medium uppercase border border-border hover:border-foreground transition-colors">
-                Clear filters
-              </button>
+        <section className="pt-28 md:pt-36 pb-6 px-4 md:px-8">
+          <div className="max-w-6xl mx-auto">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Discover Events</h1>
+            {prefs?.city && (
+              <p className="text-muted-foreground flex items-center gap-2 mb-6">
+                <MapPin className="w-4 h-4" /> Showing events near {prefs.city} (within {prefs.distance_range} miles)
+              </p>
             )}
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="px-4 md:px-8 pb-16">
-        <div className="max-w-6xl mx-auto">
-          {loading ? (
-            <div className="text-center py-16 text-muted-foreground">Loading events...</div>
-          ) : error ? (
-            <div className="text-center py-16">
-              <p className="text-red-500 mb-2">Error loading events</p>
-              <p className="text-sm text-muted-foreground">{error}</p>
-              <button onClick={refetch} className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">
-                Try Again
-              </button>
-            </div>
-          ) : filteredEvents.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-muted-foreground mb-2">No events found</p>
-              <p className="text-sm text-muted-foreground">Try adjusting your filters or distance range in settings.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredEvents.map((event, i) => (
-                <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${i * 0.05}s`, animationFillMode: 'both' }}>
-                  <EventCard event={event} />
-                </div>
+        <section className="px-4 md:px-8 pb-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className={cn("h-9 px-3 text-xs font-medium uppercase tracking-wider border border-border flex items-center gap-2 hover:border-foreground transition-colors", date && "border-foreground bg-foreground text-background")}>
+                    <CalendarIcon className="w-3 h-3" />
+                    {date ? format(date, 'MMM d') : 'Date'}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={date} onSelect={setDate} className="pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+              {date && (
+                <button onClick={() => setDate(undefined)} className="h-9 px-3 text-xs font-medium uppercase border border-border hover:border-foreground transition-colors">
+                  Clear date
+                </button>
+              )}
+              {CATEGORIES.map(cat => (
+                <button key={cat.id} onClick={() => toggleCategory(cat.id)}
+                  className={`h-9 px-3 text-xs font-medium uppercase tracking-wider border transition-colors ${selectedCategories.includes(cat.id) ? 'border-foreground bg-foreground text-background' : 'border-border hover:border-foreground'}`}>
+                  {cat.emoji} {cat.label}
+                </button>
               ))}
+              {selectedCategories.length > 0 && (
+                <button onClick={() => setSelectedCategories([])} className="h-9 px-3 text-xs font-medium uppercase border border-border hover:border-foreground transition-colors">
+                  Clear filters
+                </button>
+              )}
             </div>
-          )}
-        </div>
-      </section>
-    </div>
+          </div>
+        </section>
+
+        <section className="px-4 md:px-8 pb-16">
+          <div className="max-w-6xl mx-auto">
+            {loading ? (
+              <div className="text-center py-16 text-muted-foreground">Loading events...</div>
+            ) : error ? (
+              <div className="text-center py-16">
+                <p className="text-red-500 mb-2">Error loading events</p>
+                <p className="text-sm text-muted-foreground">{error}</p>
+                <button onClick={refetch} className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">
+                  Try Again
+                </button>
+              </div>
+            ) : filteredEvents.length === 0 ? (
+              <div className="text-center py-16">
+                <p className="text-muted-foreground mb-2">No events found</p>
+                <p className="text-sm text-muted-foreground">Try adjusting your filters or distance range in settings.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredEvents.map((event, i) => (
+                  <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${i * 0.05}s`, animationFillMode: 'both' }}>
+                    <EventCard event={event} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* Floating Action Button for Event Creation */}
+      <button
+        onClick={() => navigate('/create-event')}
+        className="fixed bottom-8 right-8 w-14 h-14 bg-black text-white rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 flex items-center justify-center group z-50"
+        aria-label="Create new event"
+      >
+        <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
+        <span className="absolute right-full mr-3 px-3 py-1 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
+          Create Event
+        </span>
+      </button>
+    </>
   );
 };
-
 export default Discover;
