@@ -20,7 +20,7 @@ jest.mock('lucide-react', () => ({
   Check: () => <div data-testid="check-icon" />,
 }));
 
-const mockUseAuthWithBackend = require('../../hooks/useAuthWithBackend');
+import * as useAuthWithBackend from '../../hooks/useAuthWithBackend';
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 // Test data
@@ -49,7 +49,7 @@ describe('Onboarding Component', () => {
     jest.clearAllMocks();
     
     // Mock useAuthWithBackend
-    mockUseAuthWithBackend.useAuthWithBackend = () => ({
+    (useAuthWithBackend.useAuthWithBackend as jest.Mock) = () => ({
       user: mockUser,
       fetchOnboardingStatus: jest.fn().mockResolvedValue(true),
     });

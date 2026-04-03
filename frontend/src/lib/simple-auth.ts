@@ -17,7 +17,7 @@ export const signInWithGoogleSimple = async () => {
   return data;
 };
 
-export const handleSimpleOAuthCallback = async (): Promise<{ success: boolean; user?: any; error?: string }> => {
+export const handleSimpleOAuthCallback = async (): Promise<{ success: boolean; user?: User; error?: string }> => {
   try {
     // Wait for session to establish
     await new Promise(resolve => setTimeout(resolve, 2000));

@@ -251,7 +251,7 @@ class ApiClient {
     created_at: string;
     updated_at: string;
   }> {
-    return this.request<any>('/api/auth/oauth/profile');
+    return this.request('/api/auth/oauth/profile');
   }
 
   async linkOAuthAccount(profile: {

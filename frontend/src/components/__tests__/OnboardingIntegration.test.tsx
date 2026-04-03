@@ -250,14 +250,14 @@ export const TestDataFactory = {
 // Test Utilities
 export const TestHelpers = {
   // Mock API responses
-  mockApiSuccess: (data: any) => Promise.resolve({ data }),
+  mockApiSuccess: <T,>(data: T) => Promise.resolve({ data }),
   mockApiError: (message: string) => Promise.reject(new Error(message)),
 
   // Wait for async operations
   waitFor: (ms: number) => new Promise(resolve => setTimeout(resolve, ms)),
 
   // Verify API call was made with correct data
-  verifyApiCall: (mockFn: any, expectedData: any) => {
+  verifyApiCall: (mockFn: jest.Mock, expectedData: unknown) => {
     expect(mockFn).toHaveBeenCalledWith(expectedData);
   }
 };
