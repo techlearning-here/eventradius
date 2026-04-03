@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { useEvents } from '@/hooks/useEvents';
-import { CalendarIcon, MapPin, Plus } from 'lucide-react';
+import { CalendarIcon, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CATEGORIES } from '@/data/cities';
@@ -217,18 +217,6 @@ const Discover = () => {
           </div>
         </section>
       </div>
-
-      {/* Floating Action Button for Event Creation */}
-      <button
-        onClick={() => navigate('/create-event')}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-black text-white rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 flex items-center justify-center group z-50"
-        aria-label="Create new event"
-      >
-        <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
-        <span className="absolute right-full mr-3 px-3 py-1 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
-          Create Event
-        </span>
-      </button>
     </>
   );
 };

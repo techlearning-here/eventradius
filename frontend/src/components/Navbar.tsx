@@ -17,7 +17,7 @@ export const Navbar: React.FC = () => {
     const links: { label: string; to?: string; onClick?: () => void }[] = [];
 
     if (user) {
-      // Role-based navigation (excluding signout)
+      // Role-based navigation (excluding signout and settings)
       if (role === 'user' || !role) {
         links.push({ label: 'Discover Events', to: '/discover' });
       }
@@ -25,14 +25,6 @@ export const Navbar: React.FC = () => {
       if (role === 'organizer') {
         links.push({ label: 'My Events', to: '/organizer' });
       }
-      
-      // Create Event - available to organizer and admin roles
-      if (role === 'organizer' || roles.includes('admin')) {
-        links.push({ label: 'Create Event', to: '/create-event' });
-      }
-      
-      // Always available
-      links.push({ label: 'Settings', to: '/settings' });
       
       if (roles.includes('admin')) {
         links.push({ label: 'Admin', to: '/admin-dashboard' });
@@ -42,6 +34,10 @@ export const Navbar: React.FC = () => {
       links.push({ label: 'Sign In', onClick: () => setIsAuthOpen(true) });
     }
     return links;
+  };
+
+  const shouldShowCreateEventButton = () => {
+    return user && (role === 'organizer' || roles.includes('admin'));
   };
 
   const links = navLinks();
@@ -67,18 +63,10 @@ export const Navbar: React.FC = () => {
                   if (link.to === '/discover') void setActiveRole('user');
                   if (link.to === '/organizer') void setActiveRole('organizer');
                 }}
-                className={`relative overflow-hidden bg-background text-foreground h-[34px] px-3 flex items-center text-[11px] font-medium uppercase border border-l-0 border-foreground leading-none group ${
-                  link.label === 'Create Event' 
-                    ? 'bg-green-500 text-white border-green-500' 
-                    : ''
-                }`}
+                className="relative overflow-hidden bg-background text-foreground h-[34px] px-3 flex items-center text-[11px] font-medium uppercase border border-l-0 border-foreground leading-none group"
               >
                 <span className="relative z-10">{link.label}</span>
-                <span className={`absolute inset-0 ${
-                  link.label === 'Create Event' 
-                    ? 'bg-green-600' 
-                    : 'bg-[hsl(295,100%,73%)]'
-                } translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out`} />
+                <span className="absolute inset-0 bg-[hsl(295,100%,73%)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
               </Link>
             ) : (
               <button key={link.label} onClick={link.onClick}
@@ -88,6 +76,16 @@ export const Navbar: React.FC = () => {
               </button>
             )
           ))}
+          {/* Create Event Button */}
+          {shouldShowCreateEventButton() && (
+            <button
+              onClick={() => navigate('/create-event')}
+              className="relative overflow-hidden bg-green-500 text-white h-[34px] px-3 flex items-center text-[11px] font-medium uppercase border border-l-0 border-green-500 leading-none group"
+            >
+              <span className="relative z-10">Create Event</span>
+              <span className="absolute inset-0 bg-green-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+            </button>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -129,11 +127,7 @@ export const Navbar: React.FC = () => {
                     if (canSwitchRole && link.to === '/discover') void setActiveRole('user');
                     if (canSwitchRole && link.to === '/organizer') void setActiveRole('organizer');
                   }}
-                  className={`flex-1 flex items-center justify-center text-[17px] font-medium uppercase border-b border-border tracking-[-0.34px] ${
-                    link.label === 'Create Event'
-                      ? 'text-green-500'
-                      : 'text-foreground'
-                  }`}
+                  className="flex-1 flex items-center justify-center text-[17px] font-medium uppercase border-b border-border tracking-[-0.34px]"
                 >
                   {link.label}
                 </Link>

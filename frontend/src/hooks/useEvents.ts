@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient, type Event, type EventCreate, type EventUpdate } from '@/integrations/backend/api';
 
+export type { EventCreate } from '@/integrations/backend/api';
+
 export const useEvents = (params: {
   limit?: number;
   offset?: number;

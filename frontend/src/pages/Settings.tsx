@@ -23,6 +23,12 @@ const Settings = () => {
   const [citySearch, setCitySearch] = useState('');
   const [selectedCity, setSelectedCity] = useState<typeof CITIES[0] | null>(null);
   const [distanceRange, setDistanceRange] = useState(25);
+  
+  // Onboarding preferences state
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [emailUpdates, setEmailUpdates] = useState(true);
+  const [privacyLevel, setPrivacyLevel] = useState<'public' | 'friends' | 'private'>('public');
 
   useEffect(() => {
     if (!user) {
@@ -45,6 +51,13 @@ const Settings = () => {
           setHasKids(data.has_kids || false);
           setInterests((data.interests as string[]) || []);
           setDistanceRange(data.distance_range || 25);
+          
+          // Load onboarding preferences
+          setOnboardingCompleted(data.onboarding_completed || false);
+          setNotificationsEnabled(data.notifications_enabled !== false);
+          setEmailUpdates(data.email_updates !== false);
+          setPrivacyLevel((data.privacy_level as 'public' | 'friends' | 'private') || 'public');
+          
           if (data.city) {
             setCitySearch(data.city);
             const match = CITIES.find(c => `${c.name}, ${c.state}` === data.city);
@@ -106,6 +119,12 @@ const Settings = () => {
         latitude: selectedCity?.lat || null,
         longitude: selectedCity?.lng || null,
         distance_range: distanceRange,
+        
+        // Save onboarding preferences
+        onboarding_completed: onboardingCompleted,
+        notifications_enabled: notificationsEnabled,
+        email_updates: emailUpdates,
+        privacy_level: privacyLevel,
       });
 
       toast.success('Profile and preferences updated!');
@@ -253,6 +272,75 @@ const Settings = () => {
                 ))}
               </div>
             )}
+          </div>
+        </section>
+
+        {/* Onboarding Preferences */}
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold mb-4">Onboarding Preferences</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Onboarding Completed</label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setOnboardingCompleted(true)}
+                  className={`px-3 py-1.5 text-sm border rounded transition-colors ${
+                    onboardingCompleted 
+                      ? 'border-foreground bg-foreground text-background' 
+                      : 'border-border hover:border-foreground'
+                  }`}
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={() => setOnboardingCompleted(false)}
+                  className={`px-3 py-1.5 text-sm border rounded transition-colors ${
+                    !onboardingCompleted 
+                      ? 'border-foreground bg-foreground text-background' 
+                      : 'border-border hover:border-foreground'
+                  }`}
+                >
+                  No
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium mb-2">
+                <input
+                  type="checkbox"
+                  checked={notificationsEnabled}
+                  onChange={(e) => setNotificationsEnabled(e.target.checked)}
+                  className="w-4 h-4 text-foreground"
+                />
+                Enable Notifications
+              </label>
+            </div>
+            
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium mb-2">
+                <input
+                  type="checkbox"
+                  checked={emailUpdates}
+                  onChange={(e) => setEmailUpdates(e.target.checked)}
+                  className="w-4 h-4 text-foreground"
+                />
+                Email Updates
+              </label>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">Privacy Level</label>
+              <select
+                value={privacyLevel}
+                onChange={(e) => setPrivacyLevel(e.target.value as 'public' | 'friends' | 'private')}
+                className="w-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground"
+              >
+                <option value="public">Public - Everyone can see my profile</option>
+                <option value="friends">Friends - Only friends can see my profile</option>
+                <option value="private">Private - Only I can see my profile</option>
+              </select>
+            </div>
           </div>
         </section>
 
