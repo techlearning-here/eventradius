@@ -219,7 +219,7 @@ cp frontend/.env.example frontend/.env
 # NEVER commit real credentials to the repository!
 ```
 
-## �🛡️ Pre-commit Checks
+## �️ Pre-commit Checks
 
 To avoid CI failures and security issues, this project includes pre-commit hooks that automatically run before each push. These hooks catch common issues early:
 
@@ -235,9 +235,13 @@ To avoid CI failures and security issues, this project includes pre-commit hooks
 pip install pre-commit
 pre-commit install
 
-# Or install from requirements
-pip install -r requirements.txt  # Includes pre-commit
-pre-commit install
+# Install gitleaks binary (security scanning)
+# macOS: brew install gitleaks
+# Linux: wget https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64
+# Or: https://github.com/gitleaks/gitleaks#install
+
+# Or use the automated setup script
+./setup-dev.sh
 ```
 
 ### Manual Usage:

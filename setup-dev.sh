@@ -36,6 +36,27 @@ if [ -d "backend" ]; then
     echo "Installing pre-commit hooks..."
     pre-commit install
     
+    # Install gitleaks (Go binary)
+    echo "Installing gitleaks..."
+    if ! command -v gitleaks &> /dev/null; then
+        echo "Installing gitleaks binary..."
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS
+            if command -v brew &> /dev/null; then
+                brew install gitleaks
+            else
+                echo "Please install gitleaks manually: https://github.com/gitleaks/gitleaks#install"
+            fi
+        elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+            # Linux
+            wget https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64
+            chmod +x gitleaks-linux-amd64
+            sudo mv gitleaks-linux-amd64 /usr/local/bin/gitleaks
+        else
+            echo "Please install gitleaks manually: https://github.com/gitleaks/gitleaks#install"
+        fi
+    fi
+    
     # Initialize secrets baseline
     echo "Initializing secrets detection baseline..."
     detect-secrets scan --baseline .secrets.baseline || true

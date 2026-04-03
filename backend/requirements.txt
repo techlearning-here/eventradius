@@ -16,7 +16,6 @@ flake8==7.1.1
 isort==6.0.1
 pre-commit==3.8.0
 detect-secrets==1.4.0
-gitleaks==8.18.2
 
 # Testing dependencies
 pytest==8.3.4
