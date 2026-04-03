@@ -16,17 +16,17 @@ def test_datetime_import_fix():
         # If we get here, the import succeeded
         assert users is not None
         print("PASS: users.py imports successfully (datetime import fix verified)")
-        return True
     except ImportError as e:
         # Supabase dependency issue is expected
         if "storage3" in str(e) or "supabase" in str(e):
             print("WARN: users.py import failed (supabase deps; expected on Windows)")
-            return True  # This is expected due to missing Visual C++ build tools
-        print(f"FAIL: Failed to import users.py: {e}")
-        return False
+            assert True  # This is expected due to missing Visual C++ build tools
+        else:
+            print(f"FAIL: Failed to import users.py: {e}")
+            assert False, f"Failed to import users.py: {e}"
     except Exception as e:
         print(f"FAIL: Unexpected error importing users.py: {e}")
-        return False
+        assert False, f"Unexpected error importing users.py: {e}"
 
 
 def test_events_module_import():
@@ -36,17 +36,17 @@ def test_events_module_import():
 
         assert events is not None
         print("PASS: events.py imports successfully")
-        return True
     except ImportError as e:
         # Supabase dependency issue is expected
         if "storage3" in str(e) or "supabase" in str(e):
             print("WARN: events.py import failed (supabase deps; expected on Windows)")
-            return True  # This is expected due to missing Visual C++ build tools
-        print(f"FAIL: Failed to import events.py: {e}")
-        return False
+            assert True  # This is expected due to missing Visual C++ build tools
+        else:
+            print(f"FAIL: Failed to import events.py: {e}")
+            assert False, f"Failed to import events.py: {e}"
     except Exception as e:
         print(f"FAIL: Unexpected error importing events.py: {e}")
-        return False
+        assert False, f"Unexpected error importing events.py: {e}"
 
 
 def test_main_module_import():
@@ -56,17 +56,17 @@ def test_main_module_import():
 
         assert main is not None
         print("PASS: main.py imports successfully")
-        return True
     except ImportError as e:
         # Supabase dependency issue is expected
         if "storage3" in str(e) or "supabase" in str(e):
             print("WARN: main.py import failed (supabase deps; expected on Windows)")
-            return True  # This is expected due to missing Visual C++ build tools
-        print(f"FAIL: Failed to import main.py: {e}")
-        return False
+            assert True  # This is expected due to missing Visual C++ build tools
+        else:
+            print(f"FAIL: Failed to import main.py: {e}")
+            assert False, f"Failed to import main.py: {e}"
     except Exception as e:
         print(f"FAIL: Unexpected error importing main.py: {e}")
-        return False
+        assert False, f"Unexpected error importing main.py: {e}"
 
 
 if __name__ == "__main__":

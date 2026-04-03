@@ -194,15 +194,15 @@ class TestUserPreferences:
     def test_debug_preferences_endpoint(self, mock_get_table, authenticated_client):
         """Test the debug preferences endpoint"""
         mock_table = MagicMock()
-        mock_table.select.return_value.eq.return_value.execute.return_value = MagicMock(
-            data=[
-                {
-                    "user_id": "test-user-id",
-                    "onboarding_completed": True,
-                    "city": "Test City",
-                }
-            ]
-        )
+        mock_result = MagicMock()
+        mock_result.data = [
+            {
+                "user_id": "test-user-id",
+                "onboarding_completed": True,
+                "city": "Test City",
+            }
+        ]
+        mock_table.select.return_value.eq.return_value.execute.return_value = mock_result
         mock_get_table.return_value = mock_table
 
         response = authenticated_client.get("/api/users/debug/preferences")
