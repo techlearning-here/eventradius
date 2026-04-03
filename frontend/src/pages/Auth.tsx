@@ -1,16 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { SEOHead } from '@/components/SEOHead';
 import { getErrorMessage } from '@/lib/utils';
+import { Chrome } from 'lucide-react';
 
 const Auth = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -22,50 +19,27 @@ const Auth = () => {
         navigate('/');
       }
     });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate('/');
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGoogleSignUp = async () => {
     setLoading(true);
-
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        toast({
-          title: 'Success',
-          description: 'Logged in successfully',
-        });
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-          },
-        });
-
-        if (error) throw error;
-
-        toast({
-          title: 'Success',
-          description: 'Account created successfully',
-        });
-      }
+      toast({
+        title: 'Success',
+        description: 'Signed in with Google successfully!',
+      });
+      
+      // Redirect to home page after successful sign in
+      navigate('/');
     } catch (error: unknown) {
       toast({
         title: 'Error',
@@ -80,53 +54,27 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white px-4">
       <SEOHead 
-        title={isLogin ? 'Sign In' : 'Sign Up'}
-        description={isLogin ? 'Sign in to manage your events and registrations' : 'Create an account to manage events and register for upcoming events'}
+        title="Sign In with Google"
+        description="Sign in to manage your events and registrations"
       />
       <div className="w-full max-w-md space-y-8">
         <div>
           <h2 className="text-4xl font-normal text-[#1A1A1A] tracking-[-0.02em]">
-            {isLogin ? 'Sign In' : 'Sign Up'}
+            Sign In with Google
           </h2>
           <p className="mt-2 text-sm text-[#1A1A1A] opacity-50">
-            {isLogin ? 'Sign in to manage events' : 'Create an account to manage events'}
+            Sign in to manage your events and registrations
           </p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <Input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="border-[#1A1A1A] text-[#1A1A1A]"
-            />
-          </div>
-          <div>
-            <Input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="border-[#1A1A1A] text-[#1A1A1A]"
-            />
-          </div>
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#1A1A1A] text-white hover:bg-opacity-90"
-          >
-            {loading ? 'Loading...' : isLogin ? 'Sign In' : 'Sign Up'}
-          </Button>
-        </form>
-        <button
-          onClick={() => setIsLogin(!isLogin)}
-          className="text-sm text-[#1A1A1A] hover:opacity-70 transition-opacity"
+        
+        <Button
+          onClick={handleGoogleSignUp}
+          disabled={loading}
+          className="w-full bg-[#1A1A1A] text-white hover:bg-opacity-90 flex items-center justify-center gap-2 py-3"
         >
-          {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-        </button>
+          <Chrome className="w-5 h-5" />
+          {loading ? 'Signing in...' : 'Sign in with Google'}
+        </Button>
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ const Onboarding = () => {
   const [step, setStep] = useState(1);
   const [ageRange, setAgeRange] = useState('');
   const [hasKids, setHasKids] = useState(false);
+  const [isOrganizer, setIsOrganizer] = useState<boolean | null>(null);
   const [interests, setInterests] = useState<string[]>([]);
   const [citySearch, setCitySearch] = useState('');
   const [selectedCity, setSelectedCity] = useState<typeof CITIES[0] | null>(null);
@@ -30,7 +31,7 @@ const Onboarding = () => {
   };
 
   const handleComplete = async () => {
-    if (!user || !selectedCity || interests.length === 0) {
+    if (!user || !selectedCity || interests.length === 0 || isOrganizer === null) {
       toast.error('Please complete all fields');
       return;
     }
@@ -46,11 +47,18 @@ const Onboarding = () => {
         longitude: selectedCity.lng,
         distance_range: distanceRange,
         onboarding_completed: true,
+        is_organizer: isOrganizer,
       });
 
       await fetchOnboardingStatus(user.id);
       toast.success('Preferences saved!');
-      navigate('/discover');
+      
+      // Redirect based on organizer status
+      if (isOrganizer) {
+        navigate('/create-event');
+      } else {
+        navigate('/discover');
+      }
     } catch (err: unknown) {
       toast.error(getErrorMessage(err) || 'Failed to save preferences');
     } finally {
@@ -65,13 +73,65 @@ const Onboarding = () => {
       <div className="w-full max-w-lg">
         {/* Progress */}
         <div className="flex gap-2 mb-8">
-          {[1, 2, 3].map(s => (
+          {[1, 2, 3, 4].map(s => (
             <div key={s} className={`h-1 flex-1 ${s <= step ? 'bg-[hsl(295,100%,73%)]' : 'bg-foreground/10'} transition-colors`} />
           ))}
         </div>
 
-        {/* Step 1: Demographics */}
+        {/* Step 1: Organizer Question */}
         {step === 1 && (
+          <div className="animate-fade-in">
+            <h2 className="text-3xl font-bold mb-2">Are you an event organizer?</h2>
+            <p className="text-foreground/50 mb-8 text-sm">This helps us customize your experience.</p>
+
+            <div className="space-y-4 mb-8">
+              <button
+                onClick={() => setIsOrganizer(true)}
+                className={`w-full py-4 px-6 text-lg border-2 transition-all ${
+                  isOrganizer === true 
+                    ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10 text-[hsl(295,100%,73%)]' 
+                    : 'border-foreground/20 hover:border-[hsl(295,100%,73%)] hover:bg-[hsl(295,100%,73%)]/5'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full bg-[hsl(295,100%,73%)]/20 flex items-center justify-center">
+                    <span className="text-[hsl(295,100%,73%)]">🎯</span>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold">Yes, I create events</div>
+                    <div className="text-sm opacity-75">Access event creation tools and analytics</div>
+                  </div>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => setIsOrganizer(false)}
+                className={`w-full py-4 px-6 text-lg border-2 transition-all ${
+                  isOrganizer === false 
+                    ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10 text-[hsl(295,100%,73%)]' 
+                    : 'border-foreground/20 hover:border-[hsl(295,100%,73%)] hover:bg-[hsl(295,100%,73%)]/5'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full bg-foreground/10 flex items-center justify-center">
+                    <span>👤</span>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold">No, I discover events</div>
+                    <div className="text-sm opacity-75">Browse and join events near me</div>
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            <button onClick={() => setStep(2)} className="w-full py-4 bg-[hsl(295,100%,73%)] text-foreground font-semibold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[hsl(295,100%,78%)] transition-colors">
+              Next <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Step 2: Demographics */}
+        {step === 2 && (
           <div className="animate-fade-in">
             <h2 className="text-3xl font-bold mb-2">About you</h2>
             <p className="text-foreground/50 mb-8 text-sm">Help us personalize your event feed.</p>
@@ -105,24 +165,24 @@ const Onboarding = () => {
               ))}
             </div>
 
-            <button onClick={() => setStep(2)} className="w-full py-4 bg-[hsl(295,100%,73%)] text-foreground font-semibold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[hsl(295,100%,78%)] transition-colors">
+            <button onClick={() => setStep(3)} className="w-full py-4 bg-[hsl(295,100%,73%)] text-foreground font-semibold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[hsl(295,100%,78%)] transition-colors">
               Next <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        {/* Step 2: Interests */}
-        {step === 2 && (
+        {/* Step 3: Interests */}
+        {step === 3 && (
           <div className="animate-fade-in">
             <h2 className="text-3xl font-bold mb-2">Your interests</h2>
             <p className="text-foreground/50 mb-8 text-sm">Select categories you're interested in.</p>
 
-            <div className="grid grid-cols-2 gap-3 mb-8">
+            <div className="grid grid-cols-2 gap-2 mb-8">
               {CATEGORIES.map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => toggleInterest(cat.id)}
-                  className={`py-4 px-4 text-left border transition-colors flex items-center gap-3 ${interests.includes(cat.id) ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10' : 'border-foreground/20 hover:border-foreground/40'}`}
+                  className={`py-3 px-4 text-left border flex items-center gap-3 transition-colors ${interests.includes(cat.id) ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10' : 'border-foreground/20 hover:border-foreground/40'}`}
                 >
                   <span className="text-xl">{cat.emoji}</span>
                   <span className="text-sm font-medium">{cat.label}</span>
@@ -132,18 +192,18 @@ const Onboarding = () => {
             </div>
 
             <div className="flex gap-3">
-              <button onClick={() => setStep(1)} className="flex-1 py-4 border border-foreground/20 text-sm uppercase tracking-wider hover:bg-foreground/5 transition-colors flex items-center justify-center gap-2">
+              <button onClick={() => setStep(2)} className="flex-1 py-4 border border-foreground/20 text-sm uppercase tracking-wider hover:bg-foreground/5 transition-colors flex items-center justify-center gap-2">
                 <ChevronLeft className="w-4 h-4" /> Back
               </button>
-              <button onClick={() => setStep(3)} disabled={interests.length === 0} className="flex-1 py-4 bg-[hsl(295,100%,73%)] text-foreground font-semibold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[hsl(295,100%,78%)] transition-colors disabled:opacity-40">
+              <button onClick={() => setStep(4)} disabled={interests.length === 0} className="flex-1 py-4 bg-[hsl(295,100%,73%)] text-foreground font-semibold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[hsl(295,100%,78%)] transition-colors disabled:opacity-40">
                 Next <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
 
-        {/* Step 3: Location */}
-        {step === 3 && (
+        {/* Step 4: Location */}
+        {step === 4 && (
           <div className="animate-fade-in">
             <h2 className="text-3xl font-bold mb-2">Your location</h2>
             <p className="text-foreground/50 mb-8 text-sm">Choose your city and preferred distance range.</p>
@@ -187,7 +247,7 @@ const Onboarding = () => {
             </div>
 
             <div className="flex gap-3">
-              <button onClick={() => setStep(2)} className="flex-1 py-4 border border-foreground/20 text-sm uppercase tracking-wider hover:bg-foreground/5 transition-colors flex items-center justify-center gap-2">
+              <button onClick={() => setStep(3)} className="flex-1 py-4 border border-foreground/20 text-sm uppercase tracking-wider hover:bg-foreground/5 transition-colors flex items-center justify-center gap-2">
                 <ChevronLeft className="w-4 h-4" /> Back
               </button>
               <button onClick={handleComplete} disabled={!selectedCity || saving} className="flex-1 py-4 bg-[hsl(295,100%,73%)] text-foreground font-semibold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[hsl(295,100%,78%)] transition-colors disabled:opacity-40">
