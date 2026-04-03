@@ -110,7 +110,7 @@ def fetch_single_record(table_name: str, record_id: str):
         # If no records found, return a result with empty data
         if "PGRST116" in str(e) or "The result contains 0 rows" in str(e):
             logger.info(f"No record found for {record_id} in {table_name}")
-            return type('Result', (), {'data': None})()
+            return type("Result", (), {"data": None})()
         else:
             logger.error(f"Error fetching single record from {table_name}: {e}")
             raise

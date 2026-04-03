@@ -213,21 +213,22 @@ async def get_user_roles(user: dict = Depends(get_current_user)):
 
 
 @router.post("/me/roles")
-async def add_user_role(role_request: RoleRequest, user: dict = Depends(get_current_user)):
+async def add_user_role(
+    role_request: RoleRequest, user: dict = Depends(get_current_user)
+):
     """
     Add a role to the current user.
     """
     try:
         role = role_request.role
-        
+
         if not role:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Role is required"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Role is required"
             )
-        
+
         logger.info(f"Adding role {role} to user {user['id']}")
-        
+
         # Check if role already exists
         existing = (
             get_table("user_roles")
@@ -267,7 +268,7 @@ async def get_user_preferences(user: dict = Depends(get_current_user)):
         table = get_table("user_preferences")
         response = table.select("*").eq("user_id", user["id"]).execute()
         logger.info(f"Preferences response: {response}")
-        
+
         if not response.data:
             logger.info(f"No preferences found for user {user['id']}, creating default")
             # Create default preferences if none exist
@@ -286,7 +287,7 @@ async def get_user_preferences(user: dict = Depends(get_current_user)):
             insert_result = insert_record("user_preferences", default_prefs)
             logger.info(f"Insert result: {insert_result}")
             return default_prefs
-        
+
         return response.data[0]  # Return the first (and only) record
     except Exception as e:
         logger.error(f"Error fetching user preferences: {e}", exc_info=True)
@@ -305,7 +306,7 @@ async def update_user_preferences(
     """
     logger.info(f"Updating user preferences for user: {user['id']}")
     logger.info(f"Preferences data: {preferences}")
-    
+
     try:
         # Check if preferences exist using user_id (not id)
         logger.info(f"Checking if preferences exist for user: {user['id']}")
@@ -346,12 +347,14 @@ async def debug_user_preferences(user: dict = Depends(get_current_user)):
         table = get_table("user_preferences")
         result = table.select("*").eq("user_id", user["id"]).execute()
         logger.info(f"Debug: Raw result: {result}")
-        
+
         return {
             "user_id": user["id"],
             "preferences": result.data,
             "count": len(result.data) if result.data else 0,
-            "onboarding_completed": result.data[0].get("onboarding_completed") if result.data else None
+            "onboarding_completed": (
+                result.data[0].get("onboarding_completed") if result.data else None
+            ),
         }
     except Exception as e:
         logger.error(f"Debug error: {e}", exc_info=True)
@@ -365,7 +368,7 @@ async def debug_tables():
     """
     try:
         from config.database import get_table
-        
+
         # Check if user_preferences table exists
         try:
             result = get_table("user_preferences").select("*").limit(1).execute()
@@ -376,10 +379,10 @@ async def debug_tables():
             logger.error(f"user_preferences table error: {e}")
             table_exists = False
             table_data = str(e)
-        
+
         return {
             "user_preferences_exists": table_exists,
-            "user_preferences_data": table_data
+            "user_preferences_data": table_data,
         }
     except Exception as e:
         logger.error(f"Debug tables error: {e}", exc_info=True)

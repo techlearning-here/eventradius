@@ -36,8 +36,7 @@ class OAuthProfileResponse(BaseModel):
 
 @router.post("/oauth/profile", response_model=dict)
 async def create_or_update_oauth_profile(
-    profile: OAuthProfile,
-    user: dict = Depends(get_current_user)
+    profile: OAuthProfile, user: dict = Depends(get_current_user)
 ):
     """
     Create or update OAuth user profile.
@@ -45,28 +44,34 @@ async def create_or_update_oauth_profile(
     """
     try:
         supabase = SupabaseClient.get_client()
-        
+
         # Check if profile already exists
-        existing_response = supabase.table("profiles").select("*").eq("user_id", user["id"]).single()
-        
+        existing_response = (
+            supabase.table("profiles").select("*").eq("user_id", user["id"]).single()
+        )
+
         if existing_response.data:
             # Update existing profile with OAuth info
             update_data = {
                 "provider": profile.provider,
                 "provider_id": profile.provider_id,
-                "updated_at": "now()"
+                "updated_at": "now()",
             }
-            
+
             # Only update non-null fields
             if profile.full_name:
                 update_data["full_name"] = profile.full_name
             if profile.avatar_url:
                 update_data["avatar_url"] = profile.avatar_url
-            
-            supabase.table("profiles").update(update_data).eq("user_id", user["id"]).execute()
-            
-            logger.info(f"Updated OAuth profile for user {user['id']} with provider {profile.provider}")
-            
+
+            supabase.table("profiles").update(update_data).eq(
+                "user_id", user["id"]
+            ).execute()
+
+            logger.info(
+                f"Updated OAuth profile for user {user['id']} with provider {profile.provider}"
+            )
+
         else:
             # Create new profile
             profile_data = {
@@ -76,18 +81,20 @@ async def create_or_update_oauth_profile(
                 "full_name": profile.full_name,
                 "avatar_url": profile.avatar_url,
             }
-            
+
             supabase.table("profiles").insert(profile_data).execute()
-            
-            logger.info(f"Created OAuth profile for user {user['id']} with provider {profile.provider}")
-        
+
+            logger.info(
+                f"Created OAuth profile for user {user['id']} with provider {profile.provider}"
+            )
+
         return {"message": "Profile created/updated successfully"}
-        
+
     except Exception as e:
         logger.error(f"Error creating/updating OAuth profile: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create or update OAuth profile"
+            detail="Failed to create or update OAuth profile",
         )
 
 
@@ -98,72 +105,79 @@ async def get_oauth_profile(user: dict = Depends(get_current_user)):
     """
     try:
         supabase = SupabaseClient.get_client()
-        
-        response = supabase.table("profiles").select("*").eq("user_id", user["id"]).single()
-        
+
+        response = (
+            supabase.table("profiles").select("*").eq("user_id", user["id"]).single()
+        )
+
         if not response.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Profile not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
             )
-        
+
         return response.data
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error fetching OAuth profile: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch OAuth profile"
+            detail="Failed to fetch OAuth profile",
         )
 
 
 @router.post("/oauth/link")
 async def link_oauth_account(
-    profile: OAuthProfile,
-    user: dict = Depends(get_current_user)
+    profile: OAuthProfile, user: dict = Depends(get_current_user)
 ):
     """
     Link an OAuth account to an existing email account.
     """
     try:
         supabase = SupabaseClient.get_client()
-        
+
         # Check if OAuth provider_id is already linked to another account
-        existing_oauth = supabase.table("profiles").select("*").eq("provider_id", profile.provider_id).single()
-        
+        existing_oauth = (
+            supabase.table("profiles")
+            .select("*")
+            .eq("provider_id", profile.provider_id)
+            .single()
+        )
+
         if existing_oauth.data and existing_oauth.data["user_id"] != user["id"]:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="OAuth account is already linked to another user"
+                detail="OAuth account is already linked to another user",
             )
-        
+
         # Update current user's profile with OAuth info
         update_data = {
             "provider": profile.provider,
             "provider_id": profile.provider_id,
-            "updated_at": "now()"
+            "updated_at": "now()",
         }
-        
+
         if profile.full_name:
             update_data["full_name"] = profile.full_name
         if profile.avatar_url:
             update_data["avatar_url"] = profile.avatar_url
-        
-        supabase.table("profiles").update(update_data).eq("user_id", user["id"]).execute()
-        
+
+        supabase.table("profiles").update(update_data).eq(
+            "user_id", user["id"]
+        ).execute()
+
         logger.info(f"Linked OAuth account {profile.provider_id} to user {user['id']}")
-        
+
         return {"message": "OAuth account linked successfully"}
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error linking OAuth account: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to link OAuth account"
+            detail="Failed to link OAuth account",
         )
 
 
@@ -175,38 +189,40 @@ async def unlink_oauth_account(user: dict = Depends(get_current_user)):
     """
     try:
         supabase = SupabaseClient.get_client()
-        
+
         # Check if user has OAuth provider
-        profile_response = supabase.table("profiles").select("provider").eq("user_id", user["id"]).single()
-        
+        profile_response = (
+            supabase.table("profiles")
+            .select("provider")
+            .eq("user_id", user["id"])
+            .single()
+        )
+
         if not profile_response.data:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Profile not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
             )
-        
+
         if profile_response.data["provider"] == "email":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No OAuth account to unlink"
+                detail="No OAuth account to unlink",
             )
-        
+
         # Update profile to remove OAuth info
-        supabase.table("profiles").update({
-            "provider": "email",
-            "provider_id": None,
-            "updated_at": "now()"
-        }).eq("user_id", user["id"]).execute()
-        
+        supabase.table("profiles").update(
+            {"provider": "email", "provider_id": None, "updated_at": "now()"}
+        ).eq("user_id", user["id"]).execute()
+
         logger.info(f"Unlinked OAuth account from user {user['id']}")
-        
+
         return {"message": "OAuth account unlinked successfully"}
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error unlinking OAuth account: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to unlink OAuth account"
+            detail="Failed to unlink OAuth account",
         )
