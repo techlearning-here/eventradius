@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient, type Event, type EventCreate, type EventUpdate } from '@/integrations/backend/api';
 
 export const useEvents = (params: {
@@ -10,25 +10,85 @@ export const useEvents = (params: {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const fetchEvents = useCallback(async () => {
+  useEffect(() => {
+    // Cancel any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
+    const { signal } = abortControllerRef.current;
+
+    let isMounted = true;
+
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const fetchedEvents = await apiClient.getEvents(params);
+        if (isMounted && !signal.aborted) {
+          setEvents(fetchedEvents);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          // Request was aborted, don't show error
+          return;
+        }
+        if (isMounted && !signal.aborted) {
+          setError(err instanceof Error ? err.message : 'Failed to fetch events');
+        }
+      } finally {
+        if (isMounted && !signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchEvents();
+
+    return () => {
+      isMounted = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [JSON.stringify(params)]);
+
+  const refetch = useCallback(async () => {
+    // Cancel any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+    const { signal } = abortControllerRef.current;
+
     try {
       setLoading(true);
       setError(null);
       const fetchedEvents = await apiClient.getEvents(params);
-      setEvents(fetchedEvents);
+      if (!signal.aborted) {
+        setEvents(fetchedEvents);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch events');
+      if (err instanceof Error && err.name === 'AbortError') {
+        // Request was aborted, don't show error
+        return;
+      }
+      if (!signal.aborted) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch events');
+      }
     } finally {
-      setLoading(false);
+      if (!signal.aborted) {
+        setLoading(false);
+      }
     }
   }, [params]);
 
-  useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
-
-  return { events, loading, error, refetch: fetchEvents };
+  return { events, loading, error, refetch };
 };
 
 export const useEvent = (eventId: string) => {
@@ -36,7 +96,38 @@ export const useEvent = (eventId: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchEvent = useCallback(async () => {
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchEvent = async () => {
+      if (!eventId) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        const fetchedEvent = await apiClient.getEvent(eventId);
+        if (isMounted) {
+          setEvent(fetchedEvent);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to fetch event');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchEvent();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [eventId]);
+
+  const refetch = async () => {
     if (!eventId) return;
     
     try {
@@ -49,13 +140,9 @@ export const useEvent = (eventId: string) => {
     } finally {
       setLoading(false);
     }
-  }, [eventId]);
+  };
 
-  useEffect(() => {
-    fetchEvent();
-  }, [fetchEvent]);
-
-  return { event, loading, error, refetch: fetchEvent };
+  return { event, loading, error, refetch };
 };
 
 export const useEventActions = () => {
