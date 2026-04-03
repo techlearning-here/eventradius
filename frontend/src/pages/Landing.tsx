@@ -147,9 +147,57 @@ const Landing = () => {
       {/* Image Section above footer */}
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto">
-          <div className="relative overflow-hidden rounded-lg">
-            {/* Add your image here - replace with your actual image path */}
-            <img src="/your-image.jpg" alt="Event Radius" className="w-full h-auto object-cover" />
+          <div className="relative overflow-hidden rounded-2xl group">
+            {/* Main image with rounded edges and strong shadow for depth */}
+            <img
+              src="/your-image.jpg"
+              alt="Event Radius"
+              className="w-full h-auto object-cover rounded-2xl transition-transform duration-500 group-hover:scale-[1.01]"
+              style={{
+                boxShadow: 'inset 0 0 100px rgba(0,0,0,0.95)'
+              }}
+            />
+            
+            {/* Side gradient overlays - strong black fade */}
+            <div
+              className="absolute inset-y-0 left-0 w-2/5 z-10 pointer-events-none rounded-2xl"
+              style={{
+                background: 'linear-gradient(90deg, hsl(240 10% 3.9%) 0%, hsl(240 10% 3.9% / 0.9) 25%, hsl(240 10% 3.9% / 0.5) 50%, transparent 80%)'
+              }}
+            />
+            
+            <div
+              className="absolute inset-y-0 right-0 w-2/5 z-10 pointer-events-none rounded-2xl"
+              style={{
+                background: 'linear-gradient(270deg, hsl(240 10% 3.9%) 0%, hsl(240 10% 3.9% / 0.9) 25%, hsl(240 10% 3.9% / 0.5) 50%, transparent 80%)'
+              }}
+            />
+            
+            {/* Top gradient - very short length */}
+            <div
+              className="absolute inset-x-0 top-0 h-12 z-10 pointer-events-none rounded-2xl"
+              style={{
+                background: 'linear-gradient(180deg, hsl(240 10% 3.9%) 0%, hsl(240 10% 3.9% / 0.8) 40%, transparent 100%)'
+              }}
+            />
+            
+            {/* Bottom gradient - very short length */}
+            <div
+              className="absolute inset-x-0 bottom-0 h-12 z-10 pointer-events-none rounded-2xl"
+              style={{
+                background: 'linear-gradient(0deg, hsl(240 10% 3.9%) 0%, hsl(240 10% 3.9% / 0.8) 40%, transparent 100%)'
+              }}
+            />
+            
+            {/* Corner rounding gradient */}
+            <div
+              className="absolute inset-0 z-10 pointer-events-none rounded-2xl"
+              style={{
+                background: 'radial-gradient(circle at 50% 50%, transparent 30%, hsl(240 10% 3.9% / 0.6) 70%, hsl(240 10% 3.9%) 100%)',
+                maskImage: 'radial-gradient(circle at 50% 50%, black 40%, transparent 65%)',
+                WebkitMaskImage: 'radial-gradient(circle at 50% 50%, black 40%, transparent 65%)'
+              }}
+            />
             
             {/* Fallback placeholder while you add your image - only shows if image doesn't load */}
             {/* <div className="absolute inset-0 w-full h-64 bg-gradient-to-br from-[#ff6bff]/20 to-[#200,100%,60%]/20 rounded-lg flex items-center justify-center">
