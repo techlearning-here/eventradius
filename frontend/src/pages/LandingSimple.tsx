@@ -9,7 +9,7 @@ const LandingSimple = () => {
   return (
     <div className="min-h-screen bg-foreground text-primary-foreground">
       <SEOHead
-        title="Event radius — Hyper-Local Event Discovery"
+        title="Event Radius — Hyper-Local Event Discovery"
         description="Discover events near you based on your interests and location."
       />
 
@@ -19,7 +19,7 @@ const LandingSimple = () => {
           <div className="w-8 h-8 bg-[hsl(295,100%,73%)] rounded-full flex items-center justify-center">
             <Zap className="w-4 h-4 text-foreground" />
           </div>
-          <span className="text-lg font-semibold tracking-tight">Event radius</span>
+          <span className="text-lg font-semibold tracking-tight">Event Radius</span>
         </div>
         <button
           onClick={() => navigate('/auth')}

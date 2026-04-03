@@ -1,6 +1,6 @@
 # EventRadius — features learning guide
 
-This document distills **`Feature_plan.md`** (product vision, categories, future verticals) and **`Website_Prompt.md`** (functional spec for “Event radius” / EventRadius). Use it to learn what the product is meant to do and how pieces fit together.
+This document distills **`Feature_plan.md`** (product vision, categories, future verticals) and **`Website_Prompt.md`** (functional spec for "Event Radius" / EventRadius). Use it to learn what the product is meant to do and how pieces fit together.
 
 **Sources:** `docs/Feature_plan.md`, `docs/Website_Prompt.md`. For a shipped vs backlog checklist, see `docs/feature_list.md`.
 

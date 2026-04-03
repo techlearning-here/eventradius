@@ -1,5 +1,5 @@
 /**
- * Backend API client for Event radius.
+ * Backend API client for Event Radius.
  * This client replaces direct Supabase calls with backend API calls.
  */
 import { supabase } from '@/integrations/supabase/client';

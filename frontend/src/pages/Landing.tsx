@@ -36,7 +36,7 @@ const Landing = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEOHead
-        title="Event radius — Hyper-Local Event Discovery"
+        title="Event Radius — Hyper-Local Event Discovery"
         description="Discover events near you based on your interests and location. Find kid-friendly activities, arts, sports, and community events within your preferred distance."
       />
 
@@ -46,7 +46,7 @@ const Landing = () => {
           <div className="w-8 h-8 bg-[#ff6bff] rounded-full flex items-center justify-center">
             <Zap className="w-4 h-4 text-foreground" />
           </div>
-          <span className="text-lg font-semibold tracking-tight text-foreground">Event radius</span>
+          <span className="text-lg font-semibold tracking-tight text-foreground">Event Radius</span>
         </div>
         {user ? (
           <button
@@ -132,7 +132,7 @@ const Landing = () => {
       <section className="py-24 px-4 border-t border-primary-foreground/10 text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-6 text-foreground">Ready to explore?</h2>
         <p className="text-foreground/70 mb-10 max-w-lg mx-auto">
-          Join Event radius today and start discovering events that match your lifestyle.
+          Join Event Radius today and start discovering events that match your lifestyle.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <button onClick={handleDiscover} className="px-8 py-4 bg-[#ff6bff] text-black font-semibold text-sm uppercase tracking-wider hover:bg-[#e055ff] transition-colors">
@@ -149,7 +149,7 @@ const Landing = () => {
         <div className="max-w-4xl mx-auto">
           <div className="relative overflow-hidden rounded-lg">
             {/* Add your image here - replace with your actual image path */}
-            <img src="/your-image.jpg" alt="Event radius" className="w-full h-auto object-cover" />
+            <img src="/your-image.jpg" alt="Event Radius" className="w-full h-auto object-cover" />
             
             {/* Fallback placeholder while you add your image - only shows if image doesn't load */}
             {/* <div className="absolute inset-0 w-full h-64 bg-gradient-to-br from-[#ff6bff]/20 to-[#200,100%,60%]/20 rounded-lg flex items-center justify-center">
@@ -160,7 +160,7 @@ const Landing = () => {
       </section>
 
       <footer className="py-8 px-4 border-t border-primary-foreground/10 text-center text-xs text-foreground/30">
-        © {new Date().getFullYear()} Event radius. All rights reserved.
+        © {new Date().getFullYear()} Event Radius. All rights reserved.
       </footer>
 
       <AuthSheet isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} defaultRole={authRole} />
