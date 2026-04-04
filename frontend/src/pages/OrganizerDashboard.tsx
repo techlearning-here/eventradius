@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/integrations/backend/api';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { Navbar } from '@/components/Navbar';
 import { RoleSwitcher } from '@/components/RoleSwitcher';
@@ -75,22 +75,25 @@ const OrganizerDashboard = () => {
   }, [user, role]);
 
   const fetchEvents = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from('events')
-      .select('id, title, date, time, status, event_type, event_status, admin_remark, background_image_url, category, city')
-      .eq('created_by', user.id)
-      .order('target_date', { ascending: false });
-    setEvents((data as unknown as OrgEvent[]) || []);
-    setLoading(false);
+    try {
+      const events = await apiClient.getUserEvents();
+      setEvents(events.created || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      setEvents([]);
+    }
   };
 
   const fetchParticipants = async (eventId: string) => {
-    const { data } = await supabase
-      .from('event_participants')
-      .select('user_id, status, profiles:user_id(display_name)')
-      .eq('event_id', eventId);
-    setParticipants((data as unknown as ParticipantRow[]) || []);
+    try {
+      // For now, we'll skip participants fetching since backend endpoint doesn't exist yet
+      // TODO: Implement getEventParticipants in backend API
+      console.log('Participants fetching not implemented yet for event:', eventId);
+      setParticipants([]);
+    } catch (error) {
+      console.error('Error fetching participants:', error);
+      setParticipants([]);
+    }
   };
 
   const filteredCities = citySearch.length > 0 && !selectedCity
@@ -127,29 +130,21 @@ const OrganizerDashboard = () => {
       const [h, m] = startTime.split(':');
       targetDate.setHours(parseInt(h) || 0, parseInt(m) || 0);
 
-      const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', user.id).single();
+      const { data: profile } = await apiClient.getCurrentUserProfile();
 
-      const { error } = await supabase.from('events').insert({
+      const eventData = {
         title: title.trim(),
         description: description.trim(),
-        date: format(startDate, 'MMMM dd, yyyy'),
-        time: `${startTime} - ${endTime}`,
-        address: address.trim(),
-        background_image_url: publicUrl,
-        target_date: targetDate.toISOString(),
-        creator: profile?.display_name || user.email?.split('@')[0] || 'Organizer',
+        location: address.trim(),
+        start_time: targetDate.toISOString(),
+        end_time: new Date(targetDate.getTime() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours later
+        image_url: publicUrl,
         category,
-        kid_friendly: kidFriendly,
-        price: parseFloat(price) || 0,
-        latitude: selectedCity?.lat || null,
-        longitude: selectedCity?.lng || null,
-        city: selectedCity ? `${selectedCity.name}, ${selectedCity.state}` : null,
-        event_type: eventType,
-        event_status: eventType === 'preview' ? 'collecting_interest' : 'confirmed',
-        status: 'pending', // approval status
-      });
+        max_participants: null,
+        is_public: true,
+      };
 
-      if (error) throw error;
+      await apiClient.createEvent(eventData);
       toast.success('Event submitted for approval!');
       setShowForm(false);
       resetForm();
@@ -170,18 +165,26 @@ const OrganizerDashboard = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this event?')) return;
-    const { error } = await supabase.from('events').delete().eq('id', id);
-    if (error) toast.error(error.message);
-    else { toast.success('Event deleted'); fetchEvents(); }
+    try {
+      await apiClient.deleteEvent(id);
+      toast.success('Event deleted');
+      fetchEvents();
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Failed to delete event');
+    }
   };
 
   const handleConvertToStandard = async (event: OrgEvent) => {
     if (!confirm('Confirm & convert this Preview Event to a Standard Event? All participants and messages will be kept.')) return;
-    const { error } = await supabase.from('events')
-      .update({ event_type: 'standard', event_status: 'confirmed' })
-      .eq('id', event.id);
-    if (error) toast.error(error.message);
-    else { toast.success('Event converted to Standard!'); fetchEvents(); setSelectedEvent(null); }
+    try {
+      await apiClient.updateEvent(event.id, {
+        status: 'approved'
+      });
+      toast.success('Event converted to standard');
+      fetchEvents();
+    } catch (error) {
+      toast.error(getErrorMessage(error) || 'Failed to convert event');
+    }
   };
 
   if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;

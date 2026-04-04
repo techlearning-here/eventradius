@@ -33,18 +33,25 @@ export const useAuthWithBackend = () => {
 
   const fetchOnboardingStatus = useCallback(async (userId: string) => {
     try {
+      console.log('🔍 Fetching onboarding status for user:', userId);
       const preferences = await apiClient.getUserPreferences();
-      console.log('Raw preferences from API:', preferences);
-      console.log('onboarding_completed value:', preferences?.onboarding_completed);
-      console.log('is_organizer value:', preferences?.is_organizer);
+      console.log('🔍 Raw preferences from API:', preferences);
+      console.log('🔍 Available keys in preferences:', Object.keys(preferences || {}));
+      
       const completed = (preferences?.onboarding_completed as boolean | null) ?? null;
       const isOrganizer = (preferences?.is_organizer as boolean | null) ?? null;
+      
+      console.log('🔍 onboarding_completed value:', completed);
+      console.log('🔍 is_organizer value:', isOrganizer);
+      
       setOnboardingCompleted(completed);
 
       // If organizer preference is set, update roles accordingly
       if (isOrganizer === true && !roles.includes('organizer')) {
+        console.log('🔍 Adding organizer role based on preference');
         await addOrganizerRole();
       } else if (isOrganizer === false && !roles.includes('user')) {
+        console.log('🔍 Adding user role based on preference');
         await addUserRole();
       }
 

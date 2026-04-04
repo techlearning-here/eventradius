@@ -38,7 +38,7 @@ const Onboarding = () => {
 
     setSaving(true);
     try {
-      await apiClient.updateUserPreferences({
+      const preferencesData = {
         age_range: ageRange || null,
         has_kids: hasKids,
         interests,
@@ -48,7 +48,14 @@ const Onboarding = () => {
         distance_range: distanceRange,
         onboarding_completed: true,
         is_organizer: isOrganizer,
-      });
+      };
+      
+      console.log('🚀 Sending preferences to API:', preferencesData);
+      console.log('🚀 is_organizer value being sent:', isOrganizer);
+      
+      await apiClient.updateUserPreferences(preferencesData);
+      
+      console.log('✅ Preferences updated successfully');
 
       await fetchOnboardingStatus(user.id);
       toast.success('Preferences saved!');

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/integrations/backend/api';
 
 export type AppRole = 'admin' | 'user' | 'organizer';
 
@@ -28,36 +29,37 @@ export const useAuth = () => {
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
 
   const fetchOnboardingStatus = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('user_preferences')
-      .select('onboarding_completed')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    setOnboardingCompleted(data?.onboarding_completed ?? null);
-    return data?.onboarding_completed ?? null;
+    try {
+      const preferences = await apiClient.getUserPreferences();
+      const completed = (preferences?.onboarding_completed as boolean | null) ?? null;
+      setOnboardingCompleted(completed);
+      return completed;
+    } catch (error) {
+      console.error('Error fetching onboarding status:', error);
+      setOnboardingCompleted(null);
+      return null;
+    }
   }, []);
 
   const fetchRoles = useCallback(async (userId: string): Promise<AppRole[]> => {
-    const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', userId);
-    if (error || !data) {
+    try {
+      const response = await apiClient.getUserRoles();
+      const list = response.roles as AppRole[];
+      setRoles(list);
+      return list;
+    } catch (error) {
+      console.error('Error fetching roles:', error);
       setRoles([]);
       return [];
     }
-    const list = data.map((r) => r.role as AppRole);
-    setRoles(list);
-    return list;
   }, []);
 
   const ensureUserPreferencesRow = useCallback(async (userId: string) => {
-    const { data: existing } = await supabase
-      .from('user_preferences')
-      .select('user_id')
-      .eq('user_id', userId)
-      .maybeSingle();
-    if (!existing) {
-      await supabase.from('user_preferences').insert({ user_id: userId });
-      setOnboardingCompleted(false);
+    try {
+      await apiClient.getUserPreferences();
+    } catch (error) {
+      // If preferences don't exist, the backend will create default ones
+      console.log('User preferences will be created by backend if needed');
     }
   }, []);
 
@@ -82,20 +84,19 @@ export const useAuth = () => {
   const seedFirstRole = useCallback(
     async (userId: string, metadata: User['user_metadata']) => {
       const desiredRole = (metadata?.role as AppRole) || 'user';
-      const { error } = await supabase.from('user_roles').insert({ user_id: userId, role: desiredRole });
-      if (error) {
-        if (error.code !== '23505') return;
+      try {
+        await apiClient.addUserRole(desiredRole);
+        setRoles([desiredRole]);
+        if (desiredRole === 'user' || desiredRole === 'organizer') setActiveRoleUi(desiredRole);
+        if (desiredRole === 'user') {
+          await ensureUserPreferencesRow(userId);
+        }
+      } catch (error) {
+        // Role might already exist, fetch current roles
         await fetchRoles(userId);
-        return;
-      }
-      setRoles([desiredRole]);
-      if (desiredRole === 'user' || desiredRole === 'organizer') setActiveRoleUi(desiredRole);
-      if (desiredRole === 'user') {
-        await supabase.from('user_preferences').insert({ user_id: userId });
-        setOnboardingCompleted(false);
       }
     },
-    [fetchRoles]
+    [fetchRoles, ensureUserPreferencesRow]
   );
 
   const loadSession = useCallback(
@@ -103,7 +104,7 @@ export const useAuth = () => {
       setUser(sessionUser);
       let list = await fetchRoles(sessionUser.id);
       if (list.length === 0) {
-        await seedFirstRole(sessionUser, sessionUser.user_metadata);
+        await seedFirstRole(sessionUser.id, sessionUser.user_metadata);
         list = await fetchRoles(sessionUser.id);
       }
       syncActiveUiFromRoles(list);
@@ -127,26 +128,32 @@ export const useAuth = () => {
 
   const addOrganizerRole = useCallback(async () => {
     if (!user || roles.includes('organizer')) return { error: null as Error | null };
-    const { error } = await supabase.from('user_roles').insert({ user_id: user.id, role: 'organizer' });
-    if (error) return { error };
-    const next = await fetchRoles(user.id);
-    syncActiveUiFromRoles(next);
-    localStorage.setItem(ACTIVE_ROLE_KEY, 'organizer');
-    setActiveRoleUi('organizer');
-    return { error: null };
+    try {
+      await apiClient.addUserRole('organizer');
+      const next = await fetchRoles(user.id);
+      syncActiveUiFromRoles(next);
+      localStorage.setItem(ACTIVE_ROLE_KEY, 'organizer');
+      setActiveRoleUi('organizer');
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
   }, [user, roles, fetchRoles, syncActiveUiFromRoles]);
 
   const addUserRole = useCallback(async () => {
     if (!user || roles.includes('user')) return { error: null as Error | null };
-    const { error } = await supabase.from('user_roles').insert({ user_id: user.id, role: 'user' });
-    if (error) return { error };
-    await ensureUserPreferencesRow(user.id);
-    const next = await fetchRoles(user.id);
-    syncActiveUiFromRoles(next);
-    localStorage.setItem(ACTIVE_ROLE_KEY, 'user');
-    setActiveRoleUi('user');
-    await fetchOnboardingStatus(user.id);
-    return { error: null };
+    try {
+      await apiClient.addUserRole('user');
+      await ensureUserPreferencesRow(user.id);
+      const next = await fetchRoles(user.id);
+      syncActiveUiFromRoles(next);
+      localStorage.setItem(ACTIVE_ROLE_KEY, 'user');
+      setActiveRoleUi('user');
+      await fetchOnboardingStatus(user.id);
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
   }, [user, roles, fetchRoles, syncActiveUiFromRoles, ensureUserPreferencesRow, fetchOnboardingStatus]);
 
   const role = useMemo(

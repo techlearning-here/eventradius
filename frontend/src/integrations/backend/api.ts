@@ -84,6 +84,11 @@ class ApiClient {
     // Get auth token from Supabase
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
+    
+    console.log('🔍 API Request:', endpoint, options.method || 'GET');
+    console.log('🔍 Session exists:', !!session);
+    console.log('🔍 Token exists:', !!token);
+    console.log('🔍 Token length:', token?.length || 0);
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -92,6 +97,9 @@ class ApiClient {
 
     if (token) {
       headers.Authorization = `Bearer ${token}`;
+      console.log('🔍 Authorization header added');
+    } else {
+      console.log('🚫 No token available - request will be unauthenticated');
     }
 
     const response = await fetch(url, {

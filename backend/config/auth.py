@@ -39,7 +39,8 @@ class AuthService:
 
     def __init__(self, supabase_client: Client):
         self.supabase = supabase_client
-        self.jwt_secret = os.getenv("JWT_SECRET", "supabase_jwt_secret")
+        self.jwt_secret = os.getenv("JWT_SECRET_KEY", os.getenv("JWT_SECRET", "supabase_jwt_secret"))
+        self.jwt_algorithm = os.getenv("JWT_ALGORITHM", "HS256")
 
     def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
         """Verify JWT token and return payload"""
@@ -55,7 +56,7 @@ class AuthService:
             logger.error(f"Invalid token: {e}")
             return None
 
-    def get_current_user(self, token: str) -> Optional[Dict[str, Any]]:
+    def get_current_user_sync(self, token: str) -> Optional[Dict[str, Any]]:
         """Get current user from token"""
         payload = self.verify_token(token)
         if not payload:
@@ -78,16 +79,22 @@ class AuthService:
         self, credentials: HTTPAuthorizationCredentials = Depends(security)
     ) -> Dict[str, Any]:
         """Dependency to require authentication"""
+        logger.info(f"🔍 Auth: require_auth called")
+        
         token = credentials.credentials
-        user = self.get_current_user(token)
+        logger.info(f"🔍 Auth token: {token[:20] if token else 'None'}...")
+        
+        user = self.get_current_user_sync(token)
 
         if not user:
+            logger.warning("🚫 No user found from token")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authentication credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
+        logger.info(f"✅ User authenticated: {user.get('id', 'unknown')}")
         return user
 
     def require_admin(
@@ -128,12 +135,17 @@ auth_service = _AuthServiceProxy()
 # Convenience dependencies
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """FastAPI dependency to get current user"""
+    logger.info(f"🔍 get_current_user called with credentials: {credentials is not None}")
+    
     if credentials is None:
+        logger.warning("🚫 No credentials provided")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    logger.info(f"🔍 Credentials found, calling require_auth")
     return auth_service.require_auth(credentials)
 
 
@@ -174,6 +186,6 @@ def optional_auth(
         if credentials is None:
             return None
         token = credentials.credentials
-        return auth_service.get_current_user(token)
+        return auth_service.get_current_user_sync(token)
     except Exception:
         return None

@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 
 from config.auth import get_current_user
-from config.database import fetch_single_record, get_table, insert_record
+from config.database import get_table, insert_record
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/users", tags=["users"])
 
 # Pydantic models
 class UserProfile(BaseModel):
-    id: str
+    user_id: str
     email: EmailStr
     full_name: Optional[str] = None
     avatar_url: Optional[str] = None
@@ -37,42 +37,22 @@ class RoleRequest(BaseModel):
 
 
 # User endpoints
-@router.get("/me", response_model=UserProfile)
+# Test endpoint to verify routing works
+@router.get("/me/test")
+async def test_endpoint():
+    """Simple test endpoint"""
+    return {"message": "Test endpoint working", "timestamp": datetime.now().isoformat()}
+
+@router.get("/me")
 async def get_current_user_profile(user: dict = Depends(get_current_user)):
     """
     Get current user's profile.
     """
-    try:
-        logger.info(f"Fetching profile for user: {user['id']}")
-        # Fetch user profile from Supabase
-        response = fetch_single_record("profiles", user["id"])
-        logger.info(f"Profile response: {response}")
-
-        if response.data:
-            profile = response.data
-        else:
-            # Create default profile if doesn't exist
-            logger.info(f"Creating default profile for user: {user['id']}")
-            profile = {
-                "id": user["id"],
-                "email": user.get("email", ""),
-                "full_name": user.get("name", ""),
-                "avatar_url": None,
-                "bio": None,
-                "created_at": datetime.now().isoformat(),
-            }
-
-            # Insert default profile
-            logger.info(f"Inserting default profile: {profile}")
-            get_table("profiles").insert(profile).execute()
-
-        return profile
-    except Exception as e:
-        logger.error(f"Error fetching user profile: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch user profile",
-        )
+    logger.info(f"🔍 /api/users/me endpoint called")
+    logger.info(f"🔍 User object received: {user}")
+    
+    # Temporary simple response to test if endpoint works
+    return {"message": "Profile endpoint working", "user_id": user["id"]}
 
 
 @router.put("/me", response_model=UserProfile)
@@ -89,9 +69,10 @@ async def update_current_user_profile(
 
         if not update_data:
             # Return current profile
-            response = fetch_single_record("profiles", user["id"])
-            if response.data:
-                return response.data
+            table = get_table("profiles")
+            response = table.select("*").eq("user_id", user["id"]).execute()
+            if response.data and len(response.data) > 0:
+                return response.data[0]
             else:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
@@ -99,7 +80,7 @@ async def update_current_user_profile(
 
         # Update profile
         response = (
-            get_table("profiles").update(update_data).eq("id", user["id"]).execute()
+            get_table("profiles").update(update_data).eq("user_id", user["id"]).execute()
         )
 
         if not response.data:
@@ -126,14 +107,15 @@ async def get_user_profile(user_id: str):
     Get a user's public profile.
     """
     try:
-        response = fetch_single_record("profiles", user_id)
+        table = get_table("profiles")
+        response = table.select("*").eq("user_id", user_id).execute()
 
-        if not response.data:
+        if not response.data or len(response.data) == 0:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
 
-        return response.data
+        return response.data[0]
     except HTTPException:
         raise
     except Exception as e:
@@ -282,6 +264,7 @@ async def get_user_preferences(user: dict = Depends(get_current_user)):
                 "longitude": None,
                 "distance_range": 25,
                 "onboarding_completed": False,
+                "is_organizer": False,
             }
             logger.info(f"Creating default preferences: {default_prefs}")
             insert_result = insert_record("user_preferences", default_prefs)
@@ -306,6 +289,12 @@ async def update_user_preferences(
     """
     logger.info(f"Updating user preferences for user: {user['id']}")
     logger.info(f"Preferences data: {preferences}")
+    
+    # Debug: Check if is_organizer is in the preferences
+    if 'is_organizer' in preferences:
+        logger.info(f"is_organizer found in preferences: {preferences['is_organizer']}")
+    else:
+        logger.info("is_organizer NOT found in preferences data")
 
     try:
         # Check if preferences exist using user_id (not id)
@@ -313,6 +302,24 @@ async def update_user_preferences(
         table = get_table("user_preferences")
         existing_result = table.select("*").eq("user_id", user["id"]).execute()
         logger.info(f"Existing preferences result: {existing_result}")
+        
+        # Debug: Check what columns exist in the returned data
+        if existing_result.data:
+            logger.info(f"Existing preferences keys: {list(existing_result.data[0].keys()) if existing_result.data else 'No data'}")
+            logger.info(f"Full existing preferences: {existing_result.data[0]}")
+            
+            # Ensure is_organizer field exists, add with default if missing
+            if 'is_organizer' not in existing_result.data[0]:
+                logger.info("is_organizer field missing from DB response, adding with default false")
+                existing_result.data[0]['is_organizer'] = False
+            else:
+                logger.info(f"is_organizer exists in DB: {existing_result.data[0]['is_organizer']}")
+                # Handle NULL values by converting to false
+                if existing_result.data[0]['is_organizer'] is None:
+                    logger.info("Converting NULL is_organizer to false")
+                    existing_result.data[0]['is_organizer'] = False
+        else:
+            logger.info("No existing preferences found")
 
         if existing_result.data:
             # Update existing - use user_id to filter, not id
