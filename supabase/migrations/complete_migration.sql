@@ -12,7 +12,11 @@
 -- =====================================================
 
 -- Create app_role enum for role-based access control
-CREATE TYPE IF NOT EXISTS public.app_role AS ENUM ('admin', 'user', 'organizer');
+DO $$ BEGIN
+    CREATE TYPE public.app_role AS ENUM ('admin', 'user', 'organizer');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- =====================================================
 -- 2. CORE TABLES
@@ -335,132 +339,202 @@ ALTER TABLE IF EXISTS public.event_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.event_audit ENABLE ROW LEVEL SECURITY;
 
 -- 5.2 Profiles RLS policies
-CREATE POLICY IF NOT EXISTS "Profiles are viewable by everyone"
-ON public.profiles
-FOR SELECT
-USING (true);
+DO $$ BEGIN
+    CREATE POLICY "Profiles are viewable by everyone"
+    ON public.profiles
+    FOR SELECT
+    USING (true);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can update their own profile"
-ON public.profiles
-FOR UPDATE
-USING (auth.uid() = user_id);
+DO $$ BEGIN
+    CREATE POLICY "Users can update their own profile"
+    ON public.profiles
+    FOR UPDATE
+    USING (auth.uid() = user_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can insert their own profile"
-ON public.profiles
-FOR INSERT
-WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+    CREATE POLICY "Users can insert their own profile"
+    ON public.profiles
+    FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- 5.3 User Roles RLS policies
-CREATE POLICY IF NOT EXISTS "Users can view their own roles"
-ON public.user_roles
-FOR SELECT
-TO authenticated
-USING (auth.uid() = user_id);
+DO $$ BEGIN
+    CREATE POLICY "Users can view their own roles"
+    ON public.user_roles
+    FOR SELECT
+    TO authenticated
+    USING (auth.uid() = user_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Only admins can manage roles"
-ON public.user_roles
-FOR ALL
-TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = auth.uid() AND role = 'admin'
-  )
-);
+DO $$ BEGIN
+    CREATE POLICY "Only admins can manage roles"
+    ON public.user_roles
+    FOR ALL
+    TO authenticated
+    USING (public.has_role(auth.uid(), 'admin'));
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- 5.4 Events RLS policies
-CREATE POLICY IF NOT EXISTS "Events are viewable by everyone"
-ON public.events
-FOR SELECT
-USING (true);
+DO $$ BEGIN
+    CREATE POLICY "Events are viewable by everyone"
+    ON public.events
+    FOR SELECT
+    USING (true);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can create events"
-ON public.events
-FOR INSERT
-WITH CHECK (auth.uid() = organizer_id);
+DO $$ BEGIN
+    CREATE POLICY "Users can create events"
+    ON public.events
+    FOR INSERT
+    WITH CHECK (auth.uid() = organizer_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Organizers can update their events"
-ON public.events
-FOR UPDATE
-USING (auth.uid() = organizer_id);
+DO $$ BEGIN
+    CREATE POLICY "Organizers can update their events"
+    ON public.events
+    FOR UPDATE
+    USING (auth.uid() = organizer_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Organizers can delete their events"
-ON public.events
-FOR DELETE
-USING (auth.uid() = organizer_id);
+DO $$ BEGIN
+    CREATE POLICY "Organizers can delete their events"
+    ON public.events
+    FOR DELETE
+    USING (auth.uid() = organizer_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- 5.5 User Preferences RLS policies
-CREATE POLICY IF NOT EXISTS "Users can view own prefs"
-ON public.user_preferences
-FOR SELECT
-TO authenticated
-USING (auth.uid() = user_id);
+DO $$ BEGIN
+    CREATE POLICY "Users can view own prefs"
+    ON public.user_preferences
+    FOR SELECT
+    TO authenticated
+    USING (auth.uid() = user_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can insert own prefs"
-ON public.user_preferences
-FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+    CREATE POLICY "Users can insert own prefs"
+    ON public.user_preferences
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = user_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can update own prefs"
-ON public.user_preferences
-FOR UPDATE
-TO authenticated
-USING (auth.uid() = user_id);
+DO $$ BEGIN
+    CREATE POLICY "Users can update own prefs"
+    ON public.user_preferences
+    FOR UPDATE
+    TO authenticated
+    USING (auth.uid() = user_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Admins can view all prefs"
-ON public.user_preferences
-FOR SELECT
-TO authenticated
-USING (public.has_role(auth.uid(), 'admin'));
+DO $$ BEGIN
+    CREATE POLICY "Admins can view all prefs"
+    ON public.user_preferences
+    FOR SELECT
+    TO authenticated
+    USING (public.has_role(auth.uid(), 'admin'));
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- 5.6 Event Participants RLS policies
-CREATE POLICY IF NOT EXISTS "Users can view their own participations"
-ON public.event_participants
-FOR SELECT
-TO authenticated
-USING (auth.uid() = user_id);
+DO $$ BEGIN
+    CREATE POLICY "Users can view their own participations"
+    ON public.event_participants
+    FOR SELECT
+    TO authenticated
+    USING (auth.uid() = user_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can insert their own participations"
-ON public.event_participants
-FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+    CREATE POLICY "Users can insert their own participations"
+    ON public.event_participants
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = user_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Users can delete their own participations"
-ON public.event_participants
-FOR DELETE
-TO authenticated
-USING (auth.uid() = user_id);
+DO $$ BEGIN
+    CREATE POLICY "Users can delete their own participations"
+    ON public.event_participants
+    FOR DELETE
+    TO authenticated
+    USING (auth.uid() = user_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Event organizers can view all participants"
-ON public.event_participants
-FOR SELECT
-TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM public.events e
-    WHERE e.id = event_id AND e.organizer_id = auth.uid()
-  )
-);
+DO $$ BEGIN
+    CREATE POLICY "Event organizers can view all participants"
+    ON public.event_participants
+    FOR SELECT
+    TO authenticated
+    USING (EXISTS (
+        SELECT 1 FROM public.events e 
+        WHERE e.id = event_participants.event_id 
+        AND e.organizer_id = auth.uid()
+    ));
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- 5.7 Audit Table RLS policies
-CREATE POLICY IF NOT EXISTS "Users can view audit logs for their events"
-ON public.event_audit
-FOR SELECT
-TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM public.events e
-    WHERE e.id = event_id AND e.organizer_id = auth.uid()
-  )
-);
+DO $$ BEGIN
+    CREATE POLICY "Users can view audit logs for their events"
+    ON public.event_audit
+    FOR SELECT
+    TO authenticated
+    USING (
+      EXISTS (
+        SELECT 1 FROM public.events e
+        WHERE e.id = event_id AND e.organizer_id = auth.uid()
+      )
+    );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Admins can view all audit logs"
-ON public.event_audit
-FOR SELECT
-TO authenticated
-USING (public.has_role(auth.uid(), 'admin'));
+DO $$ BEGIN
+    CREATE POLICY "Admins can view all audit logs"
+    ON public.event_audit
+    FOR SELECT
+    TO authenticated
+    USING (public.has_role(auth.uid(), 'admin'));
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- =====================================================
 -- 6. VIEWS FOR COMMON QUERIES

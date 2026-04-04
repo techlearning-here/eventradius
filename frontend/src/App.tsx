@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Routes, Route } from "react-router-dom";
 import RoleBasedLanding from "./pages/RoleBasedLanding";
+import Landing from "./pages/Landing";
 import Discover from "./pages/Discover";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
