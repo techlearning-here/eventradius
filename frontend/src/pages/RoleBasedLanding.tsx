@@ -50,7 +50,7 @@ const RoleBasedLanding = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEOHead title="Welcome" description="Your personalized event experience" />
-      
+
       <div className="flex flex-col lg:flex-row min-h-screen">
         {/* Left side - Welcome message */}
         <div className="flex-1 lg:flex-1 bg-gradient-to-br from-[hsl(295,100%,73%)]/5 to-[hsl(295,100%,78%)]/10 p-8 lg:p-12 flex items-center justify-center">
@@ -73,7 +73,7 @@ const RoleBasedLanding = () => {
                 </>
               )}
             </p>
-            
+
             <div className="flex flex-col lg:flex-row gap-4">
               {hasOrganizerRole && (
                 <button
@@ -84,7 +84,7 @@ const RoleBasedLanding = () => {
                   Create Event
                 </button>
               )}
-              
+
               {hasUserRole && (
                 <button
                   onClick={() => navigate('/discover')}
@@ -94,7 +94,7 @@ const RoleBasedLanding = () => {
                   Discover Events
                 </button>
               )}
-              
+
               {!hasOrganizerRole && !hasUserRole && (
                 <button
                   onClick={() => navigate('/discover')}
@@ -120,7 +120,7 @@ const RoleBasedLanding = () => {
                 <>Get Started</>
               )}
             </h2>
-            
+
             <div className="grid md:grid-cols-2 gap-6">
               {hasOrganizerRole && (
                 <>
@@ -139,7 +139,7 @@ const RoleBasedLanding = () => {
                       Go to Creator
                     </button>
                   </div>
-                  
+
                   <div className="p-6 border border-foreground/10 rounded-lg">
                     <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                       <Calendar className="w-5 h-5 text-[hsl(295,100%,73%)]" />
@@ -157,7 +157,7 @@ const RoleBasedLanding = () => {
                   </div>
                 </>
               )}
-              
+
               {hasUserRole && (
                 <>
                   <div className="p-6 border border-foreground/10 rounded-lg">
@@ -175,7 +175,7 @@ const RoleBasedLanding = () => {
                       Start Discovering
                     </button>
                   </div>
-                  
+
                   <div className="p-6 border border-foreground/10 rounded-lg">
                     <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                       <Users className="w-5 h-5 text-[hsl(295,100%,73%)]" />
@@ -193,13 +193,13 @@ const RoleBasedLanding = () => {
                   </div>
                 </>
               )}
-              
+
               {!hasOrganizerRole && !hasUserRole && (
                 <div className="p-6 border border-foreground/10 rounded-lg">
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     <Users className="w-5 h-5 text-[hsl(295,100%,73%)]" />
-                      Get Started
-                    </h3>
+                    Get Started
+                  </h3>
                     <p className="text-muted-foreground mb-4">
                       Choose how you'd like to use EventRadius.
                     </p>
@@ -218,7 +218,6 @@ const RoleBasedLanding = () => {
                       </button>
                     </div>
                   </div>
-                </>
               )}
             </div>
           </div>

@@ -103,7 +103,7 @@ export const useEvent = (eventId: string) => {
 
     const fetchEvent = async () => {
       if (!eventId) return;
-      
+
       try {
         setLoading(true);
         setError(null);
@@ -131,7 +131,7 @@ export const useEvent = (eventId: string) => {
 
   const refetch = async () => {
     if (!eventId) return;
-    
+
     try {
       setLoading(true);
       setError(null);

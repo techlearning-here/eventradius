@@ -40,26 +40,26 @@ export interface UserProfile {
 
 class BackendClient {
   private baseUrl: string;
-  
+
   constructor() {
     this.baseUrl = BACKEND_URL;
   }
-  
+
   private async getAuthHeader(): Promise<HeadersInit> {
     const { data: { session } } = await supabase.auth.getSession();
-    
+
     if (session?.access_token) {
       return {
         'Authorization': `Bearer ${session.access_token}`,
         'Content-Type': 'application/json',
       };
     }
-    
+
     return {
       'Content-Type': 'application/json',
     };
   }
-  
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -67,7 +67,7 @@ class BackendClient {
     try {
       const headers = await this.getAuthHeader();
       const url = `${this.baseUrl}${endpoint}`;
-      
+
       const response = await fetch(url, {
         ...options,
         headers: {
@@ -75,14 +75,14 @@ class BackendClient {
           ...options.headers,
         },
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         return {
           error: `HTTP ${response.status}: ${errorText || response.statusText}`,
         };
       }
-      
+
       const data = await response.json();
       return { data };
     } catch (error) {
@@ -92,12 +92,12 @@ class BackendClient {
       };
     }
   }
-  
+
   // Health check
   async healthCheck(): Promise<ApiResponse<{ status: string; database: string }>> {
     return this.request('/health');
   }
-  
+
   // Events
   async getEvents(params?: {
     limit?: number;
@@ -106,70 +106,70 @@ class BackendClient {
     is_public?: boolean;
   }): Promise<ApiResponse<Event[]>> {
     const queryParams = new URLSearchParams();
-    
+
     if (params?.limit) queryParams.set('limit', params.limit.toString());
     if (params?.offset) queryParams.set('offset', params.offset.toString());
     if (params?.category) queryParams.set('category', params.category);
     if (params?.is_public !== undefined) queryParams.set('is_public', params.is_public.toString());
-    
+
     const queryString = queryParams.toString();
     const endpoint = `/api/events${queryString ? `?${queryString}` : ''}`;
-    
+
     return this.request<Event[]>(endpoint);
   }
-  
+
   async getEvent(id: string): Promise<ApiResponse<Event>> {
     return this.request<Event>(`/api/events/${id}`);
   }
-  
+
   async createEvent(event: Omit<Event, 'id' | 'organizer_id' | 'created_at' | 'updated_at'>): Promise<ApiResponse<Event>> {
     return this.request<Event>('/api/events', {
       method: 'POST',
       body: JSON.stringify(event),
     });
   }
-  
+
   async updateEvent(id: string, event: Partial<Event>): Promise<ApiResponse<Event>> {
     return this.request<Event>(`/api/events/${id}`, {
       method: 'PUT',
       body: JSON.stringify(event),
     });
   }
-  
+
   async deleteEvent(id: string): Promise<ApiResponse<{ message: string }>> {
     return this.request<{ message: string }>(`/api/events/${id}`, {
       method: 'DELETE',
     });
   }
-  
+
   async participateEvent(id: string): Promise<ApiResponse<{ message: string }>> {
     return this.request<{ message: string }>(`/api/events/${id}/participate`, {
       method: 'POST',
     });
   }
-  
+
   async leaveEvent(id: string): Promise<ApiResponse<{ message: string }>> {
     return this.request<{ message: string }>(`/api/events/${id}/participate`, {
       method: 'DELETE',
     });
   }
-  
+
   // Users
   async getCurrentUser(): Promise<ApiResponse<UserProfile>> {
     return this.request<UserProfile>('/api/users/me');
   }
-  
+
   async updateCurrentUser(profile: Partial<UserProfile>): Promise<ApiResponse<UserProfile>> {
     return this.request<UserProfile>('/api/users/me', {
       method: 'PUT',
       body: JSON.stringify(profile),
     });
   }
-  
+
   async getUserProfile(id: string): Promise<ApiResponse<UserProfile>> {
     return this.request<UserProfile>(`/api/users/${id}`);
   }
-  
+
   async getUserEvents(): Promise<ApiResponse<{
     created: Event[];
     participating: Event[];
@@ -179,38 +179,38 @@ class BackendClient {
       participating: Event[];
     }>('/api/users/me/events');
   }
-  
+
   // Auth helpers
   async getSession() {
     const { data: { session } } = await supabase.auth.getSession();
     return session;
   }
-  
+
   async signIn(email: string, password: string) {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   async signUp(email: string, password: string) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   async signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   }
-  
+
   async resetPassword(email: string) {
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     if (error) throw error;

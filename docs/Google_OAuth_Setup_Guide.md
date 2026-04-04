@@ -83,7 +83,7 @@ Run the following SQL migration to add OAuth provider information to user profil
 
 ```sql
 -- Add OAuth provider fields to profiles table
-ALTER TABLE public.profiles 
+ALTER TABLE public.profiles
 ADD COLUMN IF NOT EXISTS provider TEXT DEFAULT 'email',
 ADD COLUMN IF NOT EXISTS provider_id TEXT,
 ADD COLUMN IF NOT EXISTS avatar_url TEXT,
@@ -93,8 +93,8 @@ ADD COLUMN IF NOT EXISTS full_name TEXT;
 CREATE INDEX IF NOT EXISTS idx_profiles_provider_id ON public.profiles(provider_id);
 
 -- Update existing profiles to have 'email' as default provider
-UPDATE public.profiles 
-SET provider = 'email' 
+UPDATE public.profiles
+SET provider = 'email'
 WHERE provider IS NULL;
 ```
 
@@ -150,7 +150,7 @@ export const signInWithGoogle = async () => {
       },
     },
   })
-  
+
   if (error) throw error
   return data
 }
@@ -192,20 +192,20 @@ class AuthService:
     def __init__(self, supabase_client: Client):
         self.supabase = supabase_client
         self.jwt_secret = os.getenv("JWT_SECRET")
-    
+
     def get_current_user(self, token: str) -> Optional[Dict[str, Any]]:
         """Get current user from JWT token"""
         try:
             payload = jwt.decode(token, options={"verify_signature": False})
             user_id = payload.get("sub")
             email = payload.get("email")
-            
+
             if not user_id:
                 return None
-                
+
             # Fetch user profile with OAuth info
             response = self.supabase.table("profiles").select("*").eq("user_id", user_id).single()
-            
+
             if response.data:
                 return {
                     "id": user_id,
@@ -214,13 +214,13 @@ class AuthService:
                     "full_name": response.data.get("full_name"),
                     "avatar_url": response.data.get("avatar_url"),
                 }
-            
+
             return {
                 "id": user_id,
                 "email": email,
                 "provider": "email",
             }
-            
+
         except Exception as e:
             logger.error(f"Error decoding token: {e}")
             return None
@@ -254,7 +254,7 @@ async def create_oauth_profile(
     try:
         # Check if profile already exists
         existing = supabase_client.table("profiles").select("*").eq("user_id", user["id"]).single()
-        
+
         if existing.data:
             # Update existing profile
             supabase_client.table("profiles").update({
@@ -273,9 +273,9 @@ async def create_oauth_profile(
                 "full_name": profile.full_name,
                 "avatar_url": profile.avatar_url,
             }).execute()
-            
+
         return {"message": "Profile created/updated successfully"}
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 ```
@@ -339,13 +339,13 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleAuthCallback = async () => {
       const { data, error } = await supabase.auth.getSession()
-      
+
       if (error) {
         console.error('Auth callback error:', error)
         navigate('/auth?error=auth_failed')
         return
       }
-      
+
       if (data.session) {
         // Create/update user profile if it's OAuth
         if (data.session.user.app_metadata.provider === 'google') {
@@ -367,7 +367,7 @@ const AuthCallback = () => {
             console.error('Profile creation error:', error)
           }
         }
-        
+
         navigate('/onboarding')
       } else {
         navigate('/auth')
@@ -432,7 +432,7 @@ import AuthCallback from "./pages/AuthCallback"
 
 ### Common Issues
 
-1. **Redirect URI Mismatch**: 
+1. **Redirect URI Mismatch**:
    - Ensure Google Cloud Console redirect URI matches Supabase callback URL
    - Check for trailing slashes and protocol (http vs https)
 

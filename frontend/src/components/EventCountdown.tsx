@@ -15,7 +15,7 @@ export const EventCountdown: React.FC<EventCountdownProps> = ({
   const calculateTimeLeft = (target: Date): TimeLeft => {
     const now = new Date().getTime();
     const distance = target.getTime() - now;
-    
+
     if (distance > 0) {
       return {
         days: Math.floor(distance / (1000 * 60 * 60 * 24)),
@@ -24,7 +24,7 @@ export const EventCountdown: React.FC<EventCountdownProps> = ({
         seconds: Math.floor(distance % (1000 * 60) / 1000)
       };
     }
-    
+
     return { days: 0, hours: 0, minutes: 0, seconds: 0 };
   };
 
@@ -33,7 +33,7 @@ export const EventCountdown: React.FC<EventCountdownProps> = ({
     const target = targetDate.getTime();
     const distance = target - now;
     const oneHour = 1000 * 60 * 60;
-    
+
     if (distance < -oneHour) return 'ended';
     if (distance >= -oneHour && distance <= oneHour) return 'happening';
     return 'upcoming';
@@ -57,8 +57,8 @@ export const EventCountdown: React.FC<EventCountdownProps> = ({
 
   if (status === 'happening') {
     return (
-      <RotatingBadge 
-        text="LIVE" 
+      <RotatingBadge
+        text="LIVE"
         showIcon={false}
         className="relative w-[80px] h-[80px] md:w-[100px] md:h-[100px] lg:w-[120px] lg:h-[120px]"
       />

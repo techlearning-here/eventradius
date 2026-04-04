@@ -60,13 +60,13 @@ erDiagram
     auth.users ||--o{ user_roles : "1:N"
     profiles ||--o{ events : "1:N"
     auth.users ||--o{ user_preferences : "1:1"
-    
+
     auth.users {
         uuid id PK
         text email
         jsonb raw_user_meta_data
     }
-    
+
     profiles {
         uuid id PK
         uuid user_id FK
@@ -78,14 +78,14 @@ erDiagram
         timestamptz created_at
         timestamptz updated_at
     }
-    
+
     user_roles {
         uuid id PK
         uuid user_id FK
         app_role role
         timestamptz created_at
     }
-    
+
     events {
         uuid id PK
         text title
@@ -102,7 +102,7 @@ erDiagram
         timestamptz created_at
         timestamptz updated_at
     }
-    
+
     user_preferences {
         uuid id PK
         uuid user_id FK

@@ -14,9 +14,9 @@ interface CategorySectionProps {
   onTagsChange: (value: string[]) => void;
 }
 
-export const CategorySection = ({ 
-  category, 
-  onCategoryChange, 
+export const CategorySection = ({
+  category,
+  onCategoryChange,
   maxParticipants,
   onMaxParticipantsChange,
   isPublic = true,
@@ -24,7 +24,7 @@ export const CategorySection = ({
   price = '',
   onPriceChange,
   tags = [],
-  onTagsChange 
+  onTagsChange
 }: CategorySectionProps) => {
   const [tagInput, setTagInput] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -141,7 +141,7 @@ export const CategorySection = ({
                 Add
               </button>
             </div>
-            
+
             {/* Tags Display */}
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-2">

@@ -18,7 +18,7 @@ export const signInWithGoogle = async () => {
       },
     },
   });
-  
+
   if (error) throw error;
   return data;
 };
@@ -30,7 +30,7 @@ export const signInWithGitHub = async () => {
       redirectTo: `${window.location.origin}/auth/callback`,
     },
   });
-  
+
   if (error) throw error;
   return data;
 };
@@ -138,28 +138,28 @@ export const unlinkOAuthAccount = async (): Promise<void> => {
 export const handleOAuthCallback = async (): Promise<void> => {
   // Wait a bit for the session to be established
   await new Promise(resolve => setTimeout(resolve, 1000));
-  
+
   const { data, error } = await supabase.auth.getSession();
-  
+
   if (error) {
     throw new Error('Auth callback error: ' + error.message);
   }
-  
+
   if (!data.session?.user) {
     throw new Error('No session found after OAuth callback');
   }
-  
+
   const user = data.session.user;
   console.log('OAuth user authenticated:', user);
-  
+
   // For now, just log the user data without trying to create profile
   // This will help us isolate if the issue is with OAuth or profile creation
-  
+
   // Check if this is an OAuth user
   if (user.app_metadata?.provider && user.app_metadata.provider !== 'email') {
     console.log('OAuth provider detected:', user.app_metadata.provider);
     console.log('User metadata:', user.user_metadata);
-    
+
     // Skip profile creation for now to test OAuth flow
     try {
       await createOrUpdateOAuthProfile({

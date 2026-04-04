@@ -123,9 +123,9 @@ const Admin = () => {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0] || !selectedEvent) return;
-    
+
     const file = e.target.files[0];
-    
+
     // Validate file type
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!validTypes.includes(file.type)) {
@@ -156,7 +156,7 @@ const Admin = () => {
       const fileExt = file.name.split('.').pop();
       // Organize uploads by user_id as required by storage policies
       const fileName = `${session.user.id}/${selectedEvent.id}-${Date.now()}.${fileExt}`;
-      
+
       const { error: uploadError } = await supabase.storage
         .from('event-images')
         .upload(fileName, file, { upsert: true });
@@ -168,7 +168,7 @@ const Admin = () => {
         .getPublicUrl(fileName);
 
       setSelectedEvent({ ...selectedEvent, background_image_url: publicUrl });
-      
+
       toast({
         title: 'Success',
         description: 'Image uploaded successfully',
@@ -189,7 +189,7 @@ const Admin = () => {
     if (!selectedEvent) return;
 
     // Convert datetime-local string to ISO timestamp
-    const targetDateISO = selectedEvent.target_date.includes('T') 
+    const targetDateISO = selectedEvent.target_date.includes('T')
       ? new Date(selectedEvent.target_date).toISOString()
       : selectedEvent.target_date;
 
@@ -254,7 +254,7 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-white p-8">
-      <SEOHead 
+      <SEOHead
         title="Admin Dashboard"
         description="Manage events and content for your event platform"
       />
@@ -355,9 +355,9 @@ const Admin = () => {
                 Background Image
               </label>
               {selectedEvent.background_image_url && (
-                <img 
-                  src={selectedEvent.background_image_url} 
-                  alt="Current background" 
+                <img
+                  src={selectedEvent.background_image_url}
+                  alt="Current background"
                   className="w-full h-32 object-cover mb-2 rounded"
                 />
               )}

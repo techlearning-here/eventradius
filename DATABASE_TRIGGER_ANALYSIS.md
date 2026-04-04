@@ -15,16 +15,16 @@ By leveraging database triggers, we can significantly reduce backend complexity 
 async def get_event(event_id: str):
     # 1. Fetch event data
     event = fetch_single_record("events", event_id)
-    
+
     # 2. Separate query for participant count
     participants_response = get_table("event_participants")\
         .select("*", count="exact")\
         .eq("event_id", event_id)\
         .execute()
-    
+
     # 3. Manual counting
     event["current_participants"] = participants_response.count or 0
-    
+
     return event
 
 # Manual status updates
@@ -32,15 +32,15 @@ async def get_event(event_id: str):
 async def create_event(event: EventCreate, user: dict):
     # 1. Insert event
     result = insert_record("events", event_data)
-    
+
     # 2. Manual participant count initialization
     created_event["current_participants"] = 0
-    
+
     # 3. Manual status calculation
     if start_time > now():
         created_event["status"] = "upcoming"
     # ... more manual logic
-    
+
     return created_event
 ```
 
@@ -54,7 +54,7 @@ async def get_event(event_id: str):
         .select("*")\
         .eq("id", event_id)\
         .execute()
-    
+
     return result.data[0]  # participant_count already included
 
 # Automatic everything
@@ -62,7 +62,7 @@ async def get_event(event_id: str):
 async def create_event(event: EventCreate, user: dict):
     # Just insert - triggers handle everything else
     result = get_table("events").insert(event_data).execute()
-    
+
     return result.data[0]  # status, participant_count set by triggers
 ```
 
@@ -178,7 +178,7 @@ CREATE TRIGGER audit_event_update
 CREATE VIEW events_with_participants AS
 SELECT e.*, ep.participant_count, p.display_name as organizer_name
 FROM events e
-LEFT JOIN (SELECT event_id, COUNT(*) as participant_count 
+LEFT JOIN (SELECT event_id, COUNT(*) as participant_count
           FROM event_participants GROUP BY event_id) ep ON e.id = ep.event_id
 LEFT JOIN profiles p ON e.organizer_id = p.user_id;
 ```
@@ -254,7 +254,7 @@ The migration strategy allows for incremental implementation with minimal risk w
 
 **Next Steps:**
 1. ✅ Create trigger optimization scripts
-2. ✅ Develop optimized API endpoints  
+2. ✅ Develop optimized API endpoints
 3. 🔄 Implement Phase 1 triggers
 4. 🔄 Test and validate performance
 5. 🔄 Full API migration

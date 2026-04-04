@@ -13,9 +13,9 @@ interface EventRegistrationProps {
   targetDate?: Date;
 }
 
-export const EventRegistration: React.FC<EventRegistrationProps> = ({ 
+export const EventRegistration: React.FC<EventRegistrationProps> = ({
   eventId,
-  onRegister, 
+  onRegister,
   isRegistered: initialIsRegistered,
   className = "",
   onAuthRequired,
@@ -51,7 +51,7 @@ export const EventRegistration: React.FC<EventRegistrationProps> = ({
       .eq('user_id', userId)
       .eq('event_id', eventId)
       .maybeSingle();
-    
+
     setIsRegistered(!!data);
   };
 
@@ -61,7 +61,7 @@ export const EventRegistration: React.FC<EventRegistrationProps> = ({
     const target = targetDate.getTime();
     const distance = target - now;
     const oneHour = 1000 * 60 * 60;
-    
+
     if (distance < -oneHour) return 'ended';
     if (distance >= -oneHour && distance <= oneHour) return 'happening';
     return 'upcoming';
@@ -94,7 +94,7 @@ export const EventRegistration: React.FC<EventRegistrationProps> = ({
     }
 
     setLoading(true);
-    
+
     try {
       if (isRegistered) {
         // Unregister
@@ -142,12 +142,12 @@ export const EventRegistration: React.FC<EventRegistrationProps> = ({
 
   return (
     <div className={`group flex items-center self-stretch relative overflow-hidden ${className}`}>
-      <button 
+      <button
         onClick={handleRegister}
         disabled={loading || isPastEvent}
         className={`flex h-[50px] justify-center items-center gap-2.5 border relative px-2.5 py-3.5 border-solid transition-all duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed w-[calc(100%-50px)] z-10 ${
-          isPastEvent 
-            ? 'bg-gray-400 border-gray-400 cursor-not-allowed' 
+          isPastEvent
+            ? 'bg-gray-400 border-gray-400 cursor-not-allowed'
             : 'bg-[#1A1A1A] border-[#1A1A1A] group-hover:w-full group-hover:bg-[#FA76FF] group-hover:border-[#FA76FF]'
         }`}
         aria-label={isPastEvent ? "Event has ended" : isRegistered ? "Unregister from event" : "Register for event"}
@@ -155,11 +155,11 @@ export const EventRegistration: React.FC<EventRegistrationProps> = ({
         <span className={`text-white text-[13px] font-normal uppercase relative transition-colors duration-300 ${!isPastEvent && 'group-hover:text-black'}`}>
           {loading ? "LOADING..." : isPastEvent ? "EVENT ENDED" : isRegistered ? "UNREGISTER" : "REGISTER"}
         </span>
-        <svg 
-          width="12" 
-          height="12" 
-          viewBox="0 0 12 12" 
-          fill="none" 
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
           xmlns="http://www.w3.org/2000/svg"
           className="absolute right-[18px] opacity-0 transition-all duration-300 ease-in-out group-hover:opacity-100"
           aria-hidden="true"
@@ -170,12 +170,12 @@ export const EventRegistration: React.FC<EventRegistrationProps> = ({
       </button>
       {!isPastEvent && (
         <div className="flex w-[50px] h-[50px] justify-center items-center border absolute right-0 bg-white rounded-[99px] border-solid border-[#1A1A1A] transition-all duration-300 ease-in-out group-hover:opacity-0 group-hover:scale-50 pointer-events-none z-0">
-        <svg 
-          width="12" 
-          height="12" 
-          viewBox="0 0 12 12" 
-          fill="none" 
-          xmlns="http://www.w3.org/2000/svg" 
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
           className="arrow-icon"
           aria-hidden="true"
         >

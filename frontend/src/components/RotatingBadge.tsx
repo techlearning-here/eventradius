@@ -20,7 +20,7 @@ export const RotatingBadge: React.FC<RotatingBadgeProps> = ({
   const getTextRepetitions = (text: string) => {
     const baseRepetitions = 5;
     const textLength = text.length;
-    
+
     if (textLength <= 4) return 8; // Short text like "LIVE"
     if (textLength <= 6) return 6; // Medium text like "BROWSE"
     return baseRepetitions; // Longer text
@@ -30,7 +30,7 @@ export const RotatingBadge: React.FC<RotatingBadgeProps> = ({
   const offsetIncrement = 100 / repetitions;
 
   return (
-    <div 
+    <div
       className={`${className} w-[60px] h-[60px] md:w-[72px] md:h-[72px] lg:w-[154px] lg:h-[154px] ${onClick ? 'cursor-pointer' : ''} z-40 animate-fade-in`}
       style={{ animationDelay: '0.2s', animationFillMode: 'both' }}
       onClick={onClick}
@@ -38,7 +38,7 @@ export const RotatingBadge: React.FC<RotatingBadgeProps> = ({
       {/* Rotating badge background */}
       <div className="w-full h-full animate-[spin_20s_linear_infinite]">
         <img src={badgeImage} alt="Badge" className="w-full h-full" />
-        
+
         {/* Circular text repeated around badge */}
         <svg viewBox="0 0 200 200" className="w-full h-full absolute inset-0">
           <defs>
@@ -53,7 +53,7 @@ export const RotatingBadge: React.FC<RotatingBadgeProps> = ({
           ))}
         </svg>
       </div>
-      
+
       {/* Static icon in center */}
       {showIcon && icon && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

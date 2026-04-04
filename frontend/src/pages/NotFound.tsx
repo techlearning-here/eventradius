@@ -11,7 +11,7 @@ const NotFound = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <SEOHead 
+      <SEOHead
         title="404 - Page Not Found"
         description="The page you're looking for doesn't exist. Return to discover events and community calendars."
       />

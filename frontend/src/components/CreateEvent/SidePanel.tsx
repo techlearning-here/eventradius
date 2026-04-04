@@ -73,7 +73,7 @@ export const SidePanel = ({ activeSection, onSectionChange, isMinimized = false,
           <FileText className="w-4 h-4" />
           Event Creator
         </h3>
-        
+
         {/* Minimize/Maximize Button */}
         <button
           onClick={onMinimizeToggle}
@@ -83,21 +83,21 @@ export const SidePanel = ({ activeSection, onSectionChange, isMinimized = false,
           <ToggleIcon className="w-4 h-4" />
         </button>
       </div>
-      
+
       {/* Section Navigation - Hidden when minimized */}
       {!isMinimized && (
         <nav className="space-y-1">
           {sidePanelSections.map((section) => {
             const Icon = section.icon;
             const isActive = activeSection === section.id;
-            
+
             return (
               <button
                 key={section.id}
                 onClick={() => onSectionChange(section.id)}
                 className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center gap-3 ${
-                  isActive 
-                    ? 'bg-white text-black' 
+                  isActive
+                    ? 'bg-white text-black'
                     : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 }`}
               >
@@ -111,7 +111,7 @@ export const SidePanel = ({ activeSection, onSectionChange, isMinimized = false,
           })}
         </nav>
       )}
-      
+
       {/* Bottom Actions - Always Visible */}
       <div className="mt-8 pt-4 border-t border-gray-700">
         <div className="space-y-2">

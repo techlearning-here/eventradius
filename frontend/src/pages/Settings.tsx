@@ -23,7 +23,7 @@ const Settings = () => {
   const [citySearch, setCitySearch] = useState('');
   const [selectedCity, setSelectedCity] = useState<typeof CITIES[0] | null>(null);
   const [distanceRange, setDistanceRange] = useState(25);
-  
+
   // Onboarding preferences state
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -35,13 +35,13 @@ const Settings = () => {
       navigate('/auth');
       return;
     }
-    
+
     // Set profile data from backend
     if (userProfile) {
       setFullName(userProfile.full_name || '');
       setBio(userProfile.bio || '');
     }
-    
+
     const fetchPrefs = async () => {
       try {
         const data = await apiClient.getUserPreferences();
@@ -51,13 +51,13 @@ const Settings = () => {
           setHasKids(data.has_kids || false);
           setInterests((data.interests as string[]) || []);
           setDistanceRange(data.distance_range || 25);
-          
+
           // Load onboarding preferences
           setOnboardingCompleted(data.onboarding_completed || false);
           setNotificationsEnabled(data.notifications_enabled !== false);
           setEmailUpdates(data.email_updates !== false);
           setPrivacyLevel((data.privacy_level as 'public' | 'friends' | 'private') || 'public');
-          
+
           if (data.city) {
             setCitySearch(data.city);
             const match = CITIES.find(c => `${c.name}, ${c.state}` === data.city);
@@ -119,7 +119,7 @@ const Settings = () => {
         latitude: selectedCity?.lat || null,
         longitude: selectedCity?.lng || null,
         distance_range: distanceRange,
-        
+
         // Save onboarding preferences
         onboarding_completed: onboardingCompleted,
         notifications_enabled: notificationsEnabled,
@@ -185,7 +185,7 @@ const Settings = () => {
         {/* Profile Section */}
         <section className="mb-10">
           <h2 className="text-lg font-semibold mb-4">Profile Information</h2>
-          
+
           {/* Full Name */}
           <div className="mb-6">
             <label className="block text-sm font-medium mb-2">Full Name</label>
@@ -285,8 +285,8 @@ const Settings = () => {
                 <button
                   onClick={() => setOnboardingCompleted(true)}
                   className={`px-3 py-1.5 text-sm border rounded transition-colors ${
-                    onboardingCompleted 
-                      ? 'border-foreground bg-foreground text-background' 
+                    onboardingCompleted
+                      ? 'border-foreground bg-foreground text-background'
                       : 'border-border hover:border-foreground'
                   }`}
                 >
@@ -295,8 +295,8 @@ const Settings = () => {
                 <button
                   onClick={() => setOnboardingCompleted(false)}
                   className={`px-3 py-1.5 text-sm border rounded transition-colors ${
-                    !onboardingCompleted 
-                      ? 'border-foreground bg-foreground text-background' 
+                    !onboardingCompleted
+                      ? 'border-foreground bg-foreground text-background'
                       : 'border-border hover:border-foreground'
                   }`}
                 >
@@ -304,7 +304,7 @@ const Settings = () => {
                 </button>
               </div>
             </div>
-            
+
             <div>
               <label className="flex items-center gap-2 text-sm font-medium mb-2">
                 <input
@@ -316,7 +316,7 @@ const Settings = () => {
                 Enable Notifications
               </label>
             </div>
-            
+
             <div>
               <label className="flex items-center gap-2 text-sm font-medium mb-2">
                 <input
@@ -328,7 +328,7 @@ const Settings = () => {
                 Email Updates
               </label>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-2">Privacy Level</label>
               <select

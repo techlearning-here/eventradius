@@ -25,7 +25,7 @@ def get_supabase_client() -> Client:
     """Initialize and return Supabase client"""
     supabase_url = os.getenv('SUPABASE_URL')
     supabase_key = os.getenv('SUPABASE_KEY')
-    
+
     client: Client = create_client(supabase_url, supabase_key)
     return client
 
@@ -33,11 +33,11 @@ async def check_existing_tables(client: Client):
     """Check what tables exist in the database"""
     print("\n🔍 CHECKING EXISTING TABLES")
     print("=" * 50)
-    
+
     # Common table names to check
     tables_to_check = [
         'events',
-        'test2', 
+        'test2',
         'users',
         'auth.users',
         'profiles',
@@ -47,7 +47,7 @@ async def check_existing_tables(client: Client):
         'storage.buckets',
         'storage.objects'
     ]
-    
+
     for table in tables_to_check:
         try:
             response = client.table(table).select('count').execute()
@@ -63,11 +63,11 @@ async def main():
     """Main function"""
     print("📋 SUPABASE TABLE INVENTORY")
     print("=" * 50)
-    
+
     client = get_supabase_client()
-    
+
     await check_existing_tables(client)
-    
+
     print("\n" + "=" * 50)
     print("🎯 NEXT STEPS")
     print("=" * 50)

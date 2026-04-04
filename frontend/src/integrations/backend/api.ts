@@ -80,7 +80,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     // Get auth token from Supabase
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;

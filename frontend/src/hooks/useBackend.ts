@@ -13,15 +13,15 @@ export function useBackend() {
   ): Promise<T | null> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await requestFn();
-      
+
       if (response.error) {
         setError(response.error);
         return null;
       }
-      
+
       return response.data || null;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error occurred';
@@ -87,7 +87,7 @@ export function useBackend() {
   const signIn = useCallback(async (email: string, password: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await backendClient.signIn(email, password);
       return data;
@@ -103,7 +103,7 @@ export function useBackend() {
   const signUp = useCallback(async (email: string, password: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await backendClient.signUp(email, password);
       return data;
@@ -119,7 +119,7 @@ export function useBackend() {
   const signOut = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       await backendClient.signOut();
     } catch (err) {
@@ -134,7 +134,7 @@ export function useBackend() {
   const resetPassword = useCallback(async (email: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       await backendClient.resetPassword(email);
     } catch (err) {
@@ -154,7 +154,7 @@ export function useBackend() {
     // State
     loading,
     error,
-    
+
     // Events
     getEvents,
     getEvent,
@@ -163,19 +163,19 @@ export function useBackend() {
     deleteEvent,
     participateEvent,
     leaveEvent,
-    
+
     // Users
     getCurrentUser,
     updateCurrentUser,
     getUserProfile,
     getUserEvents,
-    
+
     // Auth
     signIn,
     signUp,
     signOut,
     resetPassword,
-    
+
     // Utilities
     clearError,
   };

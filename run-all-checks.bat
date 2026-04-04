@@ -67,7 +67,7 @@ if %errorlevel% neq 0 (
 echo.
 
 echo ========================================
-echo ✅ ALL CHECKS PASSED! 
+echo ✅ ALL CHECKS PASSED!
 echo ========================================
 echo.
 echo Summary:

@@ -8,7 +8,7 @@ const TestOAuth = () => {
   useEffect(() => {
     const testOAuth = async () => {
       console.log('=== OAuth Test Started ===');
-      
+
       // Test 1: Check if Google OAuth is configured
       try {
         const { data, error } = await supabase.auth.signInWithOAuth({
@@ -18,20 +18,20 @@ const TestOAuth = () => {
             skipBrowserRedirect: true, // Don't redirect, just get the URL
           },
         });
-        
+
         console.log('OAuth URL generated:', data?.url);
         console.log('OAuth error:', error);
-        
+
         if (data?.url) {
           console.log('✅ Google OAuth is properly configured');
           console.log('🔗 OAuth URL:', data.url);
-          
+
           // Now try the actual redirect
           window.location.href = data.url;
         } else {
           console.error('❌ Google OAuth configuration error:', error);
         }
-        
+
       } catch (err) {
         console.error('❌ OAuth setup error:', err);
       }

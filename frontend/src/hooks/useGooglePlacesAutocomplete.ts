@@ -38,7 +38,7 @@ export const useGooglePlacesAutocomplete = (inputRef: React.RefObject<HTMLInputE
 
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-    
+
     if (!apiKey) {
       console.warn('Google Maps API key not configured. Place autocomplete will not work.');
       return;

@@ -13,31 +13,31 @@ import { type Event } from '@/integrations/backend/api';
 import { format } from 'date-fns';
 
 
-const EventCard = ({ 
-  event, 
-  isCreated, 
-  onDelete 
-}: { 
-  event: Event; 
-  isCreated?: boolean; 
+const EventCard = ({
+  event,
+  isCreated,
+  onDelete
+}: {
+  event: Event;
+  isCreated?: boolean;
   onDelete?: (id: string) => void;
 }) => {
   const navigate = useNavigate();
-  
+
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this event?')) {
       onDelete?.(event.id);
     }
   };
-  
+
   return (
-    <div 
+    <div
       className="relative cursor-pointer group"
       onClick={() => navigate(isCreated ? `/event/${event.id}/edit` : `/event/${event.id}`)}
     >
       <div className="overflow-hidden mb-3">
-        <div 
+        <div
           className="aspect-[4/3] bg-gray-300 bg-cover bg-center transition-transform duration-500 ease-out group-hover:scale-110"
           style={{ backgroundImage: `url(${event.image_url || '/placeholder.svg'})` }}
         ></div>
@@ -140,15 +140,15 @@ const MyEvents = () => {
 
   return (
     <>
-      <SEOHead 
+      <SEOHead
         title="My Events"
         description="Manage your created events and view events you've registered for"
       />
       <link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      
+
       <div className="min-h-screen bg-background">
         <Navbar />
-        
+
         <div className="pt-32 pb-20 px-4 md:px-8">
           <div>
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium leading-tight mb-8 text-foreground">
@@ -158,14 +158,14 @@ const MyEvents = () => {
             {/* Tabs */}
             <div className="relative flex gap-0 mb-12">
               {/* Sliding background */}
-              <div 
+              <div
                 className="absolute top-0 left-0 h-full bg-[#ff6bff] border border-black transition-all duration-300 ease-out pointer-events-none"
                 style={{
                   width: `${slideStyle.width}px`,
                   transform: slideStyle.transform
                 }}
               />
-              
+
               <button
                 ref={createdRef}
                 onClick={() => setActiveTab('created')}
@@ -196,15 +196,15 @@ const MyEvents = () => {
                 </div>
               ) : displayedEvents.length === 0 ? (
                 <div className="col-span-full text-center py-12">
-                  {activeTab === 'created' 
-                    ? 'You haven\'t created any events yet' 
+                  {activeTab === 'created'
+                    ? 'You haven\'t created any events yet'
                     : 'You haven\'t registered for any events yet'}
                 </div>
               ) : (
                 displayedEvents.map((event) => (
-                  <EventCard 
-                    key={event.id} 
-                    event={event} 
+                  <EventCard
+                    key={event.id}
+                    event={event}
                     isCreated={activeTab === 'created'}
                     onDelete={activeTab === 'created' ? handleDeleteEvent : undefined}
                   />

@@ -26,7 +26,7 @@ def get_supabase_client() -> Client:
     """Initialize and return Supabase client"""
     supabase_url = os.getenv('SUPABASE_URL')
     supabase_key = os.getenv('SUPABASE_KEY')
-    
+
     client: Client = create_client(supabase_url, supabase_key)
     return client
 
@@ -34,7 +34,7 @@ async def compare_table_schemas(client: Client):
     """Compare schemas between test2 and events tables"""
     print("\n🔍 COMPARING TABLE SCHEMAS")
     print("=" * 50)
-    
+
     # Test test2 table
     print("📋 test2 table structure:")
     try:
@@ -47,7 +47,7 @@ async def compare_table_schemas(client: Client):
             print("  (empty table)")
     except Exception as e:
         print(f"  ❌ Error: {e}")
-    
+
     print("\n📋 events table structure:")
     try:
         response = client.table('events').select('*').limit(1).execute()
@@ -64,14 +64,14 @@ async def test_insert_both_tables(client: Client):
     """Test insert operations on both tables"""
     print("\n🧪 TESTING INSERT OPERATIONS")
     print("=" * 50)
-    
+
     # Test insert on test2
     print("📝 Inserting into test2 table:")
     test2_data = {
         'name': f'Comparison Test {datetime.now().strftime("%H:%M:%S")}',
         'description': 'Test record for comparison'
     }
-    
+
     try:
         response = client.table('test2').insert(test2_data).execute()
         if response.data:
@@ -80,7 +80,7 @@ async def test_insert_both_tables(client: Client):
             print(f"  ❌ test2 INSERT FAILED: No data returned")
     except Exception as e:
         print(f"  ❌ test2 INSERT ERROR: {e}")
-    
+
     # Test insert on events
     print("\n📝 Inserting into events table:")
     events_data = {
@@ -101,7 +101,7 @@ async def test_insert_both_tables(client: Client):
         'event_status': 'confirmed',
         'is_public': True
     }
-    
+
     try:
         response = client.table('events').insert(events_data).execute()
         if response.data:
@@ -115,7 +115,7 @@ async def analyze_rls_policies(client: Client):
     """Analyze RLS policies differences"""
     print("\n🔐 ANALYZING RLS POLICIES")
     print("=" * 50)
-    
+
     # Check authentication status
     try:
         auth_response = client.auth.get_user()
@@ -125,16 +125,16 @@ async def analyze_rls_policies(client: Client):
             print("👤 Not authenticated (using anon key)")
     except Exception as e:
         print(f"👤 Auth check failed: {e}")
-    
+
     # Test read operations
     print("\n📖 Testing READ operations:")
-    
+
     try:
         response = client.table('test2').select('*').execute()
         print(f"  test2 READ: ✅ {len(response.data) if response.data else 0} records")
     except Exception as e:
         print(f"  test2 READ: ❌ {e}")
-    
+
     try:
         response = client.table('events').select('*').execute()
         print(f"  events READ: ✅ {len(response.data) if response.data else 0} records")
@@ -145,13 +145,13 @@ async def main():
     """Main comparison function"""
     print("🔬 TABLE COMPARISON: test2 vs events")
     print("=" * 50)
-    
+
     client = get_supabase_client()
-    
+
     await compare_table_schemas(client)
     await analyze_rls_policies(client)
     await test_insert_both_tables(client)
-    
+
     print("\n" + "=" * 50)
     print("🎯 COMPARISON SUMMARY")
     print("=" * 50)

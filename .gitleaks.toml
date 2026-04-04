@@ -43,14 +43,8 @@ paths = [
     '''yarn\.lock$''',
     '''\.md$''',
 ]
-
-# Allow specific patterns in certain files
-[[allowlist]]
-description = "Allow example files"
-paths = ['''\.env\.example$''']
-regexes = ['''GOOGLE_CLIENT_ID=$''', '''GOOGLE_CLIENT_SECRET=$''']
-
-[[allowlist]]
-description = "Allow documentation"
-paths = ['''\.md$''']
-regexes = ['''your-[a-z-]+-here''']
+regexes = [
+    '''GOOGLE_CLIENT_ID=$''',
+    '''GOOGLE_CLIENT_SECRET=$''',
+    '''your-[a-z-]+-here'''
+]

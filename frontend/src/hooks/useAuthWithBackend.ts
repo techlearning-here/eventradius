@@ -40,14 +40,14 @@ export const useAuthWithBackend = () => {
       const completed = (preferences?.onboarding_completed as boolean | null) ?? null;
       const isOrganizer = (preferences?.is_organizer as boolean | null) ?? null;
       setOnboardingCompleted(completed);
-      
+
       // If organizer preference is set, update roles accordingly
       if (isOrganizer === true && !roles.includes('organizer')) {
         await addOrganizerRole();
       } else if (isOrganizer === false && !roles.includes('user')) {
         await addUserRole();
       }
-      
+
       return completed;
     } catch (error) {
       console.error('Error fetching onboarding status:', error);

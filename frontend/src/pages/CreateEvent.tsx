@@ -15,7 +15,7 @@ import { useEventActions, type EventCreate } from '@/hooks/useEvents';
 const CreateEvent = () => {
   const { user } = useAuthWithBackend();
   const { createEvent } = useEventActions();
-  
+
   // Form state - Enhanced with all required fields
   const [eventName, setEventName] = useState('');
   const [description, setDescription] = useState('');
@@ -40,7 +40,7 @@ const CreateEvent = () => {
 
   const handleImageUpload = (file: File) => {
     setImageFile(file);
-    
+
     // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -115,7 +115,7 @@ const CreateEvent = () => {
       }
 
       alert(isEditing ? 'Event updated successfully!' : 'Event created and published successfully!');
-      
+
       // Reset form and redirect
       if (!isEditing) {
         setEventName('');
@@ -133,7 +133,7 @@ const CreateEvent = () => {
         setImagePreview(null);
         setImageFile(null);
       }
-      
+
       // Redirect to events page
       window.location.href = '/my-events';
     } catch (error) {
@@ -150,7 +150,7 @@ const CreateEvent = () => {
     setEventId(eventId);
     setIsEditing(true);
     setActiveSection('basic');
-    
+
     // Pre-fill form with existing event data
     // Implementation would go here
   };
@@ -165,7 +165,7 @@ const CreateEvent = () => {
       if (result.error) {
         throw new Error(result.error);
       }
-      
+
       alert('Event deleted successfully!');
       window.location.href = '/my-events';
     } catch (error) {
@@ -178,13 +178,13 @@ const CreateEvent = () => {
     <div className="min-h-screen bg-white">
       <Navbar />
       <div className="flex">
-        <SidePanel 
-          activeSection={activeSection} 
+        <SidePanel
+          activeSection={activeSection}
           onSectionChange={setActiveSection}
           isMinimized={isSidebarMinimized}
           onMinimizeToggle={() => setIsSidebarMinimized(!isSidebarMinimized)}
         />
-        
+
         {/* Main Content Area */}
         <div className={`flex-1 p-8 transition-all duration-300 ${
           isSidebarMinimized ? 'lg:ml-16' : 'lg:ml-64'
@@ -192,9 +192,9 @@ const CreateEvent = () => {
           <div className="max-w-4xl mx-auto">
             {activeSection === 'basic' && (
               <div className="grid lg:grid-cols-2 gap-8 md:gap-16 items-start">
-                <ImageUpload 
-                  imagePreview={imagePreview} 
-                  onImageUpload={handleImageUpload} 
+                <ImageUpload
+                  imagePreview={imagePreview}
+                  onImageUpload={handleImageUpload}
                 />
                 <BasicInfo
                   eventName={eventName}
@@ -204,7 +204,7 @@ const CreateEvent = () => {
                 />
               </div>
             )}
-            
+
             {activeSection === 'category' && (
               <CategorySection
                 category={category}
@@ -219,7 +219,7 @@ const CreateEvent = () => {
                 onTagsChange={setTags}
               />
             )}
-            
+
             {activeSection === 'datetime' && (
               <DateTimeSection
                 startDate={startDate}
@@ -232,14 +232,14 @@ const CreateEvent = () => {
                 onEndTimeChange={setEndTime}
               />
             )}
-            
+
             {activeSection === 'location' && (
               <LocationSection
                 location={location}
                 onLocationChange={setLocation}
               />
             )}
-            
+
             {activeSection === 'preview' && (
               <PreviewSection
                 eventName={eventName}
@@ -248,14 +248,14 @@ const CreateEvent = () => {
                 imagePreview={imagePreview}
               />
             )}
-            
+
             {activeSection === 'advanced' && (
               <div>
                 <h2 className="text-2xl font-bold mb-6">Advanced Settings</h2>
                 <p className="text-gray-500 mb-4">Advanced event management features coming soon...</p>
               </div>
             )}
-            
+
             {/* Submit Button - always visible */}
             <div className="mt-8 flex justify-end">
               <button
@@ -269,7 +269,7 @@ const CreateEvent = () => {
           </div>
         </div>
       </div>
-      
+
       <AuthSheet isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
   );

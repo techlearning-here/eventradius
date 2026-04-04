@@ -1,4 +1,4 @@
-Conceptual overview (roles, Standard vs Preview, event space, admin model): **`docs/features-learning-guide.md`**.  
+Conceptual overview (roles, Standard vs Preview, event space, admin model): **`docs/features-learning-guide.md`**.
 Full original spec: `docs/Website_Prompt.md`. Category / vertical roadmap: `docs/Feature_plan.md`.
 
 ---

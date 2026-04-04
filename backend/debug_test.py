@@ -47,25 +47,25 @@ with patch('config.auth.auth_service.require_auth', return_value=mock_user):
                 mock_update.return_value = update_response
                 with patch('api.events.get_table') as mock_get_table:
                     mock_table = Mock()
-                    
+
                     # First call: check existing participation
                     mock_select1 = Mock()
                     mock_eq1 = Mock()
                     mock_eq2 = Mock()
                     mock_execute1 = Mock()
                     mock_execute1.data = []  # No existing participation
-                    
+
                     # Second call: count participants
                     mock_select2 = Mock()
                     mock_eq3 = Mock()
                     mock_execute2 = Mock()
                     mock_execute2.count = 10  # Current count
-                    
+
                     # Set up the chain for first call
                     mock_table.select.return_value = mock_select1
                     mock_select1.eq.side_effect = [mock_eq1, mock_eq2]
                     mock_eq2.execute.return_value = mock_execute1
-                    
+
                     # For second call, we need to handle .select("*", count="exact")
                     mock_table.select.side_effect = [
                         mock_select1,  # First call: select("*")
@@ -73,17 +73,17 @@ with patch('config.auth.auth_service.require_auth', return_value=mock_user):
                     ]
                     mock_select2.eq.return_value = mock_eq3
                     mock_eq3.execute.return_value = mock_execute2
-                    
+
                     mock_get_table.return_value = mock_table
-                    
+
                     response = client.post(
                         f'/api/events/{event_id}/participate',
                         headers={'Authorization': 'Bearer test-token'}
                     )
-                    
+
                     print(f'\nStatus: {response.status_code}')
                     print(f'Response: {response.json()}')
-                    
+
                     # Debug: Check what the API is actually doing
                     print(f'\nMock calls made:')
                     print(f'  fetch_single_record called: {mock_fetch.called}')

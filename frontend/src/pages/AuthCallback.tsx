@@ -11,16 +11,16 @@ const AuthCallback = () => {
       try {
         console.log('Starting simple OAuth callback handling...');
         console.log('Current URL:', window.location.href);
-        
+
         // Use the simple OAuth handler that doesn't try to create profiles
         const result = await handleSimpleOAuthCallback();
-        
+
         if (result.success) {
           console.log('OAuth successful!', result.user);
           console.log('User email:', result.user.email);
           console.log('User metadata:', result.user.user_metadata);
           console.log('App metadata:', result.user.app_metadata);
-          
+
           // Check if user has completed onboarding
           try {
             const { data } = await supabase
@@ -28,9 +28,9 @@ const AuthCallback = () => {
               .select('onboarding_completed')
               .eq('user_id', result.user.id)
               .single();
-            
+
             console.log('Onboarding status from callback:', data?.onboarding_completed);
-            
+
             // Redirect based on onboarding status
             if (data?.onboarding_completed === true) {
               navigate('/discover');
@@ -45,7 +45,7 @@ const AuthCallback = () => {
           console.error('OAuth failed:', result.error);
           navigate('/auth?error=auth_failed');
         }
-        
+
       } catch (error) {
         console.error('Auth callback error:', error);
         navigate('/auth?error=auth_failed');

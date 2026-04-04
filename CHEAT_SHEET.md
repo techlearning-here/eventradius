@@ -24,7 +24,7 @@ gitleaks detect
 # ❌ Bad
 logger.info(f"Updated OAuth profile for user {user['id']} with provider {profile.provider}")
 
-# ✅ Good  
+# ✅ Good
 logger.info(
     f"Updated OAuth profile for user {user['id']} "
     f"with provider {profile.provider}"

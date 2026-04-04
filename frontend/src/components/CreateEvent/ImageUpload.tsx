@@ -45,7 +45,7 @@ export const ImageUpload = ({ imagePreview, onImageUpload }: ImageUploadProps) =
           onChange={handleImageUpload}
         />
       </label>
-      
+
       {imagePreview && (
         <button
           onClick={() => fileInputRef.current?.click()}

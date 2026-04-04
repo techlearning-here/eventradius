@@ -6,9 +6,9 @@ interface EventLocationProps {
   onGetDirections: () => void;
 }
 
-export const EventLocation: React.FC<EventLocationProps> = ({ 
-  address, 
-  onGetDirections 
+export const EventLocation: React.FC<EventLocationProps> = ({
+  address,
+  onGetDirections
 }) => {
   const encodedAddress = encodeURIComponent(address);
   return (
@@ -23,7 +23,7 @@ export const EventLocation: React.FC<EventLocationProps> = ({
         <address className="flex-1 text-[#1A1A1A] text-[17px] font-normal leading-[20.74px] tracking-[-0.34px] relative not-italic">
           {address}
         </address>
-        <a 
+        <a
           href={`https://maps.google.com/?q=${encodedAddress}`}
           target="_blank"
           rel="noopener noreferrer"

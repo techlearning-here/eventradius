@@ -21,11 +21,11 @@ export const Navbar: React.FC = () => {
       if (role === 'user' || !role) {
         links.push({ label: 'Discover Events', to: '/discover' });
       }
-      
+
       if (role === 'organizer') {
         links.push({ label: 'My Events', to: '/organizer' });
       }
-      
+
       if (roles.includes('admin')) {
         links.push({ label: 'Admin', to: '/admin-dashboard' });
       }

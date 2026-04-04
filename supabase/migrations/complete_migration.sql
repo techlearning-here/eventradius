@@ -3,7 +3,7 @@
 -- =====================================================
 -- This single script contains all database setup for EventRadius
 -- including tables, triggers, RLS policies, and optimizations.
--- 
+--
 -- Run this in Supabase SQL Editor to set up the complete database
 -- =====================================================
 
@@ -137,27 +137,27 @@ BEGIN
   INSERT INTO public.profiles (user_id, display_name)
   VALUES (new.id, COALESCE(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)))
   ON CONFLICT (user_id) DO NOTHING;
-  
+
   -- Determine role
   _role := COALESCE(NULLIF(new.raw_user_meta_data->>'role', '')::app_role, 'user'::app_role);
-  
+
   -- Assign role
-  INSERT INTO public.user_roles (user_id, role) 
-  VALUES (new.id, _role) 
+  INSERT INTO public.user_roles (user_id, role)
+  VALUES (new.id, _role)
   ON CONFLICT (user_id, role) DO NOTHING;
-  
+
   -- Create preferences for regular users
   IF _role = 'user' THEN
-    INSERT INTO public.user_preferences (user_id) 
-    VALUES (new.id) 
+    INSERT INTO public.user_preferences (user_id)
+    VALUES (new.id)
     ON CONFLICT (user_id) DO NOTHING;
   END IF;
-  
+
   -- Log user creation
   INSERT INTO public.event_audit (event_id, action, new_data, changed_by)
   VALUES (new.id, 'USER_CREATED', row_to_json(new), new.id)
   ON CONFLICT DO NOTHING;
-  
+
   RETURN new;
 END;
 $$;
@@ -168,13 +168,13 @@ RETURNS TRIGGER AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
     -- Increment participant count
-    UPDATE public.events 
+    UPDATE public.events
     SET participant_count = participant_count + 1
     WHERE id = NEW.event_id;
     RETURN NEW;
   ELSIF TG_OP = 'DELETE' THEN
     -- Decrement participant count
-    UPDATE public.events 
+    UPDATE public.events
     SET participant_count = GREATEST(participant_count - 1, 0)
     WHERE id = OLD.event_id;
     RETURN OLD;
@@ -197,7 +197,7 @@ BEGIN
       NEW.status := 'upcoming';
     END IF;
   END IF;
-  
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SET search_path = public;
@@ -212,17 +212,17 @@ BEGIN
       RAISE EXCEPTION 'End time must be after start time';
     END IF;
   END IF;
-  
+
   -- Validate max_participants is positive
   IF NEW.max_participants IS NOT NULL AND NEW.max_participants <= 0 THEN
     RAISE EXCEPTION 'Max participants must be positive';
   END IF;
-  
+
   -- Validate status
   IF NEW.status IS NOT NULL AND NEW.status NOT IN ('pending', 'approved', 'rejected', 'cancelled', 'upcoming', 'ongoing', 'ended') THEN
     RAISE EXCEPTION 'Invalid event status: %s', NEW.status;
   END IF;
-  
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SET search_path = public;
@@ -268,9 +268,9 @@ BEFORE UPDATE ON public.events
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at_column();
 
-CREATE TRIGGER update_user_preferences_updated_at 
-BEFORE UPDATE ON public.user_preferences 
-FOR EACH ROW 
+CREATE TRIGGER update_user_preferences_updated_at
+BEFORE UPDATE ON public.user_preferences
+FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at_column();
 
 -- 4.3 Participant count triggers
@@ -335,19 +335,19 @@ ALTER TABLE IF EXISTS public.event_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.event_audit ENABLE ROW LEVEL SECURITY;
 
 -- 5.2 Profiles RLS policies
-CREATE POLICY IF NOT EXISTS "Profiles are viewable by everyone" 
-ON public.profiles 
-FOR SELECT 
+CREATE POLICY IF NOT EXISTS "Profiles are viewable by everyone"
+ON public.profiles
+FOR SELECT
 USING (true);
 
-CREATE POLICY IF NOT EXISTS "Users can update their own profile" 
-ON public.profiles 
-FOR UPDATE 
+CREATE POLICY IF NOT EXISTS "Users can update their own profile"
+ON public.profiles
+FOR UPDATE
 USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can insert their own profile" 
-ON public.profiles 
-FOR INSERT 
+CREATE POLICY IF NOT EXISTS "Users can insert their own profile"
+ON public.profiles
+FOR INSERT
 WITH CHECK (auth.uid() = user_id);
 
 -- 5.3 User Roles RLS policies
@@ -369,49 +369,49 @@ USING (
 );
 
 -- 5.4 Events RLS policies
-CREATE POLICY IF NOT EXISTS "Events are viewable by everyone" 
-ON public.events 
-FOR SELECT 
+CREATE POLICY IF NOT EXISTS "Events are viewable by everyone"
+ON public.events
+FOR SELECT
 USING (true);
 
-CREATE POLICY IF NOT EXISTS "Users can create events" 
-ON public.events 
-FOR INSERT 
+CREATE POLICY IF NOT EXISTS "Users can create events"
+ON public.events
+FOR INSERT
 WITH CHECK (auth.uid() = organizer_id);
 
-CREATE POLICY IF NOT EXISTS "Organizers can update their events" 
-ON public.events 
-FOR UPDATE 
+CREATE POLICY IF NOT EXISTS "Organizers can update their events"
+ON public.events
+FOR UPDATE
 USING (auth.uid() = organizer_id);
 
-CREATE POLICY IF NOT EXISTS "Organizers can delete their events" 
-ON public.events 
-FOR DELETE 
+CREATE POLICY IF NOT EXISTS "Organizers can delete their events"
+ON public.events
+FOR DELETE
 USING (auth.uid() = organizer_id);
 
 -- 5.5 User Preferences RLS policies
-CREATE POLICY IF NOT EXISTS "Users can view own prefs" 
-ON public.user_preferences 
-FOR SELECT 
-TO authenticated 
+CREATE POLICY IF NOT EXISTS "Users can view own prefs"
+ON public.user_preferences
+FOR SELECT
+TO authenticated
 USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can insert own prefs" 
-ON public.user_preferences 
-FOR INSERT 
-TO authenticated 
+CREATE POLICY IF NOT EXISTS "Users can insert own prefs"
+ON public.user_preferences
+FOR INSERT
+TO authenticated
 WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can update own prefs" 
-ON public.user_preferences 
-FOR UPDATE 
-TO authenticated 
+CREATE POLICY IF NOT EXISTS "Users can update own prefs"
+ON public.user_preferences
+FOR UPDATE
+TO authenticated
 USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Admins can view all prefs" 
-ON public.user_preferences 
-FOR SELECT 
-TO authenticated 
+CREATE POLICY IF NOT EXISTS "Admins can view all prefs"
+ON public.user_preferences
+FOR SELECT
+TO authenticated
 USING (public.has_role(auth.uid(), 'admin'));
 
 -- 5.6 Event Participants RLS policies
@@ -468,7 +468,7 @@ USING (public.has_role(auth.uid(), 'admin'));
 
 -- 6.1 View for events with participant counts
 CREATE OR REPLACE VIEW public.events_with_participants AS
-SELECT 
+SELECT
   e.*,
   p.display_name as organizer_name,
   p.avatar_url as organizer_avatar
@@ -477,9 +477,9 @@ LEFT JOIN public.profiles p ON e.organizer_id = p.user_id;
 
 -- 6.2 View for user events with participation status
 CREATE OR REPLACE VIEW public.user_events_view AS
-SELECT 
+SELECT
   e.*,
-  CASE 
+  CASE
     WHEN ep.user_id IS NOT NULL THEN 'registered'
     WHEN e.organizer_id = auth.uid() THEN 'organizer'
     ELSE 'available'
@@ -527,7 +527,7 @@ SET search_path = public
 AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     e.id,
     e.title,
     e.description,
@@ -543,7 +543,7 @@ BEGIN
     e.participant_count,
     p.display_name as organizer_name,
     p.avatar_url as organizer_avatar,
-    CASE 
+    CASE
       WHEN ep.user_id IS NOT NULL THEN 'registered'
       WHEN e.organizer_id = p_user_id THEN 'organizer'
       ELSE 'available'
@@ -551,7 +551,7 @@ BEGIN
   FROM public.events e
   LEFT JOIN public.profiles p ON e.organizer_id = p.user_id
   LEFT JOIN public.event_participants ep ON e.id = ep.event_id AND ep.user_id = p_user_id
-  WHERE 
+  WHERE
     (p_category IS NULL OR e.category = p_category)
     AND (p_is_public IS NULL OR e.is_public = p_is_public)
     AND (p_user_id IS NULL OR e.is_public = true OR e.organizer_id = p_user_id)
@@ -624,36 +624,36 @@ COMMENT ON TABLE public.event_audit IS 'Audit trail for event changes';
 -- =====================================================
 
 -- Ensure all triggers are properly set up
-SELECT 
+SELECT
     trigger_name,
     event_manipulation,
     event_object_table,
     action_timing
-FROM information_schema.triggers 
+FROM information_schema.triggers
 WHERE trigger_schema = 'public'
 ORDER BY event_object_table, trigger_name;
 
 -- Verify all tables have RLS enabled
-SELECT 
+SELECT
     schemaname,
     tablename,
     rowsecurity
-FROM pg_tables 
-WHERE schemaname = 'public' 
+FROM pg_tables
+WHERE schemaname = 'public'
   AND tablename IN ('profiles', 'user_roles', 'events', 'user_preferences', 'event_participants', 'event_audit')
 ORDER BY tablename;
 
 -- =====================================================
 -- MIGRATION COMPLETE
 -- =====================================================
--- 
+--
 -- Next steps:
 -- 1. Set up authentication providers in Supabase
 -- 2. Configure OAuth providers if needed
 -- 3. Create initial admin users
 -- 4. Test the complete setup
 -- 5. Update backend to use optimized API functions
--- 
+--
 -- This migration includes:
 -- ✅ User management with profiles and roles
 -- ✅ Role-based access control (RBAC)
@@ -670,7 +670,7 @@ ORDER BY tablename;
 -- ✅ Optimized database views
 -- ✅ API functions for common queries
 -- ✅ Comprehensive documentation
--- 
+--
 -- Performance Benefits:
 -- ✅ 75% reduction in backend code
 -- ✅ 60-70% faster API response times

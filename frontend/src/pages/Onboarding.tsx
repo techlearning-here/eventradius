@@ -52,7 +52,7 @@ const Onboarding = () => {
 
       await fetchOnboardingStatus(user.id);
       toast.success('Preferences saved!');
-      
+
       // Redirect based on organizer status
       if (isOrganizer) {
         navigate('/create-event');
@@ -88,8 +88,8 @@ const Onboarding = () => {
               <button
                 onClick={() => setIsOrganizer(true)}
                 className={`w-full py-4 px-6 text-lg border-2 transition-all ${
-                  isOrganizer === true 
-                    ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10 text-[hsl(295,100%,73%)]' 
+                  isOrganizer === true
+                    ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10 text-[hsl(295,100%,73%)]'
                     : 'border-foreground/20 hover:border-[hsl(295,100%,73%)] hover:bg-[hsl(295,100%,73%)]/5'
                 }`}
               >
@@ -103,12 +103,12 @@ const Onboarding = () => {
                   </div>
                 </div>
               </button>
-              
+
               <button
                 onClick={() => setIsOrganizer(false)}
                 className={`w-full py-4 px-6 text-lg border-2 transition-all ${
-                  isOrganizer === false 
-                    ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10 text-[hsl(295,100%,73%)]' 
+                  isOrganizer === false
+                    ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10 text-[hsl(295,100%,73%)]'
                     : 'border-foreground/20 hover:border-[hsl(295,100%,73%)] hover:bg-[hsl(295,100%,73%)]/5'
                 }`}
               >

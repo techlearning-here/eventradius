@@ -17,25 +17,25 @@ fi
 if [ -d "backend" ]; then
     echo "📦 Setting up backend..."
     cd backend
-    
+
     # Create virtual environment if it doesn't exist
     if [ ! -d "venv" ]; then
         echo "Creating Python virtual environment..."
         python -m venv venv
     fi
-    
+
     # Activate virtual environment
     echo "Activating virtual environment..."
     source venv/bin/activate
-    
+
     # Install dependencies
     echo "Installing Python dependencies..."
     pip install -r requirements.txt
-    
+
     # Install pre-commit hooks
     echo "Installing pre-commit hooks..."
     pre-commit install
-    
+
     # Install gitleaks (Go binary)
     echo "Installing gitleaks..."
     if ! command -v gitleaks &> /dev/null; then
@@ -56,11 +56,11 @@ if [ -d "backend" ]; then
             echo "Please install gitleaks manually: https://github.com/gitleaks/gitleaks#install"
         fi
     fi
-    
+
     # Initialize secrets baseline
     echo "Initializing secrets detection baseline..."
     detect-secrets scan --baseline .secrets.baseline || true
-    
+
     cd ..
     echo "✅ Backend setup complete!"
 fi
@@ -69,11 +69,11 @@ fi
 if [ -d "frontend" ]; then
     echo "📦 Setting up frontend..."
     cd frontend
-    
+
     # Install dependencies
     echo "Installing Node.js dependencies..."
     npm install
-    
+
     cd ..
     echo "✅ Frontend setup complete!"
 fi

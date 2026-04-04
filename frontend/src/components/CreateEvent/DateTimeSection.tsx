@@ -14,15 +14,15 @@ interface DateTimeSectionProps {
   onEndTimeChange: (time: string) => void;
 }
 
-export const DateTimeSection = ({ 
-  startDate, 
-  endDate, 
-  startTime, 
-  endTime, 
-  onStartDateChange, 
-  onEndDateChange, 
-  onStartTimeChange, 
-  onEndTimeChange 
+export const DateTimeSection = ({
+  startDate,
+  endDate,
+  startTime,
+  endTime,
+  onStartDateChange,
+  onEndDateChange,
+  onStartTimeChange,
+  onEndTimeChange
 }: DateTimeSectionProps) => {
   return (
     <div>

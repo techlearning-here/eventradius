@@ -30,12 +30,12 @@ def get_supabase_client() -> Client:
     """Initialize and return Supabase client"""
     supabase_url = os.getenv('SUPABASE_URL')
     supabase_key = os.getenv('SUPABASE_KEY')
-    
+
     if not supabase_url or not supabase_key:
         print("❌ Missing Supabase configuration in .env file")
         print("Please ensure SUPABASE_URL and SUPABASE_KEY are set in your .env file")
         sys.exit(1)
-    
+
     try:
         client: Client = create_client(supabase_url, supabase_key)
         print(f"✅ Supabase client created successfully")
@@ -48,7 +48,7 @@ def get_supabase_client() -> Client:
 async def test_basic_connection(client: Client):
     """Test basic connection without any table operations"""
     print("\n🔍 Testing basic Supabase connection...")
-    
+
     try:
         # Test by checking if we can access the schema
         response = client.table('test2').select('count').execute()
@@ -61,12 +61,12 @@ async def test_basic_connection(client: Client):
 async def test_table_exists(client: Client):
     """Check if test2 table exists and is accessible"""
     print("\n🏗️ Testing if test2 table exists...")
-    
+
     try:
         # Try to select from the table
         response = client.table('test2').select('*').limit(1).execute()
         print("✅ test2 table exists and is accessible")
-        
+
         if response.data:
             print(f"   Found {len(response.data)} existing records")
             if response.data:
@@ -75,7 +75,7 @@ async def test_table_exists(client: Client):
                     print(f"     {key}: {value}")
         else:
             print("   No existing records (table is empty)")
-        
+
         return True
     except Exception as e:
         print(f"❌ test2 table access failed: {e}")
@@ -84,16 +84,16 @@ async def test_table_exists(client: Client):
 async def test_simple_insert(client: Client):
     """Test a simple insert operation"""
     print("\n📝 Testing simple INSERT operation...")
-    
+
     test_data = {
         'name': f'Test Record {datetime.now().strftime("%H:%M:%S")}',
         'description': 'This is a test record for debugging'
     }
-    
+
     try:
         print(f"   Attempting to insert: {test_data}")
         response = client.table('test2').insert(test_data).execute()
-        
+
         if response.data:
             inserted_record = response.data[0]
             print(f"   ✅ Successfully inserted record with ID: {inserted_record.get('id')}")
@@ -102,7 +102,7 @@ async def test_simple_insert(client: Client):
         else:
             print(f"   ❌ Insert returned no data: {response}")
             return None
-            
+
     except Exception as e:
         print(f"   ❌ Insert failed: {e}")
         return None
@@ -110,7 +110,7 @@ async def test_simple_insert(client: Client):
 async def test_read_operation(client: Client, record_id=None):
     """Test read operation"""
     print("\n📖 Testing READ operation...")
-    
+
     try:
         if record_id:
             # Read specific record
@@ -120,7 +120,7 @@ async def test_read_operation(client: Client, record_id=None):
             # Read all records
             response = client.table('test2').select('*').execute()
             print("   Reading all records")
-        
+
         if response.data:
             print(f"   ✅ Successfully read {len(response.data)} record(s)")
             for i, record in enumerate(response.data):
@@ -129,7 +129,7 @@ async def test_read_operation(client: Client, record_id=None):
         else:
             print("   ℹ️ No records found")
             return []
-            
+
     except Exception as e:
         print(f"   ❌ Read failed: {e}")
         return None
@@ -137,16 +137,16 @@ async def test_read_operation(client: Client, record_id=None):
 async def test_update_operation(client: Client, record_id):
     """Test update operation"""
     print("\n✏️ Testing UPDATE operation...")
-    
+
     update_data = {
         'name': f'Updated Test Record {datetime.now().strftime("%H:%M:%S")}',
         'description': 'This record has been updated'
     }
-    
+
     try:
         print(f"   Updating record {record_id} with: {update_data}")
         response = client.table('test2').update(update_data).eq('id', record_id).execute()
-        
+
         if response.data:
             updated_record = response.data[0]
             print(f"   ✅ Successfully updated record: {updated_record}")
@@ -154,7 +154,7 @@ async def test_update_operation(client: Client, record_id):
         else:
             print(f"   ❌ Update returned no data: {response}")
             return None
-            
+
     except Exception as e:
         print(f"   ❌ Update failed: {e}")
         return None
@@ -162,11 +162,11 @@ async def test_update_operation(client: Client, record_id):
 async def test_delete_operation(client: Client, record_id):
     """Test delete operation"""
     print("\n🗑️ Testing DELETE operation...")
-    
+
     try:
         print(f"   Deleting record with ID: {record_id}")
         response = client.table('test2').delete().eq('id', record_id).execute()
-        
+
         if response.data:
             deleted_record = response.data[0]
             print(f"   ✅ Successfully deleted record: {deleted_record}")
@@ -174,7 +174,7 @@ async def test_delete_operation(client: Client, record_id):
         else:
             print(f"   ❌ Delete returned no data: {response}")
             return None
-            
+
     except Exception as e:
         print(f"   ❌ Delete failed: {e}")
         return None
@@ -183,48 +183,48 @@ async def main():
     """Main debug function"""
     print("🐛 DEBUG: test2 Table Analysis")
     print("=" * 50)
-    
+
     # Initialize client
     client = get_supabase_client()
-    
+
     # Test basic connection
     if not await test_basic_connection(client):
         print("\n❌ Cannot proceed - basic connection failed")
         return
-    
+
     # Test if table exists
     if not await test_table_exists(client):
         print("\n❌ test2 table doesn't exist or isn't accessible")
         print("   Please run the migration: create_test2_table.sql")
         return
-    
+
     # Test CRUD operations
     print("\n🔄 Testing CRUD operations sequence...")
-    
+
     # INSERT
     inserted_record = await test_simple_insert(client)
     if not inserted_record:
         print("\n❌ INSERT failed - cannot proceed with further tests")
         return
-    
+
     record_id = inserted_record['id']
-    
+
     # READ
     await test_read_operation(client, record_id)
-    
+
     # UPDATE
     updated_record = await test_update_operation(client, record_id)
-    
+
     # READ again to verify update
     if updated_record:
         await test_read_operation(client, record_id)
-    
+
     # DELETE
     await test_delete_operation(client, record_id)
-    
+
     # Final read to confirm deletion
     await test_read_operation(client)
-    
+
     print("\n" + "=" * 50)
     print("🎯 DEBUG SUMMARY")
     print("=" * 50)

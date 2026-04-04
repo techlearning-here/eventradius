@@ -57,8 +57,8 @@ This document distills **`Feature_plan.md`** (product vision, categories, future
 
 Each event ties together:
 
-- The **event** row  
-- **Participants** (`interested` / `going` / `not_going`)  
+- The **event** row
+- **Participants** (`interested` / `going` / `not_going`)
 - **Chat messages** (for coordination)
 
 **Participation (all event types):**
@@ -127,10 +127,10 @@ Each event ties together:
 
 ## 10. End-to-end flow (spec checklist)
 
-1. Organizer creates Standard or Preview → **pending approval**.  
-2. Admin approves or rejects **with remark**.  
-3. **Approved** events appear in discovery (distance + preferences).  
-4. Users set **Interested / Going / Not going**; counts show everywhere.  
+1. Organizer creates Standard or Preview → **pending approval**.
+2. Admin approves or rejects **with remark**.
+3. **Approved** events appear in discovery (distance + preferences).
+4. Users set **Interested / Going / Not going**; counts show everywhere.
 5. For Preview: organizer manages interest, **converts to Standard**, chat with **going** users until **completed** and archived.
 
 ---

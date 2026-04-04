@@ -37,7 +37,7 @@ const Auth = () => {
         title: 'Success',
         description: 'Signed in with Google successfully!',
       });
-      
+
       // Redirect to home page after successful sign in
       navigate('/');
     } catch (error: unknown) {
@@ -53,7 +53,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white px-4">
-      <SEOHead 
+      <SEOHead
         title="Sign In with Google"
         description="Sign in to manage your events and registrations"
       />
@@ -66,7 +66,7 @@ const Auth = () => {
             Sign in to manage your events and registrations
           </p>
         </div>
-        
+
         <Button
           onClick={handleGoogleSignUp}
           disabled={loading}

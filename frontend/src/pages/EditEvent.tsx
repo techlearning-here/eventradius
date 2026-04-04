@@ -43,8 +43,8 @@ const EditEvent = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [registrants, setRegistrants] = useState<Array<{ display_name: string; registered_at: string }>>([]);
-  
-  
+
+
   const locationInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
@@ -124,7 +124,7 @@ const EditEvent = () => {
       // Parse date and time
       const targetDate = new Date(data.target_date);
       setStartDate(targetDate);
-      
+
       // Extract times from the time string (format: "HH:MM - HH:MM")
       const [start, end] = data.time.split(' - ');
       setStartTime(start);
@@ -343,15 +343,15 @@ const EditEvent = () => {
 
   return (
     <>
-      <SEOHead 
+      <SEOHead
         title="Edit Event"
         description="Update your event details and settings"
       />
       <AuthSheet isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
-      
+
       <div className="min-h-screen bg-white">
         <Navbar />
-        
+
         {user ? (
           <div className="max-w-7xl mx-auto pt-24 md:pt-32 pb-8 md:pb-16 px-4 md:px-8">
             <div className="grid lg:grid-cols-2 gap-8 md:gap-16 items-start">
@@ -373,7 +373,7 @@ const EditEvent = () => {
                 onChange={handleImageUpload}
               />
             </label>
-            
+
             {imagePreview && (
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -495,7 +495,7 @@ const EditEvent = () => {
                 <h3 className="text-[18px] font-medium mb-4">Registrations ({registrants.length})</h3>
                 <div className="border border-black">
                   {registrants.map((registrant, index) => (
-                    <div 
+                    <div
                       key={index}
                       className={cn(
                         "px-3 md:px-4 py-2 md:py-3 flex justify-between items-center",
@@ -524,11 +524,11 @@ const EditEvent = () => {
                       <span className="text-white text-[13px] font-normal uppercase relative transition-colors duration-300 group-hover:text-black">
                         {isSubmitting ? 'UPDATING...' : 'UPDATE EVENT'}
                       </span>
-                      <svg 
-                        width="12" 
-                        height="12" 
-                        viewBox="0 0 12 12" 
-                        fill="none" 
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 12 12"
+                        fill="none"
                         xmlns="http://www.w3.org/2000/svg"
                         className="absolute right-[18px] opacity-0 transition-all duration-300 ease-in-out group-hover:opacity-100"
                         aria-hidden="true"
@@ -538,12 +538,12 @@ const EditEvent = () => {
                       </svg>
                     </button>
                     <div className="flex w-[50px] h-[50px] justify-center items-center border absolute right-0 bg-white rounded-[99px] border-solid border-[#1A1A1A] transition-all duration-300 ease-in-out group-hover:opacity-0 group-hover:scale-50 pointer-events-none z-0">
-                      <svg 
-                        width="12" 
-                        height="12" 
-                        viewBox="0 0 12 12" 
-                        fill="none" 
-                        xmlns="http://www.w3.org/2000/svg" 
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
                         className="arrow-icon"
                         aria-hidden="true"
                       >

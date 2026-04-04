@@ -14,8 +14,8 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
 }
 
 export const supabase = createClient<Database>(
-  SUPABASE_URL || 'https://placeholder.supabase.co', 
-  SUPABASE_PUBLISHABLE_KEY || 'placeholder-key', 
+  SUPABASE_URL || 'https://placeholder.supabase.co',
+  SUPABASE_PUBLISHABLE_KEY || 'placeholder-key',
   {
   auth: {
     storage: localStorage,

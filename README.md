@@ -202,7 +202,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 pre-commit install
 
-# Frontend setup  
+# Frontend setup
 cd ../frontend
 npm install
 
@@ -226,7 +226,7 @@ To avoid CI failures and security issues, this project includes pre-commit hooks
 
 ### What's Checked:
 - **Backend**: Black code formatting, Python linting, secret detection
-- **Frontend**: ESLint, TypeScript errors, secret detection  
+- **Frontend**: ESLint, TypeScript errors, secret detection
 - **Security**: Scans for leaked API keys, tokens, and credentials
 - **Git**: Prevents pushing large files, ensures proper line endings
 
@@ -375,14 +375,14 @@ If hooks fail, fix the issues they report:
 
 #### **Backend Issues:**
 - **Black formatting errors**: Run `black .` or let hooks auto-fix
-- **Flake8 linting**: 
+- **Flake8 linting**:
   - Long lines (>88 chars): Break long strings/log messages
   - Unused imports: Remove unused imports
   - Method chains: Break long chained calls into variables
 - **Test warnings**: Use `assert` instead of `return` in pytest functions
 
 #### **Frontend Issues:**
-- **ESLint errors**: 
+- **ESLint errors**:
   - Replace `require()` with ES6 imports
   - Replace `any` types with proper TypeScript types
   - Fix React hooks dependency arrays
@@ -435,10 +435,7 @@ For a comprehensive guide to common issues and solutions, see **[CHEAT_SHEET.md]
 
 ### Most Common Issues:
 - **Long lines** (>88 chars) → Break with f-string concatenation
-- **Unused imports** → Remove unused import statements  
+- **Unused imports** → Remove unused import statements
 - **ESLint errors** → Use ES6 imports, proper TypeScript types
 - **Secret leaks** → Never commit real credentials, use placeholders
 - **Test warnings** → Use `assert` instead of `return` in pytest
-
-
-

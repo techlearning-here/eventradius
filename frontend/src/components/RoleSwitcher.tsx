@@ -17,7 +17,7 @@ export const RoleSwitcher = () => {
 
   const handleRoleSwitch = async (newRole: 'user' | 'organizer', targetPath: string) => {
     if (switching || role === newRole) return;
-    
+
     setSwitching(true);
     try {
       await setActiveRole(newRole);
@@ -36,8 +36,8 @@ export const RoleSwitcher = () => {
         onClick={() => handleRoleSwitch('user', '/discover')}
         disabled={switching}
         className={`h-full px-2.5 text-[10px] font-medium uppercase leading-none transition-all duration-200 flex items-center gap-1 ${
-          role === 'user' 
-            ? 'bg-foreground text-background' 
+          role === 'user'
+            ? 'bg-foreground text-background'
             : 'bg-background text-foreground hover:bg-muted'
         } ${switching ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
@@ -49,8 +49,8 @@ export const RoleSwitcher = () => {
         onClick={() => handleRoleSwitch('organizer', '/organizer')}
         disabled={switching}
         className={`h-full px-2.5 text-[10px] font-medium uppercase leading-none border-l border-foreground transition-all duration-200 flex items-center gap-1 ${
-          role === 'organizer' 
-            ? 'bg-foreground text-background' 
+          role === 'organizer'
+            ? 'bg-foreground text-background'
             : 'bg-background text-foreground hover:bg-muted'
         } ${switching ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
