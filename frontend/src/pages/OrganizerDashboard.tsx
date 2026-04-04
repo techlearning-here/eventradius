@@ -68,7 +68,7 @@ const OrganizerDashboard = () => {
 
   useEffect(() => {
     if (!authLoading && (!user || role !== 'organizer')) navigate('/');
-  }, [authLoading, user, role]);
+  }, [authLoading, user, role, navigate]);
 
   useEffect(() => {
     if (user && role === 'organizer') fetchEvents();

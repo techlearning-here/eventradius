@@ -18,7 +18,7 @@ describe('API Client Tests', () => {
   describe('Authentication', () => {
     it('should add Authorization header when token exists', async () => {
       const mockResponse = { data: 'test' };
-      (fetch as any).mockResolvedValueOnce({
+      (fetch as vi.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockResponse,
       });
@@ -61,7 +61,7 @@ describe('API Client Tests', () => {
 
     it('should handle missing token gracefully', async () => {
       const mockResponse = { detail: 'Not authenticated' };
-      (fetch as any).mockResolvedValueOnce({
+      (fetch as vi.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: false,
         status: 401,
         json: async () => mockResponse,
@@ -103,7 +103,7 @@ describe('API Client Tests', () => {
         distance_range: 25
       };
 
-      (fetch as any).mockResolvedValueOnce({
+      (fetch as vi.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockPreferences,
       });
@@ -127,7 +127,7 @@ describe('API Client Tests', () => {
       };
 
       const mockResponse = { message: 'Preferences updated successfully' };
-      (fetch as any).mockResolvedValueOnce({
+      (fetch as vi.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockResponse,
       });
@@ -146,7 +146,7 @@ describe('API Client Tests', () => {
 
     it('should handle preferences API errors', async () => {
       const mockError = { detail: 'Failed to fetch preferences' };
-      (fetch as any).mockResolvedValueOnce({
+      (fetch as vi.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: false,
         status: 500,
         json: async () => mockError,
@@ -177,7 +177,7 @@ describe('API Client Tests', () => {
         }
       ];
 
-      (fetch as any).mockResolvedValueOnce({
+      (fetch as vi.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockEvents,
       });
@@ -203,7 +203,7 @@ describe('API Client Tests', () => {
         organizer_id: 'user-1'
       };
 
-      (fetch as any).mockResolvedValueOnce({
+      (fetch as vi.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockEvent,
       });
@@ -228,7 +228,7 @@ describe('API Client Tests', () => {
         created_at: '2024-01-01T00:00:00Z'
       };
 
-      (fetch as any).mockResolvedValueOnce({
+      (fetch as vi.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockMessage,
       });
@@ -263,7 +263,7 @@ describe('API Client Tests', () => {
         }
       ];
 
-      (fetch as any).mockResolvedValueOnce({
+      (fetch as vi.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockMessages,
       });
@@ -297,7 +297,7 @@ describe('API Client Tests', () => {
         }
       ];
 
-      (fetch as any).mockResolvedValueOnce({
+      (fetch as vi.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockProfiles,
       });
@@ -320,7 +320,7 @@ describe('API Client Tests', () => {
         { user_id: 'user-3', role: 'admin' }
       ];
 
-      (fetch as any).mockResolvedValueOnce({
+      (fetch as vi.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockRoles,
       });
@@ -338,7 +338,7 @@ describe('API Client Tests', () => {
 
     it('should update event status', async () => {
       const mockResponse = { message: 'Event status updated successfully' };
-      (fetch as any).mockResolvedValueOnce({
+      (fetch as vi.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockResponse,
       });
@@ -358,13 +358,13 @@ describe('API Client Tests', () => {
 
   describe('Error Handling', () => {
     it('should handle network errors', async () => {
-      (fetch as any).mockRejectedValueOnce(new Error('Network error'));
+      (fetch as vi.MockedFunction<typeof fetch>).mockRejectedValueOnce(new Error('Network error'));
 
       await expect(apiClient.getCurrentUserProfile()).rejects.toThrow('Failed to fetch user profile: Network error');
     });
 
     it('should handle JSON parsing errors', async () => {
-      (fetch as any).mockResolvedValueOnce({
+      (fetch as vi.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => {
           throw new Error('Invalid JSON');
@@ -376,7 +376,7 @@ describe('API Client Tests', () => {
 
     it('should handle HTTP error status codes', async () => {
       const mockError = { detail: 'Internal server error' };
-      (fetch as any).mockResolvedValueOnce({
+      (fetch as vi.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: false,
         status: 500,
         json: async () => mockError,

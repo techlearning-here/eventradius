@@ -5,18 +5,22 @@ echo 🚀 Running EventRadius Test Suite
 echo ==================================
 
 REM Backend Tests
-echo 📋 Running Backend Tests...
+echo 📋 Running Backend Tests with Coverage...
 cd backend
 
 REM Check if virtual environment exists
-if not exist "venv" (
+if not exist "..\venv" (
     echo Creating virtual environment...
-    python -m venv venv
+    python -m venv ..\venv
 )
 
-REM Activate virtual environment
-call venv\Scripts\activate
-
+..\venv\Scripts\python.exe -m pytest tests/ -v --tb=short --cov=.
+if %errorlevel% neq 0 (
+    echo ❌ Backend tests failed!
+    exit /b 1
+) else (
+    echo ✅ Backend tests passed
+)
 REM Install test dependencies
 echo Installing test dependencies...
 pip install -r requirements-test.txt

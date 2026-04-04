@@ -52,11 +52,11 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (!authLoading && (!user || role !== 'admin')) navigate('/');
-  }, [authLoading, user, role]);
+  }, [authLoading, user, role, navigate]);
 
   useEffect(() => {
     if (user && role === 'admin') { fetchEvents(); fetchUsers(); }
-  }, [user, role]);
+  }, [user, role, fetchEvents, fetchUsers]);
 
   const fetchEvents = async () => {
     try {

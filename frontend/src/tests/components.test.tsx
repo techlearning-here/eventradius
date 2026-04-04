@@ -84,7 +84,7 @@ describe('AuthSheet Component', () => {
 
   it('should handle Google sign-in', async () => {
     const mockSignIn = jest.fn();
-    const { supabase } = require('@/integrations/supabase/client');
+    const { supabase } = jest.requireMock('@/integrations/supabase/client');
     supabase.auth.signInWithOAuth.mockImplementation(mockSignIn);
 
     render(
@@ -123,7 +123,7 @@ describe('EventDetailPage Component', () => {
       EventDetailPage: () => <div>Loading...</div>,
     }));
 
-    const { EventDetailPage } = require('@/components/EventDetailPage');
+    const { EventDetailPage } = jest.requireMock('@/components/EventDetailPage');
     render(
       <TestWrapper>
         <EventDetailPage />
@@ -139,7 +139,7 @@ describe('EventDetailPage Component', () => {
       EventDetailPage: () => <div>Event not found</div>,
     }));
 
-    const { EventDetailPage } = require('@/components/EventDetailPage');
+    const { EventDetailPage } = jest.requireMock('@/components/EventDetailPage');
     render(
       <TestWrapper>
         <EventDetailPage />
@@ -163,7 +163,7 @@ describe('EventChat Component', () => {
       ),
     }));
 
-    const { EventChat } = require('@/components/EventChat');
+    const { EventChat } = jest.requireMock('@/components/EventChat');
     render(
       <TestWrapper>
         <EventChat eventId="test-event-id" eventCreatorId="user-1" eventStatus="active" />
@@ -197,7 +197,7 @@ describe('EventChat Component', () => {
       ),
     }));
 
-    const { EventChat } = require('@/components/EventChat');
+    const { EventChat } = jest.requireMock('@/components/EventChat');
     render(
       <TestWrapper>
         <EventChat eventId="test-event-id" eventCreatorId="user-1" eventStatus="active" />
@@ -226,14 +226,14 @@ describe('Integration Tests', () => {
       name: 'Test User',
     };
 
-    const { apiClient } = require('@/integrations/backend/api');
+    const { apiClient } = jest.requireMock('@/integrations/backend/api');
     apiClient.getUserPreferences.mockResolvedValue({
       onboarding_completed: false,
       is_organizer: false,
     });
 
     // Mock OAuth success
-    const { supabase } = require('@/integrations/supabase/client');
+    const { supabase } = jest.requireMock('@/integrations/supabase/client');
     supabase.auth.signInWithOAuth.mockResolvedValue({});
 
     render(
@@ -266,7 +266,7 @@ describe('Integration Tests', () => {
       age_range: '25-34',
     };
 
-    const { apiClient } = require('@/integrations/backend/api');
+    const { apiClient } = jest.requireMock('@/integrations/backend/api');
     apiClient.updateUserPreferences.mockResolvedValue({ message: 'Updated' });
 
     // This would be tested in the actual Onboarding component

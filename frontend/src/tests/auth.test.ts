@@ -57,13 +57,13 @@ describe('useAuthWithBackend Hook', () => {
     const mockRoles = ['user'];
 
     // Mock API responses
-    const { apiClient } = require('@/integrations/backend/api');
+    const { apiClient } = jest.requireMock('@/integrations/backend/api');
     apiClient.getCurrentUserProfile.mockResolvedValue(mockUser);
     apiClient.getUserPreferences.mockResolvedValue(mockPreferences);
     apiClient.getUserRoles.mockResolvedValue({ roles: mockRoles });
 
     // Mock Supabase session
-    const { supabase } = require('@/integrations/supabase/client');
+    const { supabase } = jest.requireMock('@/integrations/supabase/client');
     supabase.auth.getSession.mockResolvedValue({
       data: { session: { access_token: 'test-token' } }
     });
@@ -91,12 +91,12 @@ describe('useAuthWithBackend Hook', () => {
       is_organizer: true,
     };
 
-    const { apiClient } = require('@/integrations/backend/api');
+    const { apiClient } = jest.requireMock('@/integrations/backend/api');
     apiClient.getCurrentUserUserProfile.mockResolvedValue(mockUser);
     apiClient.getUserPreferences.mockResolvedValue(mockPreferences);
     apiClient.addUserRole.mockResolvedValue({ message: 'Role added' });
 
-    const { supabase } = require('@/integrations/supabase/client');
+    const { supabase } = jest.requireMock('@/integrations/supabase/client');
     supabase.auth.getSession.mockResolvedValue({
       data: { session: { access_token: 'test-token' } }
     });
@@ -110,10 +110,10 @@ describe('useAuthWithBackend Hook', () => {
   });
 
   it('should handle authentication errors gracefully', async () => {
-    const { apiClient } = require('@/integrations/backend/api');
+    const { apiClient } = jest.requireMock('@/integrations/backend/api');
     apiClient.getCurrentUserUserProfile.mockRejectedValue(new Error('Auth failed'));
 
-    const { supabase } = require('@/integrations/supabase/client');
+    const { supabase } = jest.requireMock('@/integrations/supabase/client');
     supabase.auth.getSession.mockResolvedValue({
       data: { session: { access_token: 'test-token' } }
     });
@@ -134,11 +134,11 @@ describe('useAuthWithBackend Hook', () => {
       name: 'Test User',
     };
 
-    const { apiClient } = require('@/integrations/backend/api');
+    const { apiClient } = jest.requireMock('@/integrations/backend/api');
     apiClient.getCurrentUserUserProfile.mockResolvedValue(mockUser);
     apiClient.getUserPreferences.mockResolvedValue({ onboarding_completed: true });
 
-    const { supabase } = require('@/integrations/supabase/client');
+    const { supabase } = jest.requireMock('@/integrations/supabase/client');
     supabase.auth.getSession.mockResolvedValue({
       data: { session: { access_token: 'test-token' } }
     });
@@ -175,12 +175,12 @@ describe('Authentication Flow Integration', () => {
       is_organizer: false,
     };
 
-    const { apiClient } = require('@/integrations/backend/api');
+    const { apiClient } = jest.requireMock('@/integrations/backend/api');
     apiClient.getCurrentUserUserProfile.mockResolvedValue(mockUser);
     apiClient.getUserPreferences.mockResolvedValue(mockPreferences);
     apiClient.getUserRoles.mockResolvedValue({ roles: ['user'] });
 
-    const { supabase } = require('@/integrations/supabase/client');
+    const { supabase } = jest.requireMock('@/integrations/supabase/client');
     supabase.auth.getSession.mockResolvedValue({
       data: { session: { access_token: 'test-token' } }
     });

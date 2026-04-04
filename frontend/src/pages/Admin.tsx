@@ -65,7 +65,7 @@ const Admin = () => {
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();

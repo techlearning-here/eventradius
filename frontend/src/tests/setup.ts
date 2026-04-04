@@ -47,8 +47,8 @@ jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => jest.fn(),
   useParams: () => ({ id: 'test-id' }),
-  BrowserRouter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
+  BrowserRouter: ({ children }: { children: React.ReactNode }) => React.createElement('div', null, children),
+  }));
 
 // Mock window.location
 Object.defineProperty(window, 'location', {

@@ -58,6 +58,20 @@ export interface UserProfile {
   created_at: string;
 }
 
+export interface EventMessage {
+  id: string;
+  event_id: string;
+  sender_user_id: string;
+  message_text: string;
+  created_at: string;
+}
+
+export interface UserRole {
+  user_id: string;
+  role: string;
+  created_at?: string;
+}
+
 export interface UserUpdate {
   full_name?: string;
   avatar_url?: string;
@@ -224,24 +238,24 @@ class ApiClient {
   }
 
   // Event endpoints
-  async sendEventMessage(eventId: string, message: string): Promise<any> {
-    return this.request<any>(`/api/events/${eventId}/messages`, {
+  async sendEventMessage(eventId: string, message: string): Promise<EventMessage> {
+    return this.request<EventMessage>(`/api/events/${eventId}/messages`, {
       method: 'POST',
       body: JSON.stringify({ message_text: message }),
     });
   }
 
-  async getEventMessages(eventId: string): Promise<any[]> {
-    return this.request<any[]>(`/api/events/${eventId}/messages`);
+  async getEventMessages(eventId: string): Promise<EventMessage[]> {
+    return this.request<EventMessage[]>(`/api/events/${eventId}/messages`);
   }
 
   // Admin endpoints
-  async getAllProfiles(): Promise<any[]> {
-    return this.request<any[]>('/api/users/admin/profiles');
+  async getAllProfiles(): Promise<UserProfile[]> {
+    return this.request<UserProfile[]>('/api/users/admin/profiles');
   }
 
-  async getAllUserRoles(): Promise<any[]> {
-    return this.request<any[]>('/api/users/admin/roles');
+  async getAllUserRoles(): Promise<UserRole[]> {
+    return this.request<UserRole[]>('/api/users/admin/roles');
   }
 
   async adminUpdateEventStatus(eventId: string, status: string, adminRemark?: string): Promise<{ message: string }> {
