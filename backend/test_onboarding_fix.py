@@ -7,14 +7,15 @@ Run this script to test the user preferences API endpoints.
 import asyncio
 import json
 from unittest.mock import MagicMock, patch
+
+from api.users import get_user_preferences, update_user_preferences
 from config.database import get_table, insert_record
-from api.users import update_user_preferences, get_user_preferences
 
 # Mock user data
 MOCK_USER = {
     "id": "test-user-123",
     "email": "test@example.com",
-    "role": "authenticated"
+    "role": "authenticated",
 }
 
 # Mock preferences data
@@ -26,8 +27,9 @@ TEST_PREFERENCES = {
     "latitude": 40.7128,
     "longitude": -74.0060,
     "distance_range": 25,
-    "onboarding_completed": True
+    "onboarding_completed": True,
 }
+
 
 async def test_scenario_1_create_new_preferences():
     """Test creating new user preferences when none exist"""
@@ -35,26 +37,28 @@ async def test_scenario_1_create_new_preferences():
 
     # Mock table to return no existing preferences
     mock_table = MagicMock()
-    mock_table.select.return_value.eq.return_value.execute.return_value = MagicMock(data=[])
+    mock_table.select.return_value.eq.return_value.execute.return_value = MagicMock(
+        data=[]
+    )
     mock_table.update.return_value.eq.return_value.execute.return_value = MagicMock(
         data=[{"user_id": "test-user-123", "onboarding_completed": True}]
     )
 
-    with patch('api.users.get_table', return_value=mock_table):
-        with patch('api.users.insert_record') as mock_insert:
+    with patch("api.users.get_table", return_value=mock_table):
+        with patch("api.users.insert_record") as mock_insert:
             mock_insert.return_value = MagicMock()
 
             # Call the function
             result = await update_user_preferences(TEST_PREFERENCES, MOCK_USER)
 
             # Verify insert was called (since no existing preferences)
-            mock_insert.assert_called_once_with("user_preferences", {
-                "user_id": "test-user-123",
-                **TEST_PREFERENCES
-            })
+            mock_insert.assert_called_once_with(
+                "user_preferences", {"user_id": "test-user-123", **TEST_PREFERENCES}
+            )
 
             print("✅ Test 1 passed: New preferences created correctly")
             return True
+
 
 async def test_scenario_2_update_existing_preferences():
     """Test updating existing user preferences"""
@@ -69,8 +73,8 @@ async def test_scenario_2_update_existing_preferences():
         data=[{"user_id": "test-user-123", "onboarding_completed": True}]
     )
 
-    with patch('api.users.get_table', return_value=mock_table):
-        with patch('api.users.insert_record') as mock_insert:
+    with patch("api.users.get_table", return_value=mock_table):
+        with patch("api.users.insert_record") as mock_insert:
             # Call the function
             result = await update_user_preferences(TEST_PREFERENCES, MOCK_USER)
 
@@ -79,10 +83,13 @@ async def test_scenario_2_update_existing_preferences():
 
             # Verify update was called with correct data
             mock_table.update.assert_called_once_with(TEST_PREFERENCES)
-            mock_table.update.return_value.eq.assert_called_once_with("user_id", "test-user-123")
+            mock_table.update.return_value.eq.assert_called_once_with(
+                "user_id", "test-user-123"
+            )
 
             print("✅ Test 2 passed: Existing preferences updated correctly")
             return True
+
 
 async def test_scenario_3_get_preferences_creates_default():
     """Test getting preferences creates default when none exist"""
@@ -90,30 +97,36 @@ async def test_scenario_3_get_preferences_creates_default():
 
     # Mock table to return no existing preferences
     mock_table = MagicMock()
-    mock_table.select.return_value.eq.return_value.execute.return_value = MagicMock(data=[])
+    mock_table.select.return_value.eq.return_value.execute.return_value = MagicMock(
+        data=[]
+    )
 
-    with patch('api.users.get_table', return_value=mock_table):
-        with patch('api.users.insert_record') as mock_insert:
+    with patch("api.users.get_table", return_value=mock_table):
+        with patch("api.users.insert_record") as mock_insert:
             mock_insert.return_value = MagicMock()
 
             # Call the function
             result = await get_user_preferences(MOCK_USER)
 
             # Verify insert was called with default values
-            mock_insert.assert_called_once_with("user_preferences", {
-                "user_id": "test-user-123",
-                "age_range": None,
-                "has_kids": False,
-                "interests": [],
-                "city": None,
-                "latitude": None,
-                "longitude": None,
-                "distance_range": 25,
-                "onboarding_completed": False,
-            })
+            mock_insert.assert_called_once_with(
+                "user_preferences",
+                {
+                    "user_id": "test-user-123",
+                    "age_range": None,
+                    "has_kids": False,
+                    "interests": [],
+                    "city": None,
+                    "latitude": None,
+                    "longitude": None,
+                    "distance_range": 25,
+                    "onboarding_completed": False,
+                },
+            )
 
             print("✅ Test 3 passed: Default preferences created correctly")
             return True
+
 
 async def test_scenario_4_get_preferences_returns_existing():
     """Test getting preferences returns existing data"""
@@ -126,7 +139,7 @@ async def test_scenario_4_get_preferences_returns_existing():
         "has_kids": True,
         "interests": ["family"],
         "city": "Boston, MA",
-        "onboarding_completed": True
+        "onboarding_completed": True,
     }
 
     mock_table = MagicMock()
@@ -134,7 +147,7 @@ async def test_scenario_4_get_preferences_returns_existing():
         data=[existing_prefs]
     )
 
-    with patch('api.users.get_table', return_value=mock_table):
+    with patch("api.users.get_table", return_value=mock_table):
         # Call the function
         result = await get_user_preferences(MOCK_USER)
 
@@ -144,32 +157,39 @@ async def test_scenario_4_get_preferences_returns_existing():
         print("✅ Test 4 passed: Existing preferences returned correctly")
         return True
 
+
 async def test_scenario_5_onboarding_completion_flow():
     """Test complete onboarding completion flow"""
     print("🧪 Test 5: Complete onboarding completion flow...")
 
     # Step 1: Get preferences (should create default)
     mock_table = MagicMock()
-    mock_table.select.return_value.eq.return_value.execute.return_value = MagicMock(data=[])
+    mock_table.select.return_value.eq.return_value.execute.return_value = MagicMock(
+        data=[]
+    )
 
-    with patch('api.users.get_table', return_value=mock_table):
-        with patch('api.users.insert_record') as mock_insert:
+    with patch("api.users.get_table", return_value=mock_table):
+        with patch("api.users.insert_record") as mock_insert:
             mock_insert.return_value = MagicMock()
 
             # Initial state - no preferences
             result = await get_user_preferences(MOCK_USER)
             assert result["onboarding_completed"] is False
 
-            print("  📍 Step 1: Initial preferences created with onboarding_completed=false")
+            print(
+                "  📍 Step 1: Initial preferences created with onboarding_completed=false"
+            )
 
     # Step 2: Update preferences (complete onboarding)
-    mock_table.select.return_value.eq.return_value.execute.return_value = MagicMock(data=[])
+    mock_table.select.return_value.eq.return_value.execute.return_value = MagicMock(
+        data=[]
+    )
     mock_table.update.return_value.eq.return_value.execute.return_value = MagicMock(
         data=[{"user_id": "test-user-123", "onboarding_completed": True}]
     )
 
-    with patch('api.users.get_table', return_value=mock_table):
-        with patch('api.users.insert_record') as mock_insert:
+    with patch("api.users.get_table", return_value=mock_table):
+        with patch("api.users.insert_record") as mock_insert:
             mock_insert.return_value = MagicMock()
 
             # Complete onboarding
@@ -183,7 +203,7 @@ async def test_scenario_5_onboarding_completion_flow():
         data=[{"user_id": "test-user-123", "onboarding_completed": True}]
     )
 
-    with patch('api.users.get_table', return_value=mock_table):
+    with patch("api.users.get_table", return_value=mock_table):
         result = await get_user_preferences(MOCK_USER)
         assert result["onboarding_completed"] is True
 
@@ -191,6 +211,7 @@ async def test_scenario_5_onboarding_completion_flow():
 
     print("✅ Test 5 passed: Complete onboarding flow works correctly")
     return True
+
 
 async def run_all_tests():
     """Run all test scenarios"""
@@ -201,7 +222,7 @@ async def run_all_tests():
         test_scenario_2_update_existing_preferences,
         test_scenario_3_get_preferences_creates_default,
         test_scenario_4_get_preferences_returns_existing,
-        test_scenario_5_onboarding_completion_flow
+        test_scenario_5_onboarding_completion_flow,
     ]
 
     passed = 0
@@ -227,6 +248,7 @@ async def run_all_tests():
         print("  ✅ Added proper error handling and logging")
     else:
         print("⚠️  Some tests failed. Please check the implementation.")
+
 
 if __name__ == "__main__":
     asyncio.run(run_all_tests())

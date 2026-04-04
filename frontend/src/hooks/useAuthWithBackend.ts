@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { User } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +30,10 @@ export const useAuthWithBackend = () => {
   const [loading, setLoading] = useState(true);
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  
+  // Flag to prevent race conditions during initialization
+  const [isInitialized, setIsInitialized] = useState(false);
+  const isInitializingRef = useRef(false);
 
   const fetchOnboardingStatus = useCallback(async (userId: string) => {
     try {
@@ -45,6 +49,7 @@ export const useAuthWithBackend = () => {
       console.log('🔍 is_organizer value:', isOrganizer);
       
       setOnboardingCompleted(completed);
+      console.log('🔍 Setting onboardingCompleted to:', completed);
 
       // If organizer preference is set, update roles accordingly
       if (isOrganizer === true && !roles.includes('organizer')) {
@@ -58,6 +63,7 @@ export const useAuthWithBackend = () => {
       return completed;
     } catch (error) {
       console.error('Error fetching onboarding status:', error);
+      console.log('🔍 Setting onboardingCompleted to null due to error');
       setOnboardingCompleted(null);
       return null;
     }
@@ -140,7 +146,19 @@ export const useAuthWithBackend = () => {
 
   const loadSession = useCallback(
     async (sessionUser: User) => {
+      // Prevent race conditions during initialization
+      if (isInitialized) {
+        console.log('🔍 Skipping loadSession - already initializing');
+        return;
+      }
+      
+      // Store user state to localStorage for persistence
+      localStorage.setItem('supabase.auth.user', JSON.stringify(sessionUser));
+      localStorage.setItem('supabase.auth.token', JSON.stringify(sessionUser));
+      
+      console.log('🔍 Setting user state:', sessionUser?.email || 'null');
       setUser(sessionUser);
+      setIsInitialized(true);
       try {
         let list = await fetchRoles(sessionUser.id);
         if (list.length === 0) {
@@ -148,21 +166,36 @@ export const useAuthWithBackend = () => {
           list = await fetchRoles(sessionUser.id);
         }
         syncActiveUiFromRoles(list);
-        await fetchUserProfile(sessionUser.id);
+        
+        // Don't let profile fetch failure break the session
+        try {
+          await fetchUserProfile(sessionUser.id);
+        } catch (profileError) {
+          console.error('Error fetching profile (continuing):', profileError);
+        }
+        
         if (list.includes('user') || list.includes('organizer')) {
-          await ensureUserPreferencesRow(sessionUser.id);
-          await fetchOnboardingStatus(sessionUser.id);
+          try {
+            await ensureUserPreferencesRow(sessionUser.id);
+            await fetchOnboardingStatus(sessionUser.id);
+          } catch (prefError) {
+            console.error('Error fetching preferences (continuing):', prefError);
+          }
         }
       } catch (error) {
         console.error('Error loading session:', error);
-        // Don't crash the app, just set default values
+        console.log('🔍 Session load error, keeping user state:', sessionUser?.email || 'null');
+        console.log('🔍 Error details:', error);
+        // Don't reset user state on session load error, just log it
         setRoles([]);
         setActiveRoleUi(null);
-        setUserProfile(null);
+        console.log('🔍 Setting onboardingCompleted to null - session load error');
         setOnboardingCompleted(null);
+        setUserProfile(null);
+        navigate('/');
       }
     },
-    [fetchRoles, seedFirstRole, syncActiveUiFromRoles, fetchUserProfile, ensureUserPreferencesRow, fetchOnboardingStatus]
+    [fetchRoles, seedFirstRole, syncActiveUiFromRoles, fetchUserProfile, ensureUserPreferencesRow, fetchOnboardingStatus, isInitialized]
   );
 
   const setActiveRole = useCallback(
@@ -224,18 +257,57 @@ export const useAuthWithBackend = () => {
     [roles, activeRoleUi]
   );
 
+  const hasOrganizerRole = useMemo(
+    () => roles.includes('organizer'),
+    [roles]
+  );
+
+  // Debug: Log user state changes
+  useEffect(() => {
+    console.log('🔍 Current user state:', user?.email || 'null', 'Loading:', loading);
+  }, [user, loading]);
+
+  const hasUserRole = useMemo(
+    () => roles.includes('user'),
+    [roles]
+  );
+
   const canSwitchRole = useMemo(
     () => roles.includes('user') && roles.includes('organizer') && !roles.includes('admin'),
     [roles]
   );
 
   useEffect(() => {
+    // Prevent multiple useEffect runs
+    if (isInitializingRef.current) {
+      console.log('🔍 Skipping useEffect - already initializing');
+      return;
+    }
+    
+    isInitializingRef.current = true;
+    
     const init = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.user) await loadSession(session.user);
+      // First try to restore from localStorage
+      const storedUser = localStorage.getItem('supabase.auth.user');
+      const storedToken = localStorage.getItem('supabase.auth.token');
+      
+      if (storedUser && storedToken) {
+        console.log('🔍 Restoring user from localStorage');
+        const parsedUser = JSON.parse(storedUser);
+        console.log('🔍 Parsed user from localStorage:', parsedUser?.email || 'null');
+        await loadSession(parsedUser);
+      } else {
+        // Fallback to Supabase session
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.user) await loadSession(session.user);
+      }
+      
+      // Set initialization flag after session is loaded
+      setIsInitialized(true);
       setLoading(false);
+      isInitializingRef.current = false;
     };
 
     const {
@@ -244,11 +316,15 @@ export const useAuthWithBackend = () => {
       if (session?.user) {
         await loadSession(session.user);
       } else {
-        // User signed out or session expired - redirect to landing page
+        // User signed out or session expired - clear localStorage and redirect to landing page
+        console.log('🔍 Clearing user state - signing out');
+        localStorage.removeItem('supabase.auth.user');
+        localStorage.removeItem('supabase.auth.token');
         setUser(null);
+        console.log('🔍 Setting onboardingCompleted to null - sign out');
+        setOnboardingCompleted(null);
         setRoles([]);
         setActiveRoleUi(null);
-        setOnboardingCompleted(null);
         setUserProfile(null);
         navigate('/');
       }
@@ -256,11 +332,59 @@ export const useAuthWithBackend = () => {
 
     init();
     return () => subscription.unsubscribe();
-  }, [loadSession, navigate]);
+  }, []); // Empty dependency array - run only once
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    // The onAuthStateChange listener will handle the redirect
+    console.log('🔍 Initiating sign out process');
+    
+    try {
+      // Call Supabase signOut
+      await supabase.auth.signOut();
+      console.log('🔍 Supabase signOut completed');
+      
+      // Manually clear all auth state immediately
+      setUser(null);
+      setRoles([]);
+      setActiveRoleUi(null);
+      setOnboardingCompleted(null);
+      setUserProfile(null);
+      setIsInitialized(false);
+      isInitializingRef.current = false;
+      
+      // Clear localStorage
+      localStorage.removeItem('supabase.auth.user');
+      localStorage.removeItem('supabase.auth.token');
+      localStorage.removeItem(ACTIVE_ROLE_KEY);
+      
+      console.log('🔍 Manual state clearing completed');
+      
+      // Redirect after a short delay to ensure state is cleared
+      setTimeout(() => {
+        navigate('/');
+      }, 100);
+      
+    } catch (error) {
+      console.error('🔍 Error during sign out:', error);
+      // Even if Supabase signOut fails, still clear local state
+      setUser(null);
+      setRoles([]);
+      setActiveRoleUi(null);
+      setOnboardingCompleted(null);
+      setUserProfile(null);
+      setIsInitialized(false);
+      isInitializingRef.current = false;
+      
+      // Clear localStorage
+      localStorage.removeItem('supabase.auth.user');
+      localStorage.removeItem('supabase.auth.token');
+      localStorage.removeItem(ACTIVE_ROLE_KEY);
+      
+      console.log('🔍 Manual state clearing completed (error fallback)');
+      
+      setTimeout(() => {
+        navigate('/');
+      }, 100);
+    }
   };
 
   return {

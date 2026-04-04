@@ -7,7 +7,6 @@ import { MapPin, Calendar, Users, Zap } from 'lucide-react';
 
 const Landing = () => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [authRole, setAuthRole] = useState<'user' | 'organizer'>('user');
   const { user, role, hasOrganizerRole, setActiveRole } = useAuthWithBackend();
   const navigate = useNavigate();
 
@@ -16,7 +15,6 @@ const Landing = () => {
       void setActiveRole('user');
       navigate('/discover');
     } else {
-      setAuthRole('user');
       setIsAuthOpen(true);
     }
   };
@@ -28,7 +26,6 @@ const Landing = () => {
     } else if (user && !hasOrganizerRole) {
       navigate('/settings');
     } else {
-      setAuthRole('organizer');
       setIsAuthOpen(true);
     }
   };
@@ -57,7 +54,7 @@ const Landing = () => {
           </button>
         ) : (
           <button
-            onClick={() => { setAuthRole('user'); setIsAuthOpen(true); }}
+            onClick={() => setIsAuthOpen(true)}
             className="text-xs font-medium uppercase tracking-wider border border-white/20 px-4 py-2 hover:bg-white/10 transition-colors text-foreground"
           >
             Sign In
@@ -211,7 +208,7 @@ const Landing = () => {
         © {new Date().getFullYear()} Event Radius. All rights reserved.
       </footer>
 
-      <AuthSheet isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} defaultRole={authRole} />
+      <AuthSheet isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
     </div>
   );
 };

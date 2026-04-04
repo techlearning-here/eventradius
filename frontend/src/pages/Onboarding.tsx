@@ -85,92 +85,133 @@ const Onboarding = () => {
           ))}
         </div>
 
-        {/* Step 1: Organizer Question */}
+        {/* Step 1: Discover vs Post Events Choice */}
         {step === 1 && (
           <div className="animate-fade-in">
-            <h2 className="text-3xl font-bold mb-2">Are you an event organizer?</h2>
-            <p className="text-foreground/50 mb-8 text-sm">This helps us customize your experience.</p>
+            <h2 className="text-3xl font-bold mb-2">What would you like to do?</h2>
+            <p className="text-foreground/50 mb-8 text-sm">Choose how you want to use EventRadius</p>
 
             <div className="space-y-4 mb-8">
               <button
-                onClick={() => setIsOrganizer(true)}
-                className={`w-full py-4 px-6 text-lg border-2 transition-all ${
-                  isOrganizer === true
-                    ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10 text-[hsl(295,100%,73%)]'
-                    : 'border-foreground/20 hover:border-[hsl(295,100%,73%)] hover:bg-[hsl(295,100%,73%)]/5'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[hsl(295,100%,73%)]/20 flex items-center justify-center">
-                    <span className="text-[hsl(295,100%,73%)]">🎯</span>
-                  </div>
-                  <div className="text-left">
-                    <div className="font-semibold">Yes, I create events</div>
-                    <div className="text-sm opacity-75">Access event creation tools and analytics</div>
-                  </div>
-                </div>
-              </button>
-
-              <button
                 onClick={() => setIsOrganizer(false)}
-                className={`w-full py-4 px-6 text-lg border-2 transition-all ${
+                className={`w-full py-6 px-6 text-lg border-2 transition-all ${
                   isOrganizer === false
                     ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10 text-[hsl(295,100%,73%)]'
                     : 'border-foreground/20 hover:border-[hsl(295,100%,73%)] hover:bg-[hsl(295,100%,73%)]/5'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-foreground/10 flex items-center justify-center">
-                    <span>👤</span>
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-[hsl(295,100%,73%)]/20 flex items-center justify-center">
+                    <span className="text-[hsl(295,100%,73%)]">🔍</span>
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold">No, I discover events</div>
-                    <div className="text-sm opacity-75">Browse and join events near me</div>
+                    <div className="font-semibold text-lg">Discover Events</div>
+                    <div className="text-sm opacity-75">Browse and join amazing events near you</div>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setIsOrganizer(true)}
+                className={`w-full py-6 px-6 text-lg border-2 transition-all ${
+                  isOrganizer === true
+                    ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10 text-[hsl(295,100%,73%)]'
+                    : 'border-foreground/20 hover:border-[hsl(295,100%,73%)] hover:bg-[hsl(295,100%,73%)]/5'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-[hsl(295,100%,73%)]/20 flex items-center justify-center">
+                    <span className="text-[hsl(295,100%,73%)]">�</span>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold text-lg">Post Events</div>
+                    <div className="text-sm opacity-75">Create and manage your own events</div>
                   </div>
                 </div>
               </button>
             </div>
 
-            <button onClick={() => setStep(2)} className="w-full py-4 bg-[hsl(295,100%,73%)] text-foreground font-semibold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[hsl(295,100%,78%)] transition-colors">
+            <button 
+              onClick={() => setStep(2)} 
+              disabled={isOrganizer === null}
+              className="w-full py-4 bg-[hsl(295,100%,73%)] text-foreground font-semibold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[hsl(295,100%,78%)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
               Next <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        {/* Step 2: Demographics */}
+        {/* Step 2: Role-specific questions */}
         {step === 2 && (
           <div className="animate-fade-in">
-            <h2 className="text-3xl font-bold mb-2">About you</h2>
-            <p className="text-foreground/50 mb-8 text-sm">Help us personalize your event feed.</p>
+            {isOrganizer === false ? (
+              <>
+                <h2 className="text-3xl font-bold mb-2">Tell us about yourself</h2>
+                <p className="text-foreground/50 mb-8 text-sm">Help us find the perfect events for you.</p>
 
-            <label className="block text-xs uppercase tracking-wider text-foreground/50 mb-3">Age Range</label>
-            <div className="grid grid-cols-3 gap-2 mb-8">
-              {AGE_RANGES.map(range => (
-                <button
-                  key={range}
-                  onClick={() => setAgeRange(range)}
-                  className={`py-3 text-sm border transition-colors ${ageRange === range ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10 text-[hsl(295,100%,73%)]' : 'border-foreground/20 hover:border-foreground/40'}`}
-                >
-                  {range}
-                </button>
-              ))}
-            </div>
+                <label className="block text-xs uppercase tracking-wider text-foreground/50 mb-3">Age Range</label>
+                <div className="grid grid-cols-3 gap-2 mb-8">
+                  {AGE_RANGES.map(range => (
+                    <button
+                      key={range}
+                      onClick={() => setAgeRange(range)}
+                      className={`py-3 text-sm border transition-colors ${ageRange === range ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10 text-[hsl(295,100%,73%)]' : 'border-foreground/20 hover:border-foreground/40'}`}
+                    >
+                      {range}
+                    </button>
+                  ))}
+                </div>
 
-            <label className="block text-xs uppercase tracking-wider text-foreground/50 mb-3">Do you have kids?</label>
-            <div className="flex gap-2 mb-8">
-              {[
-                { label: 'Yes', value: true },
-                { label: 'No', value: false },
-              ].map(opt => (
-                <button
-                  key={opt.label}
-                  onClick={() => setHasKids(opt.value)}
-                  className={`flex-1 py-3 text-sm border transition-colors ${hasKids === opt.value ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10 text-[hsl(295,100%,73%)]' : 'border-foreground/20 hover:border-foreground/40'}`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+                <label className="block text-xs uppercase tracking-wider text-foreground/50 mb-3">Do you have kids?</label>
+                <div className="flex gap-2 mb-8">
+                  {[
+                    { label: 'Yes', value: true },
+                    { label: 'No', value: false },
+                  ].map(opt => (
+                    <button
+                      key={opt.label}
+                      onClick={() => setHasKids(opt.value)}
+                      className={`flex-1 py-3 text-sm border transition-colors ${hasKids === opt.value ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10 text-[hsl(295,100%,73%)]' : 'border-foreground/20 hover:border-foreground/40'}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-3xl font-bold mb-2">About your events</h2>
+                <p className="text-foreground/50 mb-8 text-sm">Help us understand what kind of events you'll be creating.</p>
+
+                <label className="block text-xs uppercase tracking-wider text-foreground/50 mb-3">What types of events will you create?</label>
+                <div className="grid grid-cols-2 gap-2 mb-8">
+                  {CATEGORIES.slice(0, 6).map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => toggleInterest(cat.id)}
+                      className={`py-3 px-4 text-left border flex items-center gap-3 transition-colors ${interests.includes(cat.id) ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10' : 'border-foreground/20 hover:border-foreground/40'}`}
+                    >
+                      <span className="text-xl">{cat.emoji}</span>
+                      <span className="text-sm font-medium">{cat.label}</span>
+                      {interests.includes(cat.id) && <Check className="w-4 h-4 text-[hsl(295,100%,73%)] ml-auto" />}
+                    </button>
+                  ))}
+                </div>
+
+                <label className="block text-xs uppercase tracking-wider text-foreground/50 mb-3">Target audience age range</label>
+                <div className="grid grid-cols-3 gap-2 mb-8">
+                  {AGE_RANGES.map(range => (
+                    <button
+                      key={range}
+                      onClick={() => setAgeRange(range)}
+                      className={`py-3 text-sm border transition-colors ${ageRange === range ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10 text-[hsl(295,100%,73%)]' : 'border-foreground/20 hover:border-foreground/40'}`}
+                    >
+                      {range}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
 
             <button onClick={() => setStep(3)} className="w-full py-4 bg-[hsl(295,100%,73%)] text-foreground font-semibold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[hsl(295,100%,78%)] transition-colors">
               Next <ChevronRight className="w-4 h-4" />
@@ -178,34 +219,83 @@ const Onboarding = () => {
           </div>
         )}
 
-        {/* Step 3: Interests */}
+        {/* Step 3: Role-specific content */}
         {step === 3 && (
           <div className="animate-fade-in">
-            <h2 className="text-3xl font-bold mb-2">Your interests</h2>
-            <p className="text-foreground/50 mb-8 text-sm">Select categories you're interested in.</p>
+            {isOrganizer === false ? (
+              <>
+                <h2 className="text-3xl font-bold mb-2">Your interests</h2>
+                <p className="text-foreground/50 mb-8 text-sm">Select categories you're interested in.</p>
 
-            <div className="grid grid-cols-2 gap-2 mb-8">
-              {CATEGORIES.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => toggleInterest(cat.id)}
-                  className={`py-3 px-4 text-left border flex items-center gap-3 transition-colors ${interests.includes(cat.id) ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10' : 'border-foreground/20 hover:border-foreground/40'}`}
-                >
-                  <span className="text-xl">{cat.emoji}</span>
-                  <span className="text-sm font-medium">{cat.label}</span>
-                  {interests.includes(cat.id) && <Check className="w-4 h-4 text-[hsl(295,100%,73%)] ml-auto" />}
-                </button>
-              ))}
-            </div>
+                <div className="grid grid-cols-2 gap-2 mb-8">
+                  {CATEGORIES.map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => toggleInterest(cat.id)}
+                      className={`py-3 px-4 text-left border flex items-center gap-3 transition-colors ${interests.includes(cat.id) ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10' : 'border-foreground/20 hover:border-foreground/40'}`}
+                    >
+                      <span className="text-xl">{cat.emoji}</span>
+                      <span className="text-sm font-medium">{cat.label}</span>
+                      {interests.includes(cat.id) && <Check className="w-4 h-4 text-[hsl(295,100%,73%)] ml-auto" />}
+                    </button>
+                  ))}
+                </div>
 
-            <div className="flex gap-3">
-              <button onClick={() => setStep(2)} className="flex-1 py-4 border border-foreground/20 text-sm uppercase tracking-wider hover:bg-foreground/5 transition-colors flex items-center justify-center gap-2">
-                <ChevronLeft className="w-4 h-4" /> Back
-              </button>
-              <button onClick={() => setStep(4)} disabled={interests.length === 0} className="flex-1 py-4 bg-[hsl(295,100%,73%)] text-foreground font-semibold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[hsl(295,100%,78%)] transition-colors disabled:opacity-40">
-                Next <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+                <div className="flex gap-3">
+                  <button onClick={() => setStep(2)} className="flex-1 py-4 border border-foreground/20 text-sm uppercase tracking-wider hover:bg-foreground/5 transition-colors flex items-center justify-center gap-2">
+                    <ChevronLeft className="w-4 h-4" /> Back
+                  </button>
+                  <button onClick={() => setStep(4)} disabled={interests.length === 0} className="flex-1 py-4 bg-[hsl(295,100%,73%)] text-foreground font-semibold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[hsl(295,100%,78%)] transition-colors disabled:opacity-40">
+                    Next <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-3xl font-bold mb-2">Event details</h2>
+                <p className="text-foreground/50 mb-8 text-sm">Tell us more about your event preferences.</p>
+
+                <label className="block text-xs uppercase tracking-wider text-foreground/50 mb-3">Additional event categories</label>
+                <div className="grid grid-cols-2 gap-2 mb-8">
+                  {CATEGORIES.slice(6).map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => toggleInterest(cat.id)}
+                      className={`py-3 px-4 text-left border flex items-center gap-3 transition-colors ${interests.includes(cat.id) ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10' : 'border-foreground/20 hover:border-foreground/40'}`}
+                    >
+                      <span className="text-xl">{cat.emoji}</span>
+                      <span className="text-sm font-medium">{cat.label}</span>
+                      {interests.includes(cat.id) && <Check className="w-4 h-4 text-[hsl(295,100%,73%)] ml-auto" />}
+                    </button>
+                  ))}
+                </div>
+
+                <label className="block text-xs uppercase tracking-wider text-foreground/50 mb-3">Family-friendly events?</label>
+                <div className="flex gap-2 mb-8">
+                  {[
+                    { label: 'Yes, kid-friendly', value: true },
+                    { label: 'Adults only', value: false },
+                  ].map(opt => (
+                    <button
+                      key={opt.label}
+                      onClick={() => setHasKids(opt.value)}
+                      className={`flex-1 py-3 text-sm border transition-colors ${hasKids === opt.value ? 'border-[hsl(295,100%,73%)] bg-[hsl(295,100%,73%)]/10 text-[hsl(295,100%,73%)]' : 'border-foreground/20 hover:border-foreground/40'}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex gap-3">
+                  <button onClick={() => setStep(2)} className="flex-1 py-4 border border-foreground/20 text-sm uppercase tracking-wider hover:bg-foreground/5 transition-colors flex items-center justify-center gap-2">
+                    <ChevronLeft className="w-4 h-4" /> Back
+                  </button>
+                  <button onClick={() => setStep(4)} className="flex-1 py-4 bg-[hsl(295,100%,73%)] text-foreground font-semibold text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[hsl(295,100%,78%)] transition-colors">
+                    Next <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
 

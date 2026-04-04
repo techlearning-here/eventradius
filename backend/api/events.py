@@ -3,6 +3,7 @@ Event-related API endpoints.
 """
 
 import logging
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -373,6 +374,127 @@ async def leave_event(event_id: str, user: dict = Depends(get_current_user)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to leave event",
+        )
+
+
+@router.get("/{event_id}")
+async def get_event(event_id: str):
+    """
+    Get a single event by ID.
+    """
+    try:
+        table = get_table("events")
+        response = table.select("*").eq("id", event_id).execute()
+
+        if not response.data or len(response.data) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+            )
+
+        event = response.data[0]
+
+        # Count participants
+        participants_response = (
+            get_table("event_participants")
+            .select("*", count="exact")
+            .eq("event_id", event_id)
+            .execute()
+        )
+
+        event["current_participants"] = participants_response.count or 0
+
+        return event
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching event {event_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch event",
+        )
+
+
+@router.post("/{event_id}/messages")
+async def send_event_message(
+    event_id: str,
+    message: dict,
+    user: dict = Depends(get_current_user),
+):
+    """
+    Send a message in event chat.
+    """
+    try:
+        # Verify user is participant or organizer
+        event_response = get_table("events").select("*").eq("id", event_id).execute()
+        if not event_response.data or len(event_response.data) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+            )
+
+        event = event_response.data[0]
+
+        # Check if user is organizer or participant
+        if event.get("organizer_id") != user["id"]:
+            participant_response = (
+                get_table("event_participants")
+                .select("*")
+                .eq("event_id", event_id)
+                .eq("user_id", user["id"])
+                .execute()
+            )
+            if not participant_response.data or len(participant_response.data) == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You must be a participant to send messages",
+                )
+
+        # Insert message
+        message_data = {
+            "event_id": event_id,
+            "sender_user_id": user["id"],
+            "message_text": message.get("message_text", ""),
+            "created_at": datetime.now().isoformat(),
+        }
+
+        response = get_table("event_messages").insert(message_data).execute()
+
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to send message",
+            )
+
+        return response.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending message to event {event_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send message",
+        )
+
+
+@router.get("/{event_id}/messages")
+async def get_event_messages(event_id: str):
+    """
+    Get all messages for an event.
+    """
+    try:
+        table = get_table("event_messages")
+        response = (
+            table.select("*")
+            .eq("event_id", event_id)
+            .order("created_at", ascending=True)
+            .execute()
+        )
+
+        return response.data or []
+    except Exception as e:
+        logger.error(f"Error fetching messages for event {event_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch messages",
         )
 
 

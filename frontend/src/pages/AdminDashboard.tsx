@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/integrations/backend/api';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { Navbar } from '@/components/Navbar';
 import { SEOHead } from '@/components/SEOHead';
@@ -59,49 +59,69 @@ const AdminDashboard = () => {
   }, [user, role]);
 
   const fetchEvents = async () => {
-    const { data } = await supabase
-      .from('events')
-      .select('id, title, creator, date, status, event_type, event_status, admin_remark, category, city, created_by, description, time, address, background_image_url')
-      .order('target_date', { ascending: false });
-    setEvents((data as unknown as AdminEvent[]) || []);
-    setLoading(false);
+    try {
+      const events = await apiClient.getEvents();
+      setEvents(events as unknown as AdminEvent[]);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchUsers = async () => {
-    const { data: profiles } = await supabase.from('profiles').select('*');
-    const { data: roles } = await supabase.from('user_roles').select('*');
-    const roleList = (roles ?? []) as UserRoleRow[];
-    const merged = (profiles || []).map(p => ({
-      ...p,
-      role: roleList.find((r) => r.user_id === p.user_id)?.role || 'user',
-    }));
-    setUsers(merged);
+    try {
+      const profiles = await apiClient.getAllProfiles();
+      const roles = await apiClient.getAllUserRoles();
+      const roleList = roles || [];
+      const merged = (profiles || []).map(p => ({
+        ...p,
+        roles: roleList.filter(r => r.user_id === p.id).map(r => r.role)
+      }));
+      setUsers(merged);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setUsers([]);
+    }
   };
 
   const handleApprove = async () => {
     if (!selectedEvent) return;
     if (!adminRemark.trim()) { toast.error('Please add a remark before approving'); return; }
-    const { error } = await supabase.from('events')
-      .update({ status: 'approved', admin_remark: adminRemark.trim() })
-      .eq('id', selectedEvent.id);
-    if (error) toast.error(error.message);
-    else { toast.success('Event approved'); setSelectedEvent(null); setAdminRemark(''); fetchEvents(); }
+    try {
+      await apiClient.adminUpdateEventStatus(selectedEvent.id, 'approved', adminRemark.trim());
+      toast.success('Event approved');
+      setSelectedEvent(null);
+      setAdminRemark('');
+      fetchEvents();
+    } catch (error) {
+      toast.error('Failed to approve event');
+    }
   };
 
   const handleReject = async () => {
     if (!selectedEvent) return;
     if (!adminRemark.trim()) { toast.error('Please add a remark before rejecting'); return; }
-    const { error } = await supabase.from('events')
-      .update({ status: 'rejected', admin_remark: adminRemark.trim() })
-      .eq('id', selectedEvent.id);
-    if (error) toast.error(error.message);
-    else { toast.success('Event rejected'); setSelectedEvent(null); setAdminRemark(''); fetchEvents(); }
+    try {
+      await apiClient.adminUpdateEventStatus(selectedEvent.id, 'rejected', adminRemark.trim());
+      toast.success('Event rejected');
+      setSelectedEvent(null);
+      setAdminRemark('');
+      fetchEvents();
+    } catch (error) {
+      toast.error('Failed to reject event');
+    }
   };
 
   const quickAction = async (id: string, status: string) => {
-    const { error } = await supabase.from('events').update({ status }).eq('id', id);
-    if (error) toast.error(error.message);
-    else { toast.success(`Event ${status}`); fetchEvents(); }
+    try {
+      await apiClient.adminUpdateEventStatus(id, status);
+      toast.success(`Event ${status}`);
+      fetchEvents();
+    } catch (error) {
+      toast.error(`Failed to ${status} event`);
+    }
   };
 
   const filteredEvents = statusFilter === 'all' ? events : events.filter(e => e.status === statusFilter);

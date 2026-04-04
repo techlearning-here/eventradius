@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import TestOAuth from "./pages/TestOAuth";
 import Onboarding from "./pages/Onboarding";
+import OrganizerOnboarding from "./pages/OrganizerOnboarding";
 import Settings from "./pages/Settings";
 import OrganizerDashboard from "./pages/OrganizerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -31,6 +32,7 @@ const App = () => (
       <Route path="/my-events" element={<MyEvents />} />
       <Route path="/create-event" element={<CreateEvent />} />
       <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/organizer-onboarding" element={<OrganizerOnboarding />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/organizer" element={<OrganizerDashboard />} />
       <Route path="/admin-dashboard" element={<AdminDashboard />} />

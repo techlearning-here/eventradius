@@ -83,7 +83,7 @@ const EventCard = ({ event }: { event: Event }) => {
 };
 
 const Discover = () => {
-  const { user, role, onboardingCompleted } = useAuthWithBackend();
+  const { user, role, onboardingCompleted, canSwitchRole } = useAuthWithBackend();
   const navigate = useNavigate();
   const [date, setDate] = useState<Date | undefined>(undefined);
   const { events, loading, error, refetch } = useEvents();
@@ -141,7 +141,8 @@ const Discover = () => {
       <div className="min-h-screen bg-background">
         <SEOHead title="Event Discoverer - Find Events" description="Explore events near you filtered by your interests and location." />
         <Navbar />
-        <RoleSwitcher />
+        {/* Show RoleSwitcher if user can switch between roles */}
+        {user && canSwitchRole && <RoleSwitcher />}
 
         <section className="pt-28 md:pt-36 pb-6 px-4 md:px-8">
           <div className="max-w-6xl mx-auto">

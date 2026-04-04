@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
@@ -8,9 +8,30 @@ interface AccountDetailsProps {
 }
 
 export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }) => {
-  const { user, userProfile, signOut } = useAuthWithBackend();
-  const [isOpen, setIsOpen] = useState(false);
+  // Call all hooks at the top level to ensure consistent order
+  const authResult = useAuthWithBackend();
+  const { user, userProfile, signOut, loading } = authResult;
   const navigate = useNavigate();
+  
+  const [isOpen, setIsOpen] = useState(() => {
+    const savedState = localStorage.getItem('accountDetailsOpen');
+    return savedState === 'true';
+  });
+
+  // Sync with localStorage on mount and when it changes
+  useEffect(() => {
+    const savedState = localStorage.getItem('accountDetailsOpen');
+    if (savedState === 'true' && !isOpen) {
+      setIsOpen(true);
+    } else if (savedState === 'false' && isOpen) {
+      setIsOpen(false);
+    }
+  }, []);
+
+  // Update localStorage when isOpen changes
+  useEffect(() => {
+    localStorage.setItem('accountDetailsOpen', isOpen.toString());
+  }, [isOpen]);
 
   const handleSettings = () => {
     setIsOpen(false);
@@ -22,7 +43,14 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
     signOut();
   };
 
-  if (!user) return null;
+  // Don't render anything while auth is loading
+  if (loading) {
+    return null;
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className={`relative ${className}`}>

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { handleSimpleOAuthCallback } from '@/lib/simple-auth';
+import { apiClient } from '@/integrations/backend/api';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -21,18 +22,13 @@ const AuthCallback = () => {
           console.log('User metadata:', result.user.user_metadata);
           console.log('App metadata:', result.user.app_metadata);
 
-          // Check if user has completed onboarding
+          // Check if user has completed onboarding using backend API
           try {
-            const { data } = await supabase
-              .from('user_preferences')
-              .select('onboarding_completed')
-              .eq('user_id', result.user.id)
-              .single();
-
-            console.log('Onboarding status from callback:', data?.onboarding_completed);
+            const preferences = await apiClient.getUserPreferences();
+            console.log('Onboarding status from callback:', preferences.onboarding_completed);
 
             // Redirect based on onboarding status
-            if (data?.onboarding_completed === true) {
+            if (preferences.onboarding_completed === true) {
               navigate('/discover');
             } else {
               navigate('/onboarding');

@@ -1,10 +1,11 @@
 -- =====================================================
--- COMPLETE EVENTRADIUS DATABASE MIGRATION
+-- 01 - EVENTRADIUS DATABASE SETUP - SINGLE SCRIPT
 -- =====================================================
--- This single script contains all database setup for EventRadius
--- including tables, triggers, RLS policies, and optimizations.
---
+-- This single script contains all database creation for EventRadius
+-- including tables, types, functions, triggers, RLS policies, and indexes.
+-- 
 -- Run this in Supabase SQL Editor to set up the complete database
+-- This script is safe to run multiple times (uses IF EXISTS/IF NOT EXISTS)
 -- =====================================================
 
 -- =====================================================
@@ -31,6 +32,12 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   provider_id TEXT,
   avatar_url TEXT,
   full_name TEXT,
+  email TEXT,
+  phone TEXT,
+  phone_country_code TEXT,
+  phone_verified BOOLEAN DEFAULT FALSE,
+  email_verified BOOLEAN DEFAULT FALSE,
+  organizer_status TEXT DEFAULT 'pending',
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
@@ -75,6 +82,7 @@ CREATE TABLE IF NOT EXISTS public.user_preferences (
   longitude double precision,
   distance_range integer DEFAULT 25,
   onboarding_completed boolean DEFAULT false,
+  is_organizer boolean DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -88,7 +96,26 @@ CREATE TABLE IF NOT EXISTS public.event_participants (
   UNIQUE(event_id, user_id) -- Prevent duplicate registrations
 );
 
--- 2.6 Audit table for tracking changes
+-- 2.6 Event categories table
+CREATE TABLE IF NOT EXISTS public.event_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
+  category TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  UNIQUE(event_id, category)
+);
+
+-- 2.7 Event registrations table (alias for event_participants)
+CREATE TABLE IF NOT EXISTS public.event_registrations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  registered_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  status TEXT DEFAULT 'registered',
+  UNIQUE(event_id, user_id)
+);
+
+-- 2.8 Audit table for tracking changes
 CREATE TABLE IF NOT EXISTS public.event_audit (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID NOT NULL,
@@ -138,8 +165,8 @@ AS $$
 DECLARE _role app_role;
 BEGIN
   -- Create profile
-  INSERT INTO public.profiles (user_id, display_name)
-  VALUES (new.id, COALESCE(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)))
+  INSERT INTO public.profiles (user_id, display_name, email)
+  VALUES (new.id, COALESCE(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)), new.email)
   ON CONFLICT (user_id) DO NOTHING;
 
   -- Determine role
@@ -151,11 +178,9 @@ BEGIN
   ON CONFLICT (user_id, role) DO NOTHING;
 
   -- Create preferences for regular users
-  IF _role = 'user' THEN
-    INSERT INTO public.user_preferences (user_id)
-    VALUES (new.id)
-    ON CONFLICT (user_id) DO NOTHING;
-  END IF;
+  INSERT INTO public.user_preferences (user_id)
+  VALUES (new.id)
+  ON CONFLICT (user_id) DO NOTHING;
 
   -- Log user creation
   INSERT INTO public.event_audit (event_id, action, new_data, changed_by)
@@ -257,70 +282,83 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 -- =====================================================
 
 -- 4.1 User signup trigger
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- 4.2 Timestamp update triggers
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
 CREATE TRIGGER update_profiles_updated_at
 BEFORE UPDATE ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_events_updated_at ON public.events;
 CREATE TRIGGER update_events_updated_at
 BEFORE UPDATE ON public.events
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_user_preferences_updated_at ON public.user_preferences;
 CREATE TRIGGER update_user_preferences_updated_at
 BEFORE UPDATE ON public.user_preferences
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at_column();
 
 -- 4.3 Participant count triggers
+DROP TRIGGER IF EXISTS increment_participant_count ON public.event_participants;
 CREATE TRIGGER increment_participant_count
   AFTER INSERT ON public.event_participants
   FOR EACH ROW
   EXECUTE FUNCTION public.update_participant_count();
 
+DROP TRIGGER IF EXISTS decrement_participant_count ON public.event_participants;
 CREATE TRIGGER decrement_participant_count
   AFTER DELETE ON public.event_participants
   FOR EACH ROW
   EXECUTE FUNCTION public.update_participant_count();
 
 -- 4.4 Event status triggers
+DROP TRIGGER IF EXISTS update_event_status_trigger ON public.events;
 CREATE TRIGGER update_event_status_trigger
   BEFORE UPDATE ON public.events
   FOR EACH ROW
   EXECUTE FUNCTION public.update_event_status();
 
+DROP TRIGGER IF EXISTS update_event_status_insert ON public.events;
 CREATE TRIGGER update_event_status_insert
   BEFORE INSERT ON public.events
   FOR EACH ROW
   EXECUTE FUNCTION public.update_event_status();
 
 -- 4.5 Data validation triggers
+DROP TRIGGER IF EXISTS validate_event_insert ON public.events;
 CREATE TRIGGER validate_event_insert
   BEFORE INSERT ON public.events
   FOR EACH ROW
   EXECUTE FUNCTION public.validate_event_data();
 
+DROP TRIGGER IF EXISTS validate_event_update ON public.events;
 CREATE TRIGGER validate_event_update
   BEFORE UPDATE ON public.events
   FOR EACH ROW
   EXECUTE FUNCTION public.validate_event_data();
 
 -- 4.6 Audit triggers
+DROP TRIGGER IF EXISTS audit_event_insert ON public.events;
 CREATE TRIGGER audit_event_insert
   AFTER INSERT ON public.events
   FOR EACH ROW
   EXECUTE FUNCTION public.log_event_changes();
 
+DROP TRIGGER IF EXISTS audit_event_update ON public.events;
 CREATE TRIGGER audit_event_update
   AFTER UPDATE ON public.events
   FOR EACH ROW
   EXECUTE FUNCTION public.log_event_changes();
 
+DROP TRIGGER IF EXISTS audit_event_delete ON public.events;
 CREATE TRIGGER audit_event_delete
   AFTER DELETE ON public.events
   FOR EACH ROW
@@ -336,10 +374,13 @@ ALTER TABLE IF EXISTS public.user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.user_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.event_participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.event_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.event_registrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.event_audit ENABLE ROW LEVEL SECURITY;
 
 -- 5.2 Profiles RLS policies
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON public.profiles;
     CREATE POLICY "Profiles are viewable by everyone"
     ON public.profiles
     FOR SELECT
@@ -349,6 +390,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
     CREATE POLICY "Users can update their own profile"
     ON public.profiles
     FOR UPDATE
@@ -358,6 +400,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
     CREATE POLICY "Users can insert their own profile"
     ON public.profiles
     FOR INSERT
@@ -368,6 +411,7 @@ END $$;
 
 -- 5.3 User Roles RLS policies
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can view their own roles" ON public.user_roles;
     CREATE POLICY "Users can view their own roles"
     ON public.user_roles
     FOR SELECT
@@ -378,6 +422,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Only admins can manage roles" ON public.user_roles;
     CREATE POLICY "Only admins can manage roles"
     ON public.user_roles
     FOR ALL
@@ -389,6 +434,7 @@ END $$;
 
 -- 5.4 Events RLS policies
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Events are viewable by everyone" ON public.events;
     CREATE POLICY "Events are viewable by everyone"
     ON public.events
     FOR SELECT
@@ -398,6 +444,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can create events" ON public.events;
     CREATE POLICY "Users can create events"
     ON public.events
     FOR INSERT
@@ -407,6 +454,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Organizers can update their events" ON public.events;
     CREATE POLICY "Organizers can update their events"
     ON public.events
     FOR UPDATE
@@ -416,6 +464,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Organizers can delete their events" ON public.events;
     CREATE POLICY "Organizers can delete their events"
     ON public.events
     FOR DELETE
@@ -426,6 +475,7 @@ END $$;
 
 -- 5.5 User Preferences RLS policies
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can view own prefs" ON public.user_preferences;
     CREATE POLICY "Users can view own prefs"
     ON public.user_preferences
     FOR SELECT
@@ -436,6 +486,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can insert own prefs" ON public.user_preferences;
     CREATE POLICY "Users can insert own prefs"
     ON public.user_preferences
     FOR INSERT
@@ -446,6 +497,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can update own prefs" ON public.user_preferences;
     CREATE POLICY "Users can update own prefs"
     ON public.user_preferences
     FOR UPDATE
@@ -456,6 +508,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Admins can view all prefs" ON public.user_preferences;
     CREATE POLICY "Admins can view all prefs"
     ON public.user_preferences
     FOR SELECT
@@ -467,6 +520,7 @@ END $$;
 
 -- 5.6 Event Participants RLS policies
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can view their own participations" ON public.event_participants;
     CREATE POLICY "Users can view their own participations"
     ON public.event_participants
     FOR SELECT
@@ -477,6 +531,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can insert their own participations" ON public.event_participants;
     CREATE POLICY "Users can insert their own participations"
     ON public.event_participants
     FOR INSERT
@@ -487,6 +542,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can delete their own participations" ON public.event_participants;
     CREATE POLICY "Users can delete their own participations"
     ON public.event_participants
     FOR DELETE
@@ -497,6 +553,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Event organizers can view all participants" ON public.event_participants;
     CREATE POLICY "Event organizers can view all participants"
     ON public.event_participants
     FOR SELECT
@@ -512,6 +569,7 @@ END $$;
 
 -- 5.7 Audit Table RLS policies
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can view audit logs for their events" ON public.event_audit;
     CREATE POLICY "Users can view audit logs for their events"
     ON public.event_audit
     FOR SELECT
@@ -527,6 +585,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+    DROP POLICY IF EXISTS "Admins can view all audit logs" ON public.event_audit;
     CREATE POLICY "Admins can view all audit logs"
     ON public.event_audit
     FOR SELECT
@@ -541,6 +600,7 @@ END $$;
 -- =====================================================
 
 -- 6.1 View for events with participant counts
+DROP VIEW IF EXISTS public.events_with_participants;
 CREATE OR REPLACE VIEW public.events_with_participants AS
 SELECT
   e.*,
@@ -550,6 +610,7 @@ FROM public.events e
 LEFT JOIN public.profiles p ON e.organizer_id = p.user_id;
 
 -- 6.2 View for user events with participation status
+DROP VIEW IF EXISTS public.user_events_view;
 CREATE OR REPLACE VIEW public.user_events_view AS
 SELECT
   e.*,
@@ -642,6 +703,11 @@ $$;
 -- 8.1 Profiles indexes
 CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON public.profiles(user_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_provider_id ON public.profiles(provider_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
+CREATE INDEX IF NOT EXISTS idx_profiles_phone ON public.profiles(phone);
+CREATE INDEX IF NOT EXISTS idx_profiles_phone_verified ON public.profiles(phone_verified);
+CREATE INDEX IF NOT EXISTS idx_profiles_email_verified ON public.profiles(email_verified);
+CREATE INDEX IF NOT EXISTS idx_profiles_organizer_status ON public.profiles(organizer_status);
 
 -- 8.2 User roles indexes
 CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON public.user_roles(user_id);
@@ -660,13 +726,23 @@ CREATE INDEX IF NOT EXISTS idx_events_status_time ON public.events(status, start
 CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON public.user_preferences(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_preferences_city ON public.user_preferences(city);
 CREATE INDEX IF NOT EXISTS idx_user_preferences_onboarding_completed ON public.user_preferences(onboarding_completed);
+CREATE INDEX IF NOT EXISTS idx_user_preferences_is_organizer ON public.user_preferences(is_organizer);
 
 -- 8.5 Event participants indexes
 CREATE INDEX IF NOT EXISTS idx_event_participants_event_id ON public.event_participants(event_id);
 CREATE INDEX IF NOT EXISTS idx_event_participants_user_id ON public.event_participants(user_id);
 CREATE INDEX IF NOT EXISTS idx_event_participants_registered_at ON public.event_participants(registered_at);
 
--- 8.6 Audit table indexes
+-- 8.6 Event categories indexes
+CREATE INDEX IF NOT EXISTS idx_event_categories_event_id ON public.event_categories(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_categories_category ON public.event_categories(category);
+
+-- 8.7 Event registrations indexes
+CREATE INDEX IF NOT EXISTS idx_event_registrations_event_id ON public.event_registrations(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_registrations_user_id ON public.event_registrations(user_id);
+CREATE INDEX IF NOT EXISTS idx_event_registrations_status ON public.event_registrations(status);
+
+-- 8.8 Audit table indexes
 CREATE INDEX IF NOT EXISTS idx_event_audit_event_id ON public.event_audit(event_id);
 CREATE INDEX IF NOT EXISTS idx_event_audit_changed_at ON public.event_audit(changed_at);
 CREATE INDEX IF NOT EXISTS idx_event_audit_action ON public.event_audit(action);
@@ -681,6 +757,12 @@ COMMENT ON COLUMN public.profiles.provider IS 'Authentication provider (email, g
 COMMENT ON COLUMN public.profiles.provider_id IS 'Unique identifier from the OAuth provider';
 COMMENT ON COLUMN public.profiles.avatar_url IS 'Profile picture URL from OAuth provider';
 COMMENT ON COLUMN public.profiles.full_name IS 'User full name from OAuth provider';
+COMMENT ON COLUMN public.profiles.email IS 'User email address';
+COMMENT ON COLUMN public.profiles.phone IS 'User phone number';
+COMMENT ON COLUMN public.profiles.phone_country_code IS 'Phone number country code';
+COMMENT ON COLUMN public.profiles.phone_verified IS 'Whether phone number has been verified';
+COMMENT ON COLUMN public.profiles.email_verified IS 'Whether email address has been verified';
+COMMENT ON COLUMN public.profiles.organizer_status IS 'Organizer verification status (pending, verified, active, suspended)';
 
 COMMENT ON TABLE public.user_roles IS 'Role-based access control for users';
 COMMENT ON TABLE public.events IS 'Events table for storing event information';
@@ -689,15 +771,28 @@ COMMENT ON COLUMN public.events.participant_count IS 'Automatically maintained p
 
 COMMENT ON TABLE public.user_preferences IS 'User preferences for onboarding and personalization';
 COMMENT ON COLUMN public.user_preferences.distance_range IS 'Preferred distance range in miles/kilometers';
+COMMENT ON COLUMN public.user_preferences.is_organizer IS 'Whether user wants to create events (from onboarding)';
 
 COMMENT ON TABLE public.event_participants IS 'Event registrations and participations';
+COMMENT ON TABLE public.event_categories IS 'Event categories for better organization';
+COMMENT ON TABLE public.event_registrations IS 'Event registrations with status tracking';
 COMMENT ON TABLE public.event_audit IS 'Audit trail for event changes';
 
 -- =====================================================
--- 10. VALIDATION AND CLEANUP
+-- 10. VERIFICATION QUERIES
 -- =====================================================
 
--- Ensure all triggers are properly set up
+-- Verify all tables exist and have RLS enabled
+SELECT
+    schemaname,
+    tablename,
+    rowsecurity
+FROM pg_tables
+WHERE schemaname = 'public'
+  AND tablename IN ('profiles', 'user_roles', 'events', 'user_preferences', 'event_participants', 'event_categories', 'event_registrations', 'event_audit')
+ORDER BY tablename;
+
+-- Verify all triggers are properly set up
 SELECT
     trigger_name,
     event_manipulation,
@@ -707,32 +802,15 @@ FROM information_schema.triggers
 WHERE trigger_schema = 'public'
 ORDER BY event_object_table, trigger_name;
 
--- Verify all tables have RLS enabled
-SELECT
-    schemaname,
-    tablename,
-    rowsecurity
-FROM pg_tables
-WHERE schemaname = 'public'
-  AND tablename IN ('profiles', 'user_roles', 'events', 'user_preferences', 'event_participants', 'event_audit')
-ORDER BY tablename;
-
 -- =====================================================
--- MIGRATION COMPLETE
+-- DATABASE SETUP COMPLETE
 -- =====================================================
 --
--- Next steps:
--- 1. Set up authentication providers in Supabase
--- 2. Configure OAuth providers if needed
--- 3. Create initial admin users
--- 4. Test the complete setup
--- 5. Update backend to use optimized API functions
---
--- This migration includes:
+-- This script includes:
 -- ✅ User management with profiles and roles
 -- ✅ Role-based access control (RBAC)
 -- ✅ Event management system with participant tracking
--- ✅ User preferences for onboarding
+-- ✅ User preferences for onboarding (including is_organizer field)
 -- ✅ OAuth provider support
 -- ✅ Row Level Security (RLS) policies
 -- ✅ Performance indexes
@@ -745,10 +823,5 @@ ORDER BY tablename;
 -- ✅ API functions for common queries
 -- ✅ Comprehensive documentation
 --
--- Performance Benefits:
--- ✅ 75% reduction in backend code
--- ✅ 60-70% faster API response times
--- ✅ Automatic data consistency
--- ✅ Eliminated race conditions
--- ✅ Reduced database queries
+-- Safe to run multiple times - uses IF EXISTS/IF NOT EXISTS
 -- =====================================================

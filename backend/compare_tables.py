@@ -3,17 +3,18 @@
 Compare test2 vs events table to debug the issue
 """
 
+import asyncio
 import os
 import sys
 from datetime import datetime, timezone
-import asyncio
 
 # Add the parent directory to the path so we can import from the backend
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    from supabase import create_client, Client
     from dotenv import load_dotenv
+    from supabase import Client, create_client
+
     print("✅ Successfully imported required modules")
 except ImportError as e:
     print(f"❌ Import error: {e}")
@@ -22,13 +23,15 @@ except ImportError as e:
 # Load environment variables
 load_dotenv()
 
+
 def get_supabase_client() -> Client:
     """Initialize and return Supabase client"""
-    supabase_url = os.getenv('SUPABASE_URL')
-    supabase_key = os.getenv('SUPABASE_KEY')
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_KEY")
 
     client: Client = create_client(supabase_url, supabase_key)
     return client
+
 
 async def compare_table_schemas(client: Client):
     """Compare schemas between test2 and events tables"""
@@ -38,7 +41,7 @@ async def compare_table_schemas(client: Client):
     # Test test2 table
     print("📋 test2 table structure:")
     try:
-        response = client.table('test2').select('*').limit(1).execute()
+        response = client.table("test2").select("*").limit(1).execute()
         if response.data:
             sample = response.data[0]
             for key, value in sample.items():
@@ -50,7 +53,7 @@ async def compare_table_schemas(client: Client):
 
     print("\n📋 events table structure:")
     try:
-        response = client.table('events').select('*').limit(1).execute()
+        response = client.table("events").select("*").limit(1).execute()
         if response.data:
             sample = response.data[0]
             for key, value in sample.items():
@@ -60,6 +63,7 @@ async def compare_table_schemas(client: Client):
     except Exception as e:
         print(f"  ❌ Error: {e}")
 
+
 async def test_insert_both_tables(client: Client):
     """Test insert operations on both tables"""
     print("\n🧪 TESTING INSERT OPERATIONS")
@@ -68,12 +72,12 @@ async def test_insert_both_tables(client: Client):
     # Test insert on test2
     print("📝 Inserting into test2 table:")
     test2_data = {
-        'name': f'Comparison Test {datetime.now().strftime("%H:%M:%S")}',
-        'description': 'Test record for comparison'
+        "name": f'Comparison Test {datetime.now().strftime("%H:%M:%S")}',
+        "description": "Test record for comparison",
     }
 
     try:
-        response = client.table('test2').insert(test2_data).execute()
+        response = client.table("test2").insert(test2_data).execute()
         if response.data:
             print(f"  ✅ test2 INSERT SUCCESS: {response.data[0]['id']}")
         else:
@@ -84,32 +88,33 @@ async def test_insert_both_tables(client: Client):
     # Test insert on events
     print("\n📝 Inserting into events table:")
     events_data = {
-        'title': 'Test Event for Comparison',
-        'creator': 'debug_script',
-        'description': 'Test event for debugging comparison',
-        'date': '2026-04-15',
-        'time': '14:00',
-        'address': '123 Test Street',
-        'background_image_url': 'https://example.com/bg.jpg',
-        'target_date': datetime.now(timezone.utc).isoformat(),
-        'category': 'community',
-        'kid_friendly': False,
-        'price': 0,
-        'tags': ['test'],
-        'status': 'pending',
-        'event_type': 'standard',
-        'event_status': 'confirmed',
-        'is_public': True
+        "title": "Test Event for Comparison",
+        "creator": "debug_script",
+        "description": "Test event for debugging comparison",
+        "date": "2026-04-15",
+        "time": "14:00",
+        "address": "123 Test Street",
+        "background_image_url": "https://example.com/bg.jpg",
+        "target_date": datetime.now(timezone.utc).isoformat(),
+        "category": "community",
+        "kid_friendly": False,
+        "price": 0,
+        "tags": ["test"],
+        "status": "pending",
+        "event_type": "standard",
+        "event_status": "confirmed",
+        "is_public": True,
     }
 
     try:
-        response = client.table('events').insert(events_data).execute()
+        response = client.table("events").insert(events_data).execute()
         if response.data:
             print(f"  ✅ events INSERT SUCCESS: {response.data[0]['id']}")
         else:
             print(f"  ❌ events INSERT FAILED: No data returned")
     except Exception as e:
         print(f"  ❌ events INSERT ERROR: {e}")
+
 
 async def analyze_rls_policies(client: Client):
     """Analyze RLS policies differences"""
@@ -130,16 +135,17 @@ async def analyze_rls_policies(client: Client):
     print("\n📖 Testing READ operations:")
 
     try:
-        response = client.table('test2').select('*').execute()
+        response = client.table("test2").select("*").execute()
         print(f"  test2 READ: ✅ {len(response.data) if response.data else 0} records")
     except Exception as e:
         print(f"  test2 READ: ❌ {e}")
 
     try:
-        response = client.table('events').select('*').execute()
+        response = client.table("events").select("*").execute()
         print(f"  events READ: ✅ {len(response.data) if response.data else 0} records")
     except Exception as e:
         print(f"  events READ: ❌ {e}")
+
 
 async def main():
     """Main comparison function"""
@@ -157,6 +163,7 @@ async def main():
     print("=" * 50)
     print("✅ Comparison completed")
     print("📋 Key differences should be visible above")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

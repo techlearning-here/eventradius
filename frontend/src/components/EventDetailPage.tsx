@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/integrations/backend/api';
 import { Navbar } from './Navbar';
 import { EventCountdown } from './EventCountdown';
 import { EventMeta } from './EventMeta';
@@ -16,16 +16,28 @@ import { SEOHead } from './SEOHead';
 interface Event {
   id: string;
   title: string;
-  creator: string;
-  description: string;
-  date: string;
-  time: string;
-  address: string;
-  background_image_url: string;
-  target_date: string;
-  event_type: string;
-  event_status: string;
-  created_by: string;
+  description?: string;
+  location?: string;
+  start_time?: string;
+  end_time?: string;
+  image_url?: string;
+  category?: string;
+  max_participants?: number;
+  is_public: boolean;
+  organizer_id: string;
+  created_at: string;
+  updated_at: string;
+  current_participants?: number;
+  // Legacy fields for compatibility
+  creator?: string;
+  date?: string;
+  time?: string;
+  address?: string;
+  background_image_url?: string;
+  target_date?: string;
+  event_type?: string;
+  event_status?: string;
+  created_by?: string;
 }
 
 export const EventDetailPage: React.FC = () => {
@@ -36,34 +48,39 @@ export const EventDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchEvent = useCallback(async () => {
-    const { data, error } = id
-      ? await supabase.from('events').select('*').eq('id', id).maybeSingle()
-      : await supabase.from('events').select('*').limit(1).maybeSingle();
+    try {
+      const data = id
+        ? await apiClient.getEvent(id)
+        : await apiClient.getEvents({ limit: 1 }).then(events => events[0]);
 
-    if (error) {
+      if (data) {
+        setEvent(data);
+        setError(null);
+      } else {
+        setError('Event not found');
+      }
+    } catch (error) {
       if (import.meta.env.DEV) console.error('Error fetching event:', error);
-      setNotFound(true);
-    } else if (!data) {
-      setNotFound(true);
-    } else {
-      setEvent(data as unknown as Event);
+      setError('Failed to load event');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [id]);
 
   const checkRegistration = useCallback(async () => {
     if (!id) return;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-    const { data } = await supabase
-      .from('event_registrations')
-      .select('id')
-      .eq('user_id', session.user.id)
-      .eq('event_id', id)
-      .maybeSingle();
-    setIsRegistered(!!data);
+    try {
+      // Use backend API to check registration
+      const registrations = await apiClient.getUserEvents();
+      const isEventRegistered = registrations.participating.some(event => event.id === id);
+      setIsRegistered(isEventRegistered);
+    } catch (error) {
+      console.error('Error checking registration:', error);
+      setIsRegistered(false);
+    }
   }, [id]);
 
   useEffect(() => {

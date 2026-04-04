@@ -45,11 +45,16 @@ export interface EventUpdate {
 }
 
 export interface UserProfile {
-  id: string;
+  user_id: string;
   email: string;
   full_name?: string;
   avatar_url?: string;
   bio?: string;
+  phone?: string;
+  phone_country_code?: string;
+  phone_verified?: boolean;
+  email_verified?: boolean;
+  organizer_status?: 'pending' | 'verified' | 'active' | 'suspended';
   created_at: string;
 }
 
@@ -218,22 +223,153 @@ class ApiClient {
     });
   }
 
-  // Admin endpoints
-  async getAllUsers(): Promise<UserWithRoles[]> {
-    return this.request<UserWithRoles[]>('/api/users/admin/users');
+  // Event endpoints
+  async sendEventMessage(eventId: string, message: string): Promise<any> {
+    return this.request<any>(`/api/events/${eventId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ message_text: message }),
+    });
   }
 
-  async updateEventStatus(eventId: string, status: string, adminRemark?: string): Promise<{ message: string }> {
-    const body = adminRemark ? { status, admin_remark: adminRemark } : { status };
-    return this.request<{ message: string }>(`/api/events/${eventId}/status`, {
+  async getEventMessages(eventId: string): Promise<any[]> {
+    return this.request<any[]>(`/api/events/${eventId}/messages`);
+  }
+
+  // Admin endpoints
+  async getAllProfiles(): Promise<any[]> {
+    return this.request<any[]>('/api/users/admin/profiles');
+  }
+
+  async getAllUserRoles(): Promise<any[]> {
+    return this.request<any[]>('/api/users/admin/roles');
+  }
+
+  async adminUpdateEventStatus(eventId: string, status: string, adminRemark?: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/api/users/admin/events/${eventId}/status`, {
       method: 'PUT',
-      body: JSON.stringify(body),
+      body: JSON.stringify({ status, admin_remark: adminRemark }),
     });
   }
 
   // Health check
   async healthCheck(): Promise<{ status: string; database?: string }> {
     return this.request<{ status: string; database?: string }>('/health');
+  }
+
+  async updatePhoneNumber(phoneData: {
+    phone?: string;
+    phone_country_code?: string;
+  }): Promise<{
+    message: string;
+    phone?: string;
+    phone_country_code?: string;
+    phone_verified: boolean;
+  }> {
+    return this.request('/api/users/me/phone', {
+      method: 'PUT',
+      body: JSON.stringify(phoneData),
+    });
+  }
+
+  async getOrganizerStatus(): Promise<{
+    is_organizer: boolean;
+    requires_phone: boolean;
+    requires_verification: boolean;
+    has_phone: boolean;
+    phone_verified: boolean;
+    email_verified: boolean;
+    organizer_status: 'pending' | 'verified' | 'active' | 'suspended' | null;
+    is_active: boolean;
+    phone?: string;
+    phone_country_code?: string;
+  }> {
+    return this.request('/api/users/me/organizer-status');
+  }
+
+  // Verification endpoints
+  async sendEmailVerification(email: string): Promise<{
+    message: string;
+    expires_at: string;
+    token?: string; // Only for testing
+  }> {
+    return this.request('/api/verification/email/send', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async sendPhoneVerification(phoneData: {
+    phone: string;
+    phone_country_code: string;
+  }): Promise<{
+    message: string;
+    expires_at: string;
+    token?: string; // Only for testing
+  }> {
+    return this.request('/api/verification/phone/send', {
+      method: 'POST',
+      body: JSON.stringify(phoneData),
+    });
+  }
+
+  async verifyToken(token: string, type: 'email' | 'phone'): Promise<{
+    message: string;
+    activation_message?: string;
+  }> {
+    return this.request('/api/verification/verify', {
+      method: 'POST',
+      body: JSON.stringify({ token, type }),
+    });
+  }
+
+  async getVerificationStatus(): Promise<{
+    email_verified: boolean;
+    phone_verified: boolean;
+    organizer_status: 'pending' | 'verified' | 'active' | 'suspended';
+    is_active_organizer: boolean;
+    email_verification_sent: boolean;
+    phone_verification_sent: boolean;
+  }> {
+    return this.request('/api/verification/status');
+  }
+
+  // Organizer-specific endpoints
+  async getOrganizerVerificationStatus(): Promise<{
+    is_organizer: boolean;
+    email_verified: boolean;
+    phone_verified: boolean;
+    phone_provided: boolean;
+    email_verification_sent: boolean;
+    phone_verification_sent: boolean;
+    email_verification_expires_at?: string;
+    phone_verification_expires_at?: string;
+    organizer_status?: 'pending' | 'verified' | 'active' | 'suspended';
+    is_active: boolean;
+    can_create_events: boolean;
+    missing_requirements: string[];
+    next_actions: string[];
+  }> {
+    return this.request('/api/organizers/verification-status');
+  }
+
+  async checkOrganizerActivation(): Promise<{
+    is_organizer: boolean;
+    is_active: boolean;
+    can_create_events: boolean;
+    organizer_status?: 'pending' | 'verified' | 'active' | 'suspended';
+    quick_status: 'not_organizer' | 'active' | 'needs_setup' | 'needs_email_verification' | 'needs_phone' | 'needs_phone_verification' | 'pending_activation' | 'unknown';
+  }> {
+    return this.request('/api/organizers/activation-check');
+  }
+
+  async requestOrganizerActivation(): Promise<{
+    message: string;
+    status: 'activated' | 'already_active';
+    organizer_status: 'pending' | 'verified' | 'active' | 'suspended';
+  }> {
+    return this.request('/api/organizers/request-activation', {
+      method: 'POST',
+    });
   }
 
   // OAuth endpoints
@@ -283,3 +419,6 @@ class ApiClient {
 
 // Export singleton instance
 export const apiClient = new ApiClient();
+
+// Also export the class for cases where it's needed
+export { ApiClient };

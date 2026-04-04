@@ -132,8 +132,12 @@ export const Navbar: React.FC = () => {
                   {link.label}
                 </Link>
               ) : (
-                <button key={link.label} onClick={() => { link.onClick?.(); setIsMobileMenuOpen(false); }}
-                  className="flex-1 flex items-center justify-center text-foreground text-[17px] font-medium uppercase border-b border-border tracking-[-0.34px]">
+                <button key={link.label} onClick={() => { 
+                  link.onClick?.(); 
+                  setIsMobileMenuOpen(false);
+                }}
+                  className="flex-1 flex items-center justify-center text-foreground text-[17px] font-medium uppercase border-b border-border tracking-[-0.34px]"
+                >
                   {link.label}
                 </button>
               )

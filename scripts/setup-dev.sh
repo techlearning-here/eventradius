@@ -8,15 +8,15 @@ set -e
 echo "🚀 Setting up development environment..."
 
 # Check if we're in the right directory
-if [ ! -f "package.json" ] && [ ! -f "requirements.txt" ]; then
-    echo "❌ Error: Please run this script from the project root directory"
+if [ ! -f "../package.json" ] && [ ! -f "../requirements.txt" ]; then
+    echo "❌ Error: Please run this script from the scripts directory"
     exit 1
 fi
 
 # Backend setup
-if [ -d "backend" ]; then
+if [ -d "../backend" ]; then
     echo "📦 Setting up backend..."
-    cd backend
+    cd ../backend
 
     # Create virtual environment if it doesn't exist
     if [ ! -d "venv" ]; then
@@ -61,20 +61,20 @@ if [ -d "backend" ]; then
     echo "Initializing secrets detection baseline..."
     detect-secrets scan --baseline .secrets.baseline || true
 
-    cd ..
+    cd ../..
     echo "✅ Backend setup complete!"
 fi
 
 # Frontend setup
-if [ -d "frontend" ]; then
+if [ -d "../frontend" ]; then
     echo "📦 Setting up frontend..."
-    cd frontend
+    cd ../frontend
 
     # Install dependencies
     echo "Installing Node.js dependencies..."
     npm install
 
-    cd ..
+    cd ../..
     echo "✅ Frontend setup complete!"
 fi
 

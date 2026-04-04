@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/integrations/backend/api';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { Send } from 'lucide-react';
 import { toast } from 'sonner';
@@ -34,66 +34,51 @@ export const EventChat = ({ eventId, eventCreatorId, eventStatus }: Props) => {
       setCanPost(true);
       return;
     }
-    // Check if user is "going"
-    const { data } = await supabase
-      .from('event_participants')
-      .select('status')
-      .eq('event_id', eventId)
-      .eq('user_id', user.id)
-      .maybeSingle();
-    setCanPost(data?.status === 'going');
+    // Check if user is "going" using backend API
+    try {
+      const registrations = await apiClient.getUserEvents();
+      const isParticipant = registrations.participating.some(event => event.id === eventId);
+      setCanPost(isParticipant);
+    } catch (error) {
+      console.error('Error checking participation:', error);
+      setCanPost(false);
+    }
   }, [user, eventId, eventCreatorId]);
 
   const fetchMessages = useCallback(async () => {
-    const { data } = await supabase
-      .from('event_messages')
-      .select('id, message_text, created_at, sender_user_id')
-      .eq('event_id', eventId)
-      .order('created_at', { ascending: true });
+    if (!user || isReadOnly) return;
+    try {
+      const messages = await apiClient.getEventMessages(eventId);
+      setMessages(messages || []);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      setMessages([]);
+    }
+  }, [eventId, user, isReadOnly]);
 
-    if (!data) return;
+  const sendMessage = useCallback(async () => {
+    if (!user || !newMessage.trim() || isReadOnly) return;
+    setSending(true);
+    try {
+      const message = await apiClient.sendEventMessage(eventId, newMessage.trim());
+      setMessages(prev => [...prev, message]);
+      setNewMessage('');
+      toast.success('Message sent');
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setSending(false);
+    }
+  }, [user, newMessage, eventId, isReadOnly]);
 
-    // Fetch sender names
-    const userIds = [...new Set(data.map(m => m.sender_user_id))];
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('user_id, display_name')
-      .in('user_id', userIds);
-
-    const nameMap: Record<string, string> = {};
-    (profiles || []).forEach(p => { nameMap[p.user_id] = p.display_name || 'User'; });
-
-    setMessages(data.map(m => ({
-      id: m.id,
-      message_text: m.message_text,
-      created_at: m.created_at,
-      sender_name: nameMap[m.sender_user_id] || 'User',
-    })));
-  }, [eventId]);
+  const handleSend = () => {
+    sendMessage();
+  };
 
   useEffect(() => {
     fetchMessages();
     if (user) checkCanPost();
   }, [eventId, user, fetchMessages, checkCanPost]);
-
-  const handleSend = async () => {
-    if (!user || !newMessage.trim() || isReadOnly) return;
-    setSending(true);
-    try {
-      const { error } = await supabase.from('event_messages').insert({
-        event_id: eventId,
-        sender_user_id: user.id,
-        message_text: newMessage.trim(),
-      });
-      if (error) throw error;
-      setNewMessage('');
-      await fetchMessages();
-    } catch (e: unknown) {
-      toast.error(getErrorMessage(e) || 'Failed to send message');
-    } finally {
-      setSending(false);
-    }
-  };
 
   return (
     <div className="border border-border">
