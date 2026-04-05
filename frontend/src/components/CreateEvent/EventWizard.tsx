@@ -20,60 +20,69 @@ import { RegistrationSection } from './RegistrationSection';
 import { AdvancedSection } from './AdvancedSection';
 import { ReviewSection } from './ReviewSection';
 
-// Types for the enhanced event data
+// Types for enhanced event data - aligned with database schema
 export interface EventFormData {
-  // Basic Info
+  // Priority 1: Essential Fields
   title: string;
-  subtitle: string;
-  summary: string;
+  subtitle?: string;
+  summary?: string;
   description: string;
-  language: string;
+  language?: string;
   
   // Event Type & Format
   event_type: 'online' | 'in_person' | 'hybrid';
   event_format: 'single' | 'recurring' | 'multi_date';
   event_privacy: 'public' | 'private' | 'unlisted';
   
-  // Media
-  image_url: string;
-  image_file: File | null;
-  
   // Date & Time
   start_time: Date | null;
   end_time: Date | null;
-  timezone: string;
-  doors_open_time: Date | null;
-  registration_start_time: Date | null;
-  registration_end_time: Date | null;
+  timezone?: string;
+  doors_open_time?: Date | null;
   
   // Location & Venue
-  location: string;
-  primary_venue_id: string | null;
-  virtual_event_url: string;
-  virtual_event_platform: string;
+  location?: string;
+  primary_venue_id?: string | null;
+  virtual_event_url?: string;
+  virtual_event_platform?: string;
   
-  // Category & Settings
-  category: string;
-  max_participants: number | null;
-  ticket_pricing_description: string;
-  event_password: string;
-  age_restriction: string;
-  accessibility_options: string;
+  // Priority 2: Important Fields
+  // Registration Settings
+  registration_start_time?: Date | null;
+  registration_end_time?: Date | null;
+  event_password?: string;
+  age_restriction?: string;
+  accessibility_options?: string;
   
-  // Contact & Links
-  event_website: string;
-  event_contact_email: string;
-  ticketing_website: string;
+  // Ticketing
+  ticket_types?: Array<{
+    name: string;
+    description?: string;
+    price: number;
+    currency?: string;
+    quantity_available?: number;
+    min_per_order?: number;
+    max_per_order?: number;
+    sales_start_time?: Date | null;
+    sales_end_time?: Date | null;
+    visibility?: string;
+    absorb_fees?: boolean;
+    is_donation?: boolean;
+    delivery_options?: string[];
+  }>;
   
-  // Refund Policy
+  // Advanced Options
   refund_policy: 'no_refunds' | 'refund_up_to_7_days' | 'refund_up_to_24_hours' | 'refund_up_to_1_hour' | 'custom';
-  custom_refund_policy: string;
+  custom_refund_policy?: string;
+  event_website?: string;
+  event_contact_email?: string;
   
-  // Tags
-  tags: string[];
+  // Media
+  image_url?: string;
+  image_file?: File | null;
   
   // Status
-  is_public: boolean;
+  is_public?: boolean;
   status: 'draft' | 'published';
 }
 
@@ -85,20 +94,19 @@ interface EventWizardProps {
 
 const WIZARD_STEPS = [
   { id: 'basic', title: 'Basic Info', description: 'Event title and description' },
-  { id: 'type', title: 'Event Type', description: 'Format and delivery method' },
+  { id: 'type', title: 'Event Type', description: 'Format and privacy settings' },
   { id: 'datetime', title: 'Date & Time', description: 'Schedule and timezone' },
-  { id: 'location', title: 'Location', description: 'Venue or virtual platform' },
-  { id: 'category', title: 'Category', description: 'Event type and settings' },
-  { id: 'ticketing', title: 'Ticketing', description: 'Pricing and tickets' },
-  { id: 'registration', title: 'Registration', description: 'Registration settings' },
-  { id: 'advanced', title: 'Advanced', description: 'Additional options' },
+  { id: 'location', title: 'Location', description: 'Venue or virtual event details' },
+  { id: 'registration', title: 'Registration', description: 'Registration settings and timing' },
+  { id: 'ticketing', title: 'Ticketing', description: 'Ticket types and pricing' },
+  { id: 'advanced', title: 'Advanced', description: 'Additional options and policies' },
   { id: 'review', title: 'Review', description: 'Preview and publish' },
 ];
 
 export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<EventFormData>({
-    // Basic Info
+    // Priority 1: Essential Fields
     title: '',
     subtitle: '',
     summary: '',
@@ -110,17 +118,11 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
     event_format: 'single',
     event_privacy: 'public',
     
-    // Media
-    image_url: '',
-    image_file: null,
-    
     // Date & Time
     start_time: null,
     end_time: null,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     doors_open_time: null,
-    registration_start_time: null,
-    registration_end_time: null,
     
     // Location & Venue
     location: '',
@@ -128,25 +130,26 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
     virtual_event_url: '',
     virtual_event_platform: '',
     
-    // Category & Settings
-    category: '',
-    max_participants: null,
-    ticket_pricing_description: '',
+    // Priority 2: Important Fields
+    // Registration Settings
+    registration_start_time: null,
+    registration_end_time: null,
     event_password: '',
     age_restriction: '',
     accessibility_options: '',
     
-    // Contact & Links
-    event_website: '',
-    event_contact_email: '',
-    ticketing_website: '',
+    // Ticketing
+    ticket_types: [],
     
-    // Refund Policy
+    // Advanced Options
     refund_policy: 'no_refunds',
     custom_refund_policy: '',
+    event_website: '',
+    event_contact_email: '',
     
-    // Tags
-    tags: [],
+    // Media
+    image_url: '',
+    image_file: null,
     
     // Status
     is_public: true,
@@ -228,22 +231,20 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
       case 'basic':
         return formData.title.trim() !== '' && formData.description.trim() !== '';
       case 'type':
-        return formData.event_type && formData.event_format;
+        return formData.event_type && formData.event_format && formData.event_privacy;
       case 'datetime':
         return formData.start_time && formData.end_time;
       case 'location':
         if (formData.event_type === 'online') {
-          return formData.virtual_event_url.trim() !== '';
+          return formData.virtual_event_url?.trim() !== '';
         }
-        return formData.location.trim() !== '';
-      case 'category':
-        return formData.category !== '';
-      case 'ticketing':
-        return true; // Optional step
+        return formData.location?.trim() !== '';
       case 'registration':
-        return true; // Optional step
+        return true; // Optional step - can proceed
+      case 'ticketing':
+        return true; // Optional step - can proceed
       case 'advanced':
-        return true; // Optional step
+        return true; // Optional step - can proceed
       case 'review':
         return true;
       default:
@@ -344,30 +345,6 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           />
         );
 
-      case 'category':
-        return (
-          <CategorySection
-            category={formData.category}
-            maxParticipants={formData.max_participants}
-            isPublic={formData.is_public}
-            ticketPricingDescription={formData.ticket_pricing_description}
-            tags={formData.tags}
-            onCategoryChange={(category) => updateFormData({ category })}
-            onMaxParticipantsChange={(max_participants) => updateFormData({ max_participants })}
-            onIsPublicChange={(is_public) => updateFormData({ is_public })}
-            onTicketPricingDescriptionChange={(ticket_pricing_description) => updateFormData({ ticket_pricing_description })}
-            onTagsChange={(tags) => updateFormData({ tags })}
-          />
-        );
-
-      case 'ticketing':
-        return (
-          <TicketingSection
-            ticketingWebsite={formData.ticketing_website}
-            onTicketingWebsiteChange={(ticketing_website) => updateFormData({ ticketing_website })}
-          />
-        );
-
       case 'registration':
         return (
           <RegistrationSection
@@ -388,17 +365,23 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           />
         );
 
+      case 'ticketing':
+        return (
+          <TicketingSection
+            ticketTypes={formData.ticket_types || []}
+            onTicketTypesChange={(ticket_types) => updateFormData({ ticket_types })}
+          />
+        );
+
       case 'advanced':
         return (
           <AdvancedSection
             eventWebsite={formData.event_website}
             eventContactEmail={formData.event_contact_email}
-            ticketingWebsite={formData.ticketing_website}
             refundPolicy={formData.refund_policy}
             customRefundPolicy={formData.custom_refund_policy}
             onEventWebsiteChange={(event_website) => updateFormData({ event_website })}
             onEventContactEmailChange={(event_contact_email) => updateFormData({ event_contact_email })}
-            onTicketingWebsiteChange={(ticketing_website) => updateFormData({ ticketing_website })}
             onRefundPolicyChange={(refund_policy) => updateFormData({ refund_policy: refund_policy as any })}
             onCustomRefundPolicyChange={(custom_refund_policy) => updateFormData({ custom_refund_policy })}
           />
@@ -425,19 +408,18 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="bg-gray-50">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
+      <div className="sticky top-0 z-10 bg-white border-b-2 border-black">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold">Create Event</h1>
-              {lastSaved && (
-                <Badge variant="outline" className="text-xs">
-                  Saved {lastSaved.toLocaleTimeString()}
-                </Badge>
-              )}
-            </div>
+            {lastSaved && (
+              <Badge variant="outline" className="text-xs">
+                Saved {lastSaved.toLocaleTimeString()}
+              </Badge>
+            )}
+          </div>
             
             <div className="flex items-center gap-2">
               <Button
@@ -465,10 +447,10 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           
           {/* Progress Bar */}
           <div className="mt-4">
-            <Progress value={getStepProgress()} className="h-2" />
-            <div className="mt-2 flex justify-between items-center text-xs text-gray-600">
+            <Progress value={getStepProgress()} className="h-2 bg-blue-100 [&>div]:bg-green-500" />
+            <div className="mt-2 flex justify-between items-center text-xs text-black">
               <span>Step {currentStep + 1} of {WIZARD_STEPS.length}</span>
-              <span>{Math.round(getStepProgress())}% Complete</span>
+              <span className="text-black">{Math.round(getStepProgress())}% Complete</span>
             </div>
             <div className="mt-1">
               <span className="text-sm font-medium text-black">{WIZARD_STEPS[currentStep].title}</span>
@@ -536,7 +518,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           <div className="xl:col-span-1">
             <Card className="sticky top-24">
               <CardContent className="p-6">
-                <h3 className="font-semibold mb-4">Event Progress</h3>
+                <h3 className="font-semibold mb-4 text-blue-600">Event Progress</h3>
                 
                 {/* Current Step Info */}
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg">
@@ -544,21 +526,21 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
                     <span className="text-sm font-medium text-blue-600">
                       Step {currentStep + 1} of {WIZARD_STEPS.length}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-blue-600">
                       {Math.round(getStepProgress())}%
                     </span>
                   </div>
-                  <div className="text-sm font-semibold text-gray-900">
+                  <div className="text-sm font-semibold text-blue-600">
                     {WIZARD_STEPS[currentStep].title}
                   </div>
-                  <div className="text-xs text-gray-600 mt-1">
+                  <div className="text-xs text-blue-600 mt-1">
                     {WIZARD_STEPS[currentStep].description}
                   </div>
                 </div>
 
                 {/* Step Navigation */}
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Quick Navigation</h4>
+                  <h4 className="text-sm font-medium text-black mb-3">Quick Navigation</h4>
                   {WIZARD_STEPS.map((step, index) => {
                     const isCompleted = isStepComplete(step.id);
                     const isCurrent = index === currentStep;
@@ -572,7 +554,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
                             ? 'bg-blue-100 text-blue-700 font-medium' 
                             : isCompleted
                             ? 'text-gray-700 hover:bg-gray-50'
-                            : 'text-gray-400 hover:text-gray-600'
+                            : 'text-gray-500 hover:text-gray-600'
                         }`}
                       >
                         <div className="flex items-center gap-2">

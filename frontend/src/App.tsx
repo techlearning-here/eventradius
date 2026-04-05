@@ -15,8 +15,6 @@ import Settings from "./pages/Settings";
 import OrganizerDashboard from "./pages/OrganizerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import Admin from "./pages/Admin";
-import MyEvents from "./pages/MyEvents";
-import CreateEvent from "./pages/CreateEvent";
 import EditEvent from "./pages/EditEvent";
 import NotFound from "./pages/NotFound";
 
@@ -29,8 +27,6 @@ const App = () => (
       <Route path="/discover" element={<Discover />} />
       <Route path="/event/:id" element={<Index />} />
       <Route path="/event/:id/edit" element={<EditEvent />} />
-      <Route path="/my-events" element={<MyEvents />} />
-      <Route path="/create-event" element={<CreateEvent />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/organizer-onboarding" element={<OrganizerOnboarding />} />
       <Route path="/settings" element={<Settings />} />

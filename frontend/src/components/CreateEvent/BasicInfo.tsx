@@ -22,14 +22,15 @@ export const BasicInfo = ({ eventName, description, onEventNameChange, onDescrip
           <input
             type="text"
             placeholder="Event Name"
-            className="w-full text-black text-[32px] md:text-[48px] lg:text-[56px] font-medium leading-none mb-4 md:mb-8 focus:outline-none bg-transparent border-none p-0 placeholder:text-[#C4C4C4]"
+            className="w-full text-black text-[32px] md:text-[48px] lg:text-[56px] font-medium leading-none mb-4 md:mb-8 focus:outline-none bg-red-50 border-b-2 border-red-300 p-0 placeholder:text-[#C4C4C4]"
             value={eventName}
             onChange={(e) => onEventNameChange(e.target.value)}
           />
 
           <textarea
-            placeholder="Event Description"
-            className="w-full text-black text-[16px] md:text-[18px] leading-rel focus:outline-none bg-transparent border-none p-0 placeholder:text-[#C4C4C4] resize-none h-24 md:h-32"
+            placeholder="Describe your event..."
+            className="w-full text-black text-base md:text-lg leading-relaxed focus:outline-none bg-red-50 border-b-2 border-red-300 p-0 placeholder:text-[#C4C4C4] resize-none"
+            rows={4}
             value={description}
             onChange={(e) => onDescriptionChange(e.target.value)}
           />

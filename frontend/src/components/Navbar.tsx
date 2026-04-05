@@ -36,7 +36,7 @@ export const Navbar: React.FC = () => {
 
   const handleCreateEvent = async () => {
     try {
-      // Set organizer role first, then navigate
+      // Set organizer role first, then navigate to organizer page
       await setActiveRole('organizer');
       navigate('/organizer');
     } catch (error) {
