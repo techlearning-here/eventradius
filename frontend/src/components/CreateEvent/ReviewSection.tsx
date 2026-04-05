@@ -3,43 +3,7 @@ import { Eye, Edit, CheckCircle, AlertCircle, Clock, MapPin, Users, Calendar, Gl
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-
-interface EventFormData {
-  title: string;
-  subtitle: string;
-  summary: string;
-  description: string;
-  language: string;
-  event_type: 'online' | 'in_person' | 'hybrid';
-  event_format: 'single' | 'recurring' | 'multi_date';
-  event_privacy: 'public' | 'private' | 'unlisted';
-  image_url: string;
-  image_file: File | null;
-  start_time: Date | null;
-  end_time: Date | null;
-  timezone: string;
-  doors_open_time: Date | null;
-  registration_start_time: Date | null;
-  registration_end_time: Date | null;
-  location: string;
-  primary_venue_id: string | null;
-  virtual_event_url: string;
-  virtual_event_platform: string;
-  category: string;
-  max_participants: number | null;
-  ticket_pricing_description: string;
-  event_password: string;
-  age_restriction: string;
-  accessibility_options: string;
-  event_website: string;
-  event_contact_email: string;
-  ticketing_website: string;
-  refund_policy: 'no_refunds' | 'refund_up_to_7_days' | 'refund_up_to_24_hours' | 'refund_up_to_1_hour' | 'custom';
-  custom_refund_policy: string;
-  tags: string[];
-  is_public: boolean;
-  status: 'draft' | 'published';
-}
+import { type EventFormData } from './EventWizard';
 
 interface ReviewSectionProps {
   formData: EventFormData;

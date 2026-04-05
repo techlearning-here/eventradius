@@ -23,21 +23,21 @@ export const EventTypeSection = ({
       title: 'In-Person',
       description: 'Physical venue with face-to-face interaction',
       icon: Users,
-      color: 'bg-blue-50 border-blue-200 text-blue-700',
+      color: 'bg-blue-500 border-blue-600 text-white',
     },
     {
       id: 'online',
       title: 'Online',
       description: 'Virtual event accessible from anywhere',
       icon: Monitor,
-      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      color: 'bg-purple-500 border-purple-600 text-white',
     },
     {
       id: 'hybrid',
       title: 'Hybrid',
       description: 'Combination of in-person and online',
       icon: Wifi,
-      color: 'bg-green-50 border-green-200 text-green-700',
+      color: 'bg-green-500 border-green-600 text-white',
     },
   ];
 
@@ -47,21 +47,21 @@ export const EventTypeSection = ({
       title: 'Single Event',
       description: 'One-time event on a specific date',
       icon: Calendar,
-      color: 'bg-orange-50 border-orange-200 text-orange-700',
+      color: 'bg-orange-500 border-orange-600 text-white',
     },
     {
       id: 'recurring',
       title: 'Recurring',
       description: 'Regular event that repeats (weekly, monthly)',
       icon: Repeat,
-      color: 'bg-indigo-50 border-indigo-200 text-indigo-700',
+      color: 'bg-indigo-500 border-indigo-600 text-white',
     },
     {
       id: 'multi_date',
       title: 'Multi-Date',
       description: 'Event spanning multiple days',
       icon: Grid3X3,
-      color: 'bg-pink-50 border-pink-200 text-pink-700',
+      color: 'bg-pink-500 border-pink-600 text-white',
     },
   ];
 
@@ -157,10 +157,10 @@ export const EventTypeSection = ({
           <select
             value={language}
             onChange={(e) => onLanguageChange(e.target.value)}
-            className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
           >
             {languages.map((lang) => (
-              <option key={lang.code} value={lang.code}>
+              <option key={lang.code} value={lang.code} className="text-black">
                 {lang.name}
               </option>
             ))}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Save, Eye, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,18 +7,15 @@ import { Badge } from '@/components/ui/badge';
 
 // Import existing components
 import { BasicInfo } from './BasicInfo';
-import { CategorySection } from './CategorySection';
+import { EventTypeSection } from './EventTypeSection';
 import { DateTimeSection } from './DateTimeSection';
 import { LocationSection } from './LocationSection';
-import { PreviewSection } from './PreviewSection';
 import { ImageUpload } from './ImageUpload';
-
-// Import new enhanced components
-import { EventTypeSection } from './EventTypeSection';
-import { TicketingSection } from './TicketingSection';
 import { RegistrationSection } from './RegistrationSection';
+import { TicketingSection } from './TicketingSection';
 import { AdvancedSection } from './AdvancedSection';
 import { ReviewSection } from './ReviewSection';
+import { ContactInfo } from './ContactInfo';
 
 // Types for enhanced event data - aligned with database schema
 export interface EventFormData {
@@ -76,6 +73,14 @@ export interface EventFormData {
   custom_refund_policy?: string;
   event_website?: string;
   event_contact_email?: string;
+  event_contact_phone?: string;
+  ticketing_website?: string;
+  
+  // Legacy fields for compatibility
+  category?: string;
+  max_participants?: number;
+  tags?: string[];
+  ticket_pricing_description?: string;
   
   // Media
   image_url?: string;
@@ -92,28 +97,26 @@ interface EventWizardProps {
   onPublish?: (data: EventFormData) => void;
 }
 
-const WIZARD_STEPS = [
-  { id: 'basic', title: 'Basic Info', description: 'Event title and description' },
-  { id: 'type', title: 'Event Type', description: 'Format and privacy settings' },
-  { id: 'datetime', title: 'Date & Time', description: 'Schedule and timezone' },
-  { id: 'location', title: 'Location', description: 'Venue or virtual event details' },
-  { id: 'registration', title: 'Registration', description: 'Registration settings and timing' },
-  { id: 'ticketing', title: 'Ticketing', description: 'Ticket types and pricing' },
-  { id: 'advanced', title: 'Advanced', description: 'Additional options and policies' },
-  { id: 'review', title: 'Review', description: 'Preview and publish' },
-];
+import { WIZARD_SECTIONS } from './wizardConfig';
 
 export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps) => {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const [currentSubStepIndex, setCurrentSubStepIndex] = useState(0);
+  
+  const getCurrentSection = () => WIZARD_SECTIONS[currentSectionIndex];
+  const getCurrentSubStep = () => getCurrentSection().subSteps[currentSubStepIndex];
+  const getTotalSubSteps = () => WIZARD_SECTIONS.reduce((total, section) => total + section.subSteps.length, 0);
+  const getCurrentSubStepNumber = () => {
+    return WIZARD_SECTIONS.slice(0, currentSectionIndex)
+      .reduce((total, section) => total + section.subSteps.length, 0) + currentSubStepIndex + 1;
+  };
   const [formData, setFormData] = useState<EventFormData>({
     // Priority 1: Essential Fields
     title: '',
-    subtitle: '',
-    summary: '',
     description: '',
     language: 'en',
     
-    // Event Type & Format
+    // Event Type & Format - Basic defaults
     event_type: 'in_person',
     event_format: 'single',
     event_privacy: 'public',
@@ -122,7 +125,6 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
     start_time: null,
     end_time: null,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    doors_open_time: null,
     
     // Location & Venue
     location: '',
@@ -130,22 +132,27 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
     virtual_event_url: '',
     virtual_event_platform: '',
     
-    // Priority 2: Important Fields
-    // Registration Settings
+    // Priority 2: Advanced Fields - Set sensible defaults
+    subtitle: '',
+    summary: '',
+    doors_open_time: null,
     registration_start_time: null,
     registration_end_time: null,
     event_password: '',
     age_restriction: '',
     accessibility_options: '',
-    
-    // Ticketing
     ticket_types: [],
-    
-    // Advanced Options
     refund_policy: 'no_refunds',
     custom_refund_policy: '',
     event_website: '',
     event_contact_email: '',
+    ticketing_website: '',
+    
+    // Legacy fields for compatibility
+    category: '',
+    max_participants: null,
+    tags: [],
+    ticket_pricing_description: '',
     
     // Media
     image_url: '',
@@ -206,96 +213,95 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
     setFormData(prev => ({ ...prev, ...updates }));
   };
 
-  const goToNextStep = () => {
-    if (currentStep < WIZARD_STEPS.length - 1) {
-      setCurrentStep(currentStep + 1);
+  const goToNextSubStep = () => {
+    const currentSection = getCurrentSection();
+    if (currentSubStepIndex < currentSection.subSteps.length - 1) {
+      // Move to next sub-step in current section
+      setCurrentSubStepIndex(currentSubStepIndex + 1);
+    } else if (currentSectionIndex < WIZARD_SECTIONS.length - 1) {
+      // Move to first sub-step of next section
+      setCurrentSectionIndex(currentSectionIndex + 1);
+      setCurrentSubStepIndex(0);
     }
   };
 
-  const goToPreviousStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
+  const goToPreviousSubStep = () => {
+    if (currentSubStepIndex > 0) {
+      // Move to previous sub-step in current section
+      setCurrentSubStepIndex(currentSubStepIndex - 1);
+    } else if (currentSectionIndex > 0) {
+      // Move to last sub-step of previous section
+      setCurrentSectionIndex(currentSectionIndex - 1);
+      setCurrentSubStepIndex(WIZARD_SECTIONS[currentSectionIndex - 1].subSteps.length - 1);
     }
   };
 
-  const goToStep = (stepIndex: number) => {
-    setCurrentStep(stepIndex);
+  const goToSubStep = (sectionIndex: number, subStepIndex: number) => {
+    setCurrentSectionIndex(sectionIndex);
+    setCurrentSubStepIndex(subStepIndex);
   };
 
   const getStepProgress = () => {
-    return ((currentStep + 1) / WIZARD_STEPS.length) * 100;
+    return (getCurrentSubStepNumber() / getTotalSubSteps()) * 100;
   };
 
-  const isStepComplete = (stepId: string) => {
-    switch (stepId) {
-      case 'basic':
+  const isSubStepComplete = useCallback((subStepId: string) => {
+    switch (subStepId) {
+      case 'info':
         return formData.title.trim() !== '' && formData.description.trim() !== '';
       case 'type':
-        return formData.event_type && formData.event_format && formData.event_privacy;
+        return !!formData.event_type && !!formData.event_format;
       case 'datetime':
-        return formData.start_time && formData.end_time;
-      case 'location':
-        if (formData.event_type === 'online') {
-          return formData.virtual_event_url?.trim() !== '';
-        }
-        return formData.location?.trim() !== '';
+        return !!formData.start_time && !!formData.end_time &&
+               (formData.event_type === 'online' ? !!formData.virtual_event_url?.trim() : !!formData.location?.trim());
+      case 'contact':
+        return true; // Contact info is optional
       case 'registration':
-        return true; // Optional step - can proceed
+        return true; // Optional
       case 'ticketing':
-        return true; // Optional step - can proceed
-      case 'advanced':
-        return true; // Optional step - can proceed
-      case 'review':
-        return true;
+        return true; // Optional
+      case 'settings':
+        return true; // Optional
       default:
         return false;
     }
-  };
+  }, [formData]);
 
   const canProceedToNext = () => {
-    const currentStepId = WIZARD_STEPS[currentStep].id;
-    return isStepComplete(currentStepId);
+    const currentSubStepId = getCurrentSubStep().id;
+    return isSubStepComplete(currentSubStepId);
   };
 
-  const renderStepContent = () => {
-    const currentStepId = WIZARD_STEPS[currentStep].id;
+  const renderSubStepContent = () => {
+    const currentSubStepId = getCurrentSubStep().id;
 
-    switch (currentStepId) {
-      case 'basic':
+    switch (currentSubStepId) {
+      case 'info':
         return (
-          <div className="grid lg:grid-cols-2 gap-8 md:gap-16 items-start">
-            <ImageUpload
-              imagePreview={formData.image_url}
-              onImageUpload={(file) => updateFormData({ image_file: file })}
+          <div className="space-y-8">
+            <BasicInfo
+              eventName={formData.title}
+              description={formData.description}
+              onEventNameChange={(title) => updateFormData({ title })}
+              onDescriptionChange={(description) => updateFormData({ description })}
             />
-            <div className="space-y-6">
-              <BasicInfo
-                eventName={formData.title}
-                description={formData.description}
-                onEventNameChange={(title) => updateFormData({ title })}
-                onDescriptionChange={(description) => updateFormData({ description })}
+            <div className="flex justify-center">
+              <ImageUpload
+                imagePreview={formData.image_url}
+                onImageUpload={(file) => updateFormData({ image_file: file })}
               />
-              <div>
-                <label className="block text-sm font-medium mb-2">Subtitle (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="A catchy tagline for your event"
-                  value={formData.subtitle}
-                  onChange={(e) => updateFormData({ subtitle: e.target.value })}
-                  className="w-full text-black text-[16px] md:text-[18px] font-medium leading-none focus:outline-none bg-transparent border-none p-0 placeholder:text-[#C4C4C4]"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Summary (Optional)</label>
-                <textarea
-                  placeholder="Brief summary for search results and social media"
-                  value={formData.summary}
-                  onChange={(e) => updateFormData({ summary: e.target.value })}
-                  className="w-full text-black text-[16px] md:text-[18px] leading-rel focus:outline-none bg-transparent border-none p-0 placeholder:text-[#C4C4C4] resize-none h-20"
-                />
-              </div>
             </div>
           </div>
+        );
+
+      case 'contact':
+        return (
+          <ContactInfo
+            contactPhone={formData.event_contact_phone || ''}
+            contactEmail={formData.event_contact_email || ''}
+            onContactPhoneChange={(phone) => updateFormData({ event_contact_phone: phone })}
+            onContactEmailChange={(email) => updateFormData({ event_contact_email: email })}
+          />
         );
 
       case 'type':
@@ -312,37 +318,36 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
 
       case 'datetime':
         return (
-          <DateTimeSection
-            startDate={formData.start_time}
-            endDate={formData.end_time}
-            startTime={formData.start_time}
-            endTime={formData.end_time}
-            timezone={formData.timezone}
-            doorsOpenTime={formData.doors_open_time}
-            registrationStartTime={formData.registration_start_time}
-            registrationEndTime={formData.registration_end_time}
-            onStartDateChange={(start_time) => updateFormData({ start_time })}
-            onEndDateChange={(end_time) => updateFormData({ end_time })}
-            onStartTimeChange={(start_time) => updateFormData({ start_time })}
-            onEndTimeChange={(end_time) => updateFormData({ end_time })}
-            onTimezoneChange={(timezone) => updateFormData({ timezone })}
-            onDoorsOpenTimeChange={(doors_open_time) => updateFormData({ doors_open_time })}
-            onRegistrationStartTimeChange={(registration_start_time) => updateFormData({ registration_start_time })}
-            onRegistrationEndTimeChange={(registration_end_time) => updateFormData({ registration_end_time })}
-          />
-        );
-
-      case 'location':
-        return (
-          <LocationSection
-            location={formData.location}
-            virtualEventUrl={formData.virtual_event_url}
-            virtualEventPlatform={formData.virtual_event_platform}
-            eventType={formData.event_type}
-            onLocationChange={(location) => updateFormData({ location })}
-            onVirtualEventUrlChange={(virtual_event_url) => updateFormData({ virtual_event_url })}
-            onVirtualEventPlatformChange={(virtual_event_platform) => updateFormData({ virtual_event_platform })}
-          />
+          <div className="space-y-8">
+            <DateTimeSection
+              startDate={formData.start_time}
+              endDate={formData.end_time}
+              startTime={formData.start_time}
+              endTime={formData.end_time}
+              timezone={formData.timezone}
+              doorsOpenTime={formData.doors_open_time}
+              registrationStartTime={formData.registration_start_time}
+              registrationEndTime={formData.registration_end_time}
+              onStartDateChange={(start_time) => updateFormData({ start_time })}
+              onEndDateChange={(end_time) => updateFormData({ end_time })}
+              onStartTimeChange={(start_time) => updateFormData({ start_time })}
+              onEndTimeChange={(end_time) => updateFormData({ end_time })}
+              onTimezoneChange={(timezone) => updateFormData({ timezone })}
+              onDoorsOpenTimeChange={(doors_open_time) => updateFormData({ doors_open_time })}
+              onRegistrationStartTimeChange={(registration_start_time) => updateFormData({ registration_start_time })}
+              onRegistrationEndTimeChange={(registration_end_time) => updateFormData({ registration_end_time })}
+            />
+            
+            <LocationSection
+              location={formData.location}
+              virtualEventUrl={formData.virtual_event_url}
+              virtualEventPlatform={formData.virtual_event_platform}
+              eventType={formData.event_type}
+              onLocationChange={(location) => updateFormData({ location })}
+              onVirtualEventUrlChange={(virtual_event_url) => updateFormData({ virtual_event_url })}
+              onVirtualEventPlatformChange={(virtual_event_platform) => updateFormData({ virtual_event_platform })}
+            />
+          </div>
         );
 
       case 'registration':
@@ -373,37 +378,39 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           />
         );
 
-      case 'advanced':
+      case 'settings':
         return (
-          <AdvancedSection
-            eventWebsite={formData.event_website}
-            eventContactEmail={formData.event_contact_email}
-            refundPolicy={formData.refund_policy}
-            customRefundPolicy={formData.custom_refund_policy}
-            onEventWebsiteChange={(event_website) => updateFormData({ event_website })}
-            onEventContactEmailChange={(event_contact_email) => updateFormData({ event_contact_email })}
-            onRefundPolicyChange={(refund_policy) => updateFormData({ refund_policy: refund_policy as any })}
-            onCustomRefundPolicyChange={(custom_refund_policy) => updateFormData({ custom_refund_policy })}
-          />
-        );
-
-      case 'review':
-        return (
-          <ReviewSection
-            formData={formData}
-            onEdit={(stepId) => {
-              const stepIndex = WIZARD_STEPS.findIndex(step => step.id === stepId);
-              if (stepIndex !== -1) {
-                goToStep(stepIndex);
-              }
-            }}
-            onPublish={handlePublish}
-            isPublishing={isPublishing}
-          />
+          <div className="space-y-8">
+            <AdvancedSection
+              eventWebsite={formData.event_website}
+              eventContactEmail={formData.event_contact_email}
+              refundPolicy={formData.refund_policy}
+              customRefundPolicy={formData.custom_refund_policy}
+              onEventWebsiteChange={(event_website) => updateFormData({ event_website })}
+              onEventContactEmailChange={(event_contact_email) => updateFormData({ event_contact_email })}
+              onRefundPolicyChange={(refund_policy) => updateFormData({ refund_policy: refund_policy as any })}
+              onCustomRefundPolicyChange={(custom_refund_policy) => updateFormData({ custom_refund_policy })}
+            />
+            
+            <ReviewSection
+              formData={formData}
+              onEdit={(stepId) => {
+                // Find the section and sub-step for the given stepId
+                WIZARD_SECTIONS.forEach((section, sectionIndex) => {
+                  const subStepIndex = section.subSteps.findIndex(subStep => subStep.id === stepId);
+                  if (subStepIndex !== -1) {
+                    goToSubStep(sectionIndex, subStepIndex);
+                  }
+                });
+              }}
+              onPublish={handlePublish}
+              isPublishing={isPublishing}
+            />
+          </div>
         );
 
       default:
-        return <div>Step not found</div>;
+        return <div>Sub-step not found</div>;
     }
   };
 
@@ -449,11 +456,14 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           <div className="mt-4">
             <Progress value={getStepProgress()} className="h-2 bg-blue-100 [&>div]:bg-green-500" />
             <div className="mt-2 flex justify-between items-center text-xs text-black">
-              <span>Step {currentStep + 1} of {WIZARD_STEPS.length}</span>
+              <span>Step {getCurrentSubStepNumber()} of {getTotalSubSteps()}</span>
               <span className="text-black">{Math.round(getStepProgress())}% Complete</span>
             </div>
             <div className="mt-1">
-              <span className="text-sm font-medium text-black">{WIZARD_STEPS[currentStep].title}</span>
+              <span className="text-sm font-medium text-black">{getCurrentSection().title} - {getCurrentSubStep().title}</span>
+            </div>
+            <div className="text-xs text-white mt-1">
+              {getCurrentSubStep().description}
             </div>
           </div>
         </div>
@@ -468,29 +478,29 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
                 {/* Step Header */}
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold mb-2">
-                    {WIZARD_STEPS[currentStep].title}
+                    {getCurrentSubStep().title}
                   </h2>
-                  <p className="text-gray-600">
-                    {WIZARD_STEPS[currentStep].description}
+                  <p className="text-white">
+                    {getCurrentSubStep().description}
                   </p>
                 </div>
 
                 {/* Step Content */}
-                {renderStepContent()}
+                {renderSubStepContent()}
 
                 {/* Navigation */}
                 <div className="flex items-center justify-between mt-8 pt-8 border-t border-gray-200">
                   <Button
                     variant="outline"
-                    onClick={goToPreviousStep}
-                    disabled={currentStep === 0}
+                    onClick={goToPreviousSubStep}
+                    disabled={currentSectionIndex === 0 && currentSubStepIndex === 0}
                   >
                     <ChevronLeft className="w-4 h-4 mr-2" />
                     Previous
                   </Button>
 
                   <div className="flex items-center gap-2">
-                    {currentStep === WIZARD_STEPS.length - 1 ? (
+                    {currentSectionIndex === WIZARD_SECTIONS.length - 1 && currentSubStepIndex === getCurrentSection().subSteps.length - 1 ? (
                       <Button
                         onClick={handlePublish}
                         disabled={isPublishing || !canProceedToNext()}
@@ -501,7 +511,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
                       </Button>
                     ) : (
                       <Button
-                        onClick={goToNextStep}
+                        onClick={goToNextSubStep}
                         disabled={!canProceedToNext()}
                       >
                         Next
@@ -524,54 +534,61 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-blue-600">
-                      Step {currentStep + 1} of {WIZARD_STEPS.length}
+                      Step {getCurrentSubStepNumber()} of {getTotalSubSteps()}
                     </span>
                     <span className="text-xs text-blue-600">
                       {Math.round(getStepProgress())}%
                     </span>
                   </div>
                   <div className="text-sm font-semibold text-blue-600">
-                    {WIZARD_STEPS[currentStep].title}
+                    {getCurrentSection().title}
                   </div>
                   <div className="text-xs text-blue-600 mt-1">
-                    {WIZARD_STEPS[currentStep].description}
+                    {getCurrentSubStep().title}
                   </div>
                 </div>
 
                 {/* Step Navigation */}
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium text-black mb-3">Quick Navigation</h4>
-                  {WIZARD_STEPS.map((step, index) => {
-                    const isCompleted = isStepComplete(step.id);
-                    const isCurrent = index === currentStep;
-                    
-                    return (
-                      <button
-                        key={step.id}
-                        onClick={() => goToStep(index)}
-                        className={`w-full text-left p-2 rounded text-sm transition-colors ${
-                          isCurrent 
-                            ? 'bg-blue-100 text-blue-700 font-medium' 
-                            : isCompleted
-                            ? 'text-gray-700 hover:bg-gray-50'
-                            : 'text-gray-500 hover:text-gray-600'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`w-2 h-2 rounded-full ${
-                              isCompleted
-                                ? 'bg-green-500'
-                                : isCurrent
-                                ? 'bg-blue-500'
-                                : 'bg-gray-300'
+                  {WIZARD_SECTIONS.map((section, sectionIndex) => (
+                    <div key={section.id} className="mb-3">
+                      <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
+                        {section.title}
+                      </div>
+                      {section.subSteps.map((subStep, subStepIndex) => {
+                        const isCurrent = sectionIndex === currentSectionIndex && subStepIndex === currentSubStepIndex;
+                        const isCompleted = isSubStepComplete(subStep.id);
+                        
+                        return (
+                          <button
+                            key={subStep.id}
+                            onClick={() => goToSubStep(sectionIndex, subStepIndex)}
+                            className={`w-full text-left p-2 rounded text-sm transition-colors mb-1 ${
+                              isCurrent 
+                                ? 'bg-blue-100 text-blue-700 font-medium' 
+                                : isCompleted
+                                ? 'text-gray-700 hover:bg-gray-50'
+                                : 'text-gray-500 hover:text-gray-600'
                             }`}
-                          />
-                          <span className="truncate">{step.title}</span>
-                        </div>
-                      </button>
-                    );
-                  })}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  isCompleted
+                                    ? 'bg-green-500'
+                                    : isCurrent
+                                    ? 'bg-blue-500'
+                                    : 'bg-gray-300'
+                                }`}
+                              />
+                              <span className="truncate">{subStep.title}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
 
                 {/* AI Suggestions */}
