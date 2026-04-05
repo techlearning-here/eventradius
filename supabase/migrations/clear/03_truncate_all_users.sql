@@ -5,6 +5,7 @@
 -- while preserving the database schema and structure
 -- 
 -- WARNING: This will permanently delete ALL user data!
+-- Including auth.users table and all related user data!
 -- =====================================================
 
 -- Disable foreign key constraints temporarily
@@ -25,6 +26,10 @@ TRUNCATE TABLE public.user_roles CASCADE;
 
 -- 3. User profiles
 TRUNCATE TABLE public.profiles CASCADE;
+
+-- 4. Core authentication users table
+-- This removes all user accounts from the auth system
+TRUNCATE TABLE auth.users CASCADE;
 
 -- Re-enable foreign key constraints
 SET session_replication_role = 'origin';
@@ -51,11 +56,14 @@ SELECT
     n_live_tup as live_rows,
     n_dead_tup as dead_rows
 FROM pg_stat_user_tables 
-WHERE schemaname = 'public' 
-    AND relname IN ('profiles', 'user_roles', 'user_preferences', 'events', 'event_participants', 'event_registrations', 'event_categories', 'event_audit')
-ORDER BY relname;
+WHERE schemaname IN ('public', 'auth') 
+    AND relname IN ('users', 'profiles', 'user_roles', 'user_preferences', 'events', 'event_participants', 'event_registrations', 'event_categories', 'event_audit')
+ORDER BY schemaname, relname;
 
 -- Show that tables are empty
+SELECT 
+    'auth.users' as table_name, COUNT(*) as row_count FROM auth.users
+UNION ALL
 SELECT 
     'profiles' as table_name, COUNT(*) as row_count FROM public.profiles
 UNION ALL
@@ -89,6 +97,7 @@ ORDER BY table_name;
 -- You can now test fresh user registration and onboarding flows.
 --
 -- Tables truncated:
+-- ✅ auth.users (core authentication table)
 -- ✅ event_audit
 -- ✅ event_registrations  
 -- ✅ event_categories

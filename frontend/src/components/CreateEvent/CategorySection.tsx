@@ -8,8 +8,8 @@ interface CategorySectionProps {
   onMaxParticipantsChange: (value: number | undefined) => void;
   isPublic?: boolean;
   onIsPublicChange: (value: boolean) => void;
-  price?: string;
-  onPriceChange: (value: string) => void;
+  ticketPricingDescription: string;
+  onTicketPricingDescriptionChange: (value: string) => void;
   tags?: string[];
   onTagsChange: (value: string[]) => void;
 }
@@ -21,8 +21,8 @@ export const CategorySection = ({
   onMaxParticipantsChange,
   isPublic = true,
   onIsPublicChange,
-  price = '',
-  onPriceChange,
+  ticketPricingDescription,
+  onTicketPricingDescriptionChange,
   tags = [],
   onTagsChange
 }: CategorySectionProps) => {
@@ -105,18 +105,24 @@ export const CategorySection = ({
           </label>
         </div>
 
-        {/* Price */}
+        {/* Ticket Pricing Description */}
         <div>
-          <label className="block text-sm font-medium mb-2">Price (optional)</label>
-          <div className="relative">
-            <DollarSign className="absolute left-3 top-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              value={price}
-              onChange={(e) => onPriceChange(e.target.value)}
-              placeholder="0.00"
-              className="w-full text-black text-[16px] md:text-[18px] font-medium leading-none focus:outline-none bg-transparent border-none p-0 pl-8 placeholder:text-[#C4C4C4]"
+          <label className="block text-sm font-medium mb-2">Ticket Pricing Description</label>
+          <div className="space-y-2">
+            <textarea
+              value={ticketPricingDescription}
+              onChange={(e) => onTicketPricingDescriptionChange(e.target.value)}
+              placeholder="Describe your ticket pricing structure. For example:
+• Adults: $25
+• Students/Seniors: $15
+• Children under 12: Free
+• VIP seating: $50
+• Group discounts available for 10+ people"
+              className="w-full text-black text-[16px] md:text-[18px] leading-rel focus:outline-none bg-transparent border border-gray-200 rounded-lg p-3 placeholder:text-[#C4C4C4] resize-none h-32"
             />
+            <p className="text-xs text-gray-500">
+              Include all pricing tiers, age-based discounts, seating options, and any special conditions
+            </p>
           </div>
         </div>
 

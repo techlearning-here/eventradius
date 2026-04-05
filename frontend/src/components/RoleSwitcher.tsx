@@ -46,17 +46,17 @@ export const RoleSwitcher = () => {
     try {
       // Check if organizer onboarding is needed
       try {
-        const organizerStatus = await apiClient.getOrganizerStatus();
+        const preferences = await apiClient.getUserPreferences();
         
-        // If user doesn't have organizer role or missing required info, redirect to onboarding
-        if (!organizerStatus.is_organizer || !organizerStatus.has_phone || !organizerStatus.phone_verified) {
+        // If user hasn't completed organizer onboarding, redirect to onboarding
+        if (!preferences.organizer_onboarding_completed) {
           console.log('Organizer onboarding required, redirecting to onboarding');
           navigate('/organizer-onboarding');
           return;
         }
       } catch (error) {
-        console.log('Error checking organizer status, proceeding to onboarding:', error);
-        // If we can't check status, assume onboarding is needed
+        console.log('Error checking organizer preferences, proceeding to onboarding:', error);
+        // If we can't check preferences, assume onboarding is needed
         navigate('/organizer-onboarding');
         return;
       }

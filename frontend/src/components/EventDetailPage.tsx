@@ -28,6 +28,10 @@ interface Event {
   created_at: string;
   updated_at: string;
   current_participants?: number;
+  timezone?: string;
+  organizer_email?: string;
+  organizer_phone?: string;
+  organizer_website?: string;
   // Legacy fields for compatibility
   creator?: string;
   date?: string;
@@ -132,12 +136,14 @@ export const EventDetailPage: React.FC = () => {
     <main className="flex h-screen justify-center items-start w-full relative bg-background mx-auto my-0 max-lg:flex-col max-lg:h-auto">
       <div className="flex flex-col justify-end items-start fixed h-screen w-[calc(100%-540px)] pl-[49px] pr-[590px] pt-[calc(100vh-97px)] pb-12 left-0 top-0 overflow-hidden max-lg:relative max-lg:w-full max-lg:h-[400px] max-lg:bg-cover max-lg:bg-center max-lg:pt-80 max-lg:pb-6 max-lg:px-4 max-lg:right-0 max-sm:h-[300px] max-sm:pt-60 max-sm:pb-6 max-sm:px-4" role="img" aria-label="Event background image">
         <div className="absolute inset-0 animate-[zoom-in_1.2s_ease-out_forwards]" style={{
-          backgroundImage: `url("${event.background_image_url}")`,
-          backgroundSize: 'cover',
+          backgroundImage: event.background_image_url 
+            ? `url("${event.background_image_url}")` 
+            : `linear-gradient(135deg, #667eea 0%, #764ba2 100%)`,
+          backgroundSize: event.background_image_url ? 'cover' : 'auto',
           backgroundPosition: 'center'
         }}></div>
         <div className="relative z-10 animate-fade-in" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
-          <EventCountdown targetDate={new Date(event.target_date)} />
+          <EventCountdown targetDate={new Date(event.target_date)} className="text-white" />
         </div>
       </div>
 
@@ -151,7 +157,16 @@ export const EventDetailPage: React.FC = () => {
           )}
 
           <div className="flex flex-col items-start gap-4 self-stretch relative">
-            <EventMeta date={event.date} time={event.time} />
+            <EventMeta 
+              date={event.date} 
+              time={event.time} 
+              timezone={event.timezone} 
+              contact={{
+                email: event.organizer_email,
+                phone: event.organizer_phone,
+                website: event.organizer_website
+              }} 
+            />
             <EventHeader title={event.title} creator={event.creator} />
           </div>
 
