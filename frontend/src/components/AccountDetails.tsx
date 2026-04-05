@@ -53,7 +53,7 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
   }
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative pt-12 ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 bg-background text-foreground h-[34px] px-3 border border-foreground hover:border-foreground/80 transition-colors"

@@ -73,35 +73,6 @@ export const RoleSwitcher = () => {
 
   return (
     <>
-      <div className="flex items-center border border-l-0 border-foreground h-[34px]">
-        <button
-          type="button"
-          onClick={() => handleRoleSwitch('user', '/discover')}
-          disabled={switching}
-          className={`h-full px-2.5 text-[10px] font-medium uppercase leading-none transition-all duration-200 flex items-center gap-1 ${
-            role === 'user'
-              ? 'bg-foreground text-background'
-              : 'bg-background text-foreground hover:bg-muted'
-          } ${switching ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-          {switching && role !== 'user' && <Loader2 className="w-2 h-2 animate-spin" />}
-          Event Discoverer
-        </button>
-        <button
-          type="button"
-          onClick={() => handleRoleSwitch('organizer', '/organizer')}
-          disabled={switching}
-          className={`h-full px-2.5 text-[10px] font-medium uppercase leading-none border-l border-foreground transition-all duration-200 flex items-center gap-1 ${
-            role === 'organizer'
-              ? 'bg-foreground text-background'
-              : 'bg-background text-foreground hover:bg-muted'
-          } ${switching ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-          {switching && role !== 'organizer' && <Loader2 className="w-2 h-2 animate-spin" />}
-          Event Publisher
-        </button>
-      </div>
-
       {/* Confirmation Dialog */}
       {showConfirmation && (
         <div className="fixed inset-0 z-[4000] flex items-center justify-center animate-in fade-in duration-200">

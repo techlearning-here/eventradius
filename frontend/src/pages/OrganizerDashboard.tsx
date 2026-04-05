@@ -10,7 +10,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn, getErrorMessage } from '@/lib/utils';
-import { Plus, Trash2, MapPin, X, ArrowRight, Maximize2, Minimize2, CalendarDays, Users, Settings, BarChart3, FileText, CreditCard, HelpCircle, LogOut, Home, Megaphone } from 'lucide-react';
+import { Plus, Trash2, MapPin, X, ArrowRight, Maximize2, Minimize2, CalendarDays, Users, Settings, BarChart3, FileText, CreditCard, HelpCircle, LogOut, Home, Megaphone, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 const COMMON_TIMEZONES = [
@@ -67,6 +67,7 @@ const OrganizerDashboard = () => {
   const [stepsExpanded, setStepsExpanded] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeSection, setActiveSection] = useState('events');
+  const [sidebarIconized, setSidebarIconized] = useState(false);
 
   // Sidebar navigation items
   const sidebarItems = [
@@ -694,16 +695,30 @@ const OrganizerDashboard = () => {
       <RoleSwitcher />
       <div className="flex">
         {/* Left Sidebar */}
-        <div className="w-64 bg-gray-50 border-r border-gray-200 min-h-screen">
-          <div className="p-4">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                <Home className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-sm">Event Publisher</h2>
-                <p className="text-xs text-gray-500">Organizer Dashboard</p>
-              </div>
+        <div className={`bg-black border-r border-gray-200 min-h-screen transition-all duration-300 ease-in-out pt-12 ${
+          sidebarIconized ? 'w-16' : 'w-64'
+        }`}>
+          <div className="p-4 pt-12">
+            {/* Header with Toggle */}
+            <div className="flex items-center justify-between mb-6">
+              {!sidebarIconized && (
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <Home className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-sm text-white">Event Publisher</h2>
+                    <p className="text-xs text-gray-400">Organizer Dashboard</p>
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={() => setSidebarIconized(!sidebarIconized)}
+                className="p-2 rounded-lg hover:bg-gray-800 text-white transition-colors"
+                title={sidebarIconized ? "Expand sidebar" : "Iconize sidebar"}
+              >
+                {sidebarIconized ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              </button>
             </div>
 
             {/* Navigation Items */}
@@ -718,15 +733,18 @@ const OrganizerDashboard = () => {
                     onClick={() => setActiveSection(item.id)}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                       isActive
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        ? 'bg-blue-100 text-black border border-blue-200'
+                        : 'text-white hover:bg-gray-800 hover:text-white'
                     }`}
+                    title={sidebarIconized ? `${item.label} - ${item.description}` : ''}
                   >
-                    <Icon className="w-4 h-4" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium">{item.label}</div>
-                      <div className="text-xs text-gray-500 truncate">{item.description}</div>
-                    </div>
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    {!sidebarIconized && (
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-sm font-medium ${isActive ? 'text-black' : 'text-white'}`}>{item.label}</div>
+                        <div className={`text-xs truncate ${isActive ? 'text-black' : 'text-white'}`}>{item.description}</div>
+                      </div>
+                    )}
                   </button>
                 );
               })}
@@ -740,9 +758,10 @@ const OrganizerDashboard = () => {
                   navigate('/');
                 }}
                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+                title={sidebarIconized ? "Logout" : ""}
               >
-                <LogOut className="w-4 h-4" />
-                <div className="text-sm font-medium">Logout</div>
+                <LogOut className="w-4 h-4 flex-shrink-0" />
+                {!sidebarIconized && <div className="text-sm font-medium">Logout</div>}
               </button>
             </div>
           </div>

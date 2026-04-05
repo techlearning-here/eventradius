@@ -152,25 +152,6 @@ const Discover = () => {
                 <MapPin className="w-4 h-4" /> Showing events near {prefs.city} (within {prefs.distance_range} miles)
               </p>
             )}
-            
-            {/* Become an Event Publisher Card */}
-            {user && !hasOrganizerRole && (
-              <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6 mb-8">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-xl font-semibold text-purple-900 mb-2">Want to create your own events?</h2>
-                    <p className="text-purple-700 text-sm">Become an event publisher and share amazing experiences with your community.</p>
-                  </div>
-                  <button
-                    onClick={() => navigate('/organizer-onboarding')}
-                    className="flex items-center gap-2 px-5 py-3 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Become an Event Publisher
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </section>
 
