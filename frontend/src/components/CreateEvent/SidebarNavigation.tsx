@@ -31,7 +31,7 @@ export const SidebarNavigation = ({
                 onClick={() => onSubStepChange(sectionIndex, subStepIndex)}
                 className={`w-full text-left p-2 rounded text-sm transition-colors mb-1 ${
                   isCurrent 
-                    ? 'bg-blue-100 text-blue-700 font-medium' 
+                    ? 'bg-blue-500 text-blue-100 font-medium' 
                     : isCompleted
                     ? 'text-gray-700 hover:bg-gray-50'
                     : 'text-gray-500 hover:text-gray-600'

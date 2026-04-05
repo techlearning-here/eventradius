@@ -84,73 +84,109 @@ export const EventTypeSection = ({
 
   return (
     <div className="space-y-8">
-      {/* Event Type Selection */}
+      {/* Step 1: Event Type Selection */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Event Type</h3>
-        <p className="text-gray-600 mb-6">
-          Choose how attendees will experience your event
-        </p>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+            1
+          </div>
+          <h3 className="text-lg font-semibold">Event Type</h3>
+        </div>
         
         <div className="grid md:grid-cols-3 gap-4">
           {eventTypes.map((type) => {
             const Icon = type.icon;
             return (
-              <button
-                key={type.id}
-                onClick={() => onEventTypeChange(type.id as any)}
-                className={`p-4 border-2 rounded-lg text-left transition-all ${
-                  eventType === type.id
-                    ? `${type.color} border-current`
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <Icon className="w-6 h-6" />
-                  <span className="font-semibold">{type.title}</span>
+              <label key={type.id} className="relative cursor-pointer">
+                <input
+                  type="radio"
+                  name="event-type"
+                  value={type.id}
+                  checked={eventType === type.id}
+                  onChange={(e) => {
+                    console.log('Event type selected:', type.id);
+                    onEventTypeChange(type.id as any);
+                  }}
+                  className="sr-only peer"
+                />
+                <div
+                  className={`p-4 border-2 rounded-lg text-left transition-all cursor-pointer peer-checked:ring-2 peer-checked:ring-offset-2 peer-checked:ring-blue-200 h-full flex flex-col ${
+                    eventType === type.id
+                      ? `${type.color} border-current`
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  style={eventType === type.id ? { color: 'black !important', fontWeight: 'bold' } : {}}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <Icon className="w-6 h-6" style={eventType === type.id ? { color: 'black' } : {}} />
+                    <span className="font-semibold" style={eventType === type.id ? { color: 'black' } : {}}>{type.title}</span>
+                  </div>
+                  <p className="text-sm flex-1" style={eventType === type.id ? { color: 'black', opacity: '1' } : {}}>{type.description}</p>
                 </div>
-                <p className="text-sm opacity-80">{type.description}</p>
-              </button>
+              </label>
             );
           })}
         </div>
       </div>
 
-      {/* Event Format Selection */}
+      {/* Step 2: Event Format Selection */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Event Format</h3>
-        <p className="text-gray-600 mb-6">
-          Define the schedule structure of your event
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+            2
+          </div>
+          <h3 className="text-lg font-semibold">Event Format</h3>
+        </div>
+        <p className="text-white mb-6">
+          Define schedule structure of your event
         </p>
         
         <div className="grid md:grid-cols-3 gap-4">
           {eventFormats.map((format) => {
             const Icon = format.icon;
             return (
-              <button
-                key={format.id}
-                onClick={() => onEventFormatChange(format.id as any)}
-                className={`p-4 border-2 rounded-lg text-left transition-all ${
-                  eventFormat === format.id
-                    ? `${format.color} border-current`
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <Icon className="w-6 h-6" />
-                  <span className="font-semibold">{format.title}</span>
+              <label key={format.id} className="relative cursor-pointer">
+                <input
+                  type="radio"
+                  name="event-format"
+                  value={format.id}
+                  checked={eventFormat === format.id}
+                  onChange={(e) => {
+                    console.log('Event format selected:', format.id);
+                    onEventFormatChange(format.id as any);
+                  }}
+                  className="sr-only peer"
+                />
+                <div
+                  className={`p-4 border-2 rounded-lg text-left transition-all cursor-pointer peer-checked:ring-2 peer-checked:ring-offset-2 peer-checked:ring-blue-200 h-full flex flex-col ${
+                    eventFormat === format.id
+                      ? `${format.color} border-current`
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  style={eventFormat === format.id ? { color: 'black !important', fontWeight: 'bold' } : {}}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <Icon className="w-6 h-6" style={eventFormat === format.id ? { color: 'black' } : {}} />
+                    <span className="font-semibold" style={eventFormat === format.id ? { color: 'black' } : {}}>{format.title}</span>
+                  </div>
+                  <p className="text-sm flex-1" style={eventFormat === format.id ? { color: 'black', opacity: '1' } : {}}>{format.description}</p>
                 </div>
-                <p className="text-sm opacity-80">{format.description}</p>
-              </button>
+              </label>
             );
           })}
         </div>
       </div>
 
-      {/* Language Selection */}
+      {/* Step 3: Language Selection */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Event Language</h3>
-        <p className="text-gray-600 mb-6">
-          Select the primary language for your event
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+            3
+          </div>
+          <h3 className="text-lg font-semibold">Event Language</h3>
+        </div>
+        <p className="text-white mb-6">
+          Select primary language for your event
         </p>
         
         <div className="max-w-md">
@@ -168,10 +204,10 @@ export const EventTypeSection = ({
         </div>
       </div>
 
-      {/* Event Type Tips */}
+      {/* Step 4: Event Type Tips */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="font-semibold text-blue-900 mb-2">💡 Pro Tips</h4>
-        <ul className="text-sm text-blue-800 space-y-1">
+        <h4 className="font-semibold text-gray-900 mb-2">💡 Pro Tips</h4>
+        <ul className="text-sm text-gray-800 space-y-1">
           {eventType === 'online' && (
             <>
               <li>• Test your virtual platform before the event</li>

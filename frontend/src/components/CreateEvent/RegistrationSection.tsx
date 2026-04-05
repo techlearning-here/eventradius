@@ -47,10 +47,10 @@ export const RegistrationSection = ({
       {/* Privacy Settings */}
       <div>
         <div className="flex items-center gap-2 mb-4">
-          <Users className="w-5 h-5 text-gray-600" />
+          <Users className="w-5 h-5 text-white" />
           <h3 className="text-lg font-semibold">Event Privacy</h3>
         </div>
-        <p className="text-gray-600 mb-6">
+        <p className="text-white mb-6">
           Control who can find and register for your event
         </p>
         
@@ -71,7 +71,7 @@ export const RegistrationSection = ({
       {/* Registration Settings */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Registration Settings</h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-white mb-6">
           Configure additional registration requirements and options
         </p>
         
@@ -89,7 +89,7 @@ export const RegistrationSection = ({
       {/* Accessibility Features */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Accessibility</h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-white mb-6">
           Let attendees know about accessibility features available at your event
         </p>
         

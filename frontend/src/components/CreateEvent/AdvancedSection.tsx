@@ -38,7 +38,7 @@ export const AdvancedSection = ({
       {/* Event Website */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Event Website</h3>
-        <p className="text-gray-600 mb-4">
+        <p className="text-white mb-4">
           Provide a website for more information about your event
         </p>
         
@@ -60,7 +60,7 @@ export const AdvancedSection = ({
       {/* Event Contact Email */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Event Contact Email</h3>
-        <p className="text-gray-600 mb-4">
+        <p className="text-white mb-4">
           Email address for event-specific inquiries
         </p>
         
@@ -81,9 +81,9 @@ export const AdvancedSection = ({
 
       {/* Ticketing Website */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Ticketing Website</h3>
-        <p className="text-gray-600 mb-4">
-          External ticketing platform if you're not using built-in ticketing
+        <h3 className="text-lg font-semibold mb-4">External Ticketing</h3>
+        <p className="text-white mb-4">
+          Add your external ticketing platform if you're not using built-in ticketing
         </p>
         
         <div className="relative max-w-md">
@@ -104,7 +104,7 @@ export const AdvancedSection = ({
       {/* Refund Policy */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Refund Policy</h3>
-        <p className="text-gray-600 mb-4">
+        <p className="text-white mb-4">
           Set clear expectations for ticket refunds
         </p>
         
@@ -140,7 +140,7 @@ export const AdvancedSection = ({
       {/* Additional Advanced Settings */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Additional Settings</h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-white mb-6">
           More advanced event management features
         </p>
         

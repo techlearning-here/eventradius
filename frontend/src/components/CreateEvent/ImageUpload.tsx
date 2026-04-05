@@ -31,9 +31,9 @@ export const ImageUpload = ({ imagePreview, onImageUpload }: ImageUploadProps) =
     <div className="flex flex-col gap-3 md:gap-4">
       <div>
         <label className="block text-sm font-medium mb-2">
-          Event Image <span className="text-gray-500 font-normal">(Optional)</span>
+          Event Image <span className="text-white font-normal">(Optional)</span>
         </label>
-        <p className="text-xs text-gray-600 mb-3">
+        <p className="text-xs text-white mb-3">
           Add an image to make your event more attractive. Recommended size: 1920x1080px
         </p>
       </div>

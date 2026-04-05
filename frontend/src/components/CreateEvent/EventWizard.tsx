@@ -30,6 +30,7 @@ export interface EventFormData {
   event_type: 'online' | 'in_person' | 'hybrid';
   event_format: 'single' | 'recurring' | 'multi_date';
   event_privacy: 'public' | 'private' | 'unlisted';
+  is_paid_event: boolean;
   
   // Date & Time
   start_time: Date | null;
@@ -40,6 +41,8 @@ export interface EventFormData {
   // Location & Venue
   location?: string;
   primary_venue_id?: string | null;
+  is_virtual: boolean;
+  virtual_event_details?: string;
   virtual_event_url?: string;
   virtual_event_platform?: string;
   
@@ -120,6 +123,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
     event_type: 'in_person',
     event_format: 'single',
     event_privacy: 'public',
+    is_paid_event: false,
     
     // Date & Time
     start_time: null,
@@ -129,6 +133,8 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
     // Location & Venue
     location: '',
     primary_venue_id: null,
+    is_virtual: false,
+    virtual_event_details: '',
     virtual_event_url: '',
     virtual_event_platform: '',
     
@@ -282,8 +288,10 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
             <BasicInfo
               eventName={formData.title}
               description={formData.description}
+              isPaidEvent={formData.is_paid_event}
               onEventNameChange={(title) => updateFormData({ title })}
               onDescriptionChange={(description) => updateFormData({ description })}
+              onIsPaidEventChange={(is_paid_event) => updateFormData({ is_paid_event })}
             />
             <div className="flex justify-center">
               <ImageUpload
@@ -340,12 +348,11 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
             
             <LocationSection
               location={formData.location}
-              virtualEventUrl={formData.virtual_event_url}
-              virtualEventPlatform={formData.virtual_event_platform}
-              eventType={formData.event_type}
+              isVirtual={formData.is_virtual}
+              virtualEventDetails={formData.virtual_event_details}
               onLocationChange={(location) => updateFormData({ location })}
-              onVirtualEventUrlChange={(virtual_event_url) => updateFormData({ virtual_event_url })}
-              onVirtualEventPlatformChange={(virtual_event_platform) => updateFormData({ virtual_event_platform })}
+              onIsVirtualChange={(is_virtual) => updateFormData({ is_virtual })}
+              onVirtualEventDetailsChange={(virtual_event_details) => updateFormData({ virtual_event_details })}
             />
           </div>
         );
@@ -417,7 +424,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
   return (
     <div className="bg-gray-50">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b-2 border-black">
+      <div className="bg-white border-b-2 border-black">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -526,7 +533,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
 
           {/* Sidebar */}
           <div className="xl:col-span-1">
-            <Card className="sticky top-24">
+            <Card className="top-24">
               <CardContent className="p-6">
                 <h3 className="font-semibold mb-4 text-blue-600">Event Progress</h3>
                 
