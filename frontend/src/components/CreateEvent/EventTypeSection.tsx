@@ -22,7 +22,6 @@ import { Monitor, Users, Wifi, Calendar, Repeat, Grid3X3 } from 'lucide-react';
 interface EventTypeSectionProps {
   eventType: 'online' | 'in_person' | 'hybrid';
   eventFormat: 'single' | 'recurring' | 'multi_date';
-  language: string;
   venueAddress?: string;
   // Structured venue fields
   venueStreet?: string;
@@ -52,7 +51,6 @@ interface EventTypeSectionProps {
   }>;
   onEventTypeChange: (value: 'online' | 'in_person' | 'hybrid') => void;
   onEventFormatChange: (value: 'single' | 'recurring' | 'multi_date') => void;
-  onLanguageChange: (value: string) => void;
   onVenueAddressChange: (value: string) => void;
   // Structured venue field handlers
   onVenueStreetChange: (value: string) => void;
@@ -80,7 +78,6 @@ interface EventTypeSectionProps {
 export const EventTypeSection = ({
   eventType,
   eventFormat,
-  language,
   venueAddress = '',
   venueStreet = '',
   venueCity = '',
@@ -104,7 +101,6 @@ export const EventTypeSection = ({
   multiDateEvents = [],
   onEventTypeChange,
   onEventFormatChange,
-  onLanguageChange,
   onVenueAddressChange,
   onVenueStreetChange,
   onVenueCityChange,
@@ -235,21 +231,14 @@ export const EventTypeSection = ({
     },
   ];
 
-  const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Spanish' },
-    { code: 'fr', name: 'French' },
-    { code: 'de', name: 'German' },
-    { code: 'it', name: 'Italian' },
-    { code: 'pt', name: 'Portuguese' },
-    { code: 'zh', name: 'Chinese' },
-    { code: 'ja', name: 'Japanese' },
-    { code: 'ko', name: 'Korean' },
-    { code: 'ar', name: 'Arabic' },
-    { code: 'hi', name: 'हिन्दी (Hindi)' },
-    { code: 'ml', name: 'മലയാളം (Malayalam)' },
-    { code: 'ta', name: 'தமிழ் (Tamil)' },
-    { code: 'te', name: 'తెలుగు (Telugu)' },
+  const weekDays = [
+    { id: 'monday', label: 'Monday', color: 'bg-blue-500 border-blue-600 text-white' },
+    { id: 'tuesday', label: 'Tuesday', color: 'bg-green-500 border-green-600 text-white' },
+    { id: 'wednesday', label: 'Wednesday', color: 'bg-yellow-500 border-yellow-600 text-white' },
+    { id: 'thursday', label: 'Thursday', color: 'bg-purple-500 border-purple-600 text-white' },
+    { id: 'friday', label: 'Friday', color: 'bg-pink-500 border-pink-600 text-white' },
+    { id: 'saturday', label: 'Saturday', color: 'bg-orange-500 border-orange-600 text-white' },
+    { id: 'sunday', label: 'Sunday', color: 'bg-red-500 border-red-600 text-white' },
   ];
 
   return (
@@ -671,15 +660,7 @@ export const EventTypeSection = ({
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-white mb-2">Select Days to Exclude <span className="text-red-500">*</span></label>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {[
-                        { id: 'monday', label: 'Monday' },
-                        { id: 'tuesday', label: 'Tuesday' },
-                        { id: 'wednesday', label: 'Wednesday' },
-                        { id: 'thursday', label: 'Thursday' },
-                        { id: 'friday', label: 'Friday' },
-                        { id: 'saturday', label: 'Saturday' },
-                        { id: 'sunday', label: 'Sunday' },
-                      ].map((day) => (
+                      {weekDays.map((day) => (
                         <label key={day.id} className="relative cursor-pointer">
                           <input
                             type="checkbox"
@@ -693,12 +674,16 @@ export const EventTypeSection = ({
                             }}
                             className="sr-only peer"
                           />
-                          <div className={`p-3 border-2 rounded-lg text-center cursor-pointer transition-all ${
-                            recurringExcludedDays.includes(day.id)
-                              ? 'bg-red-50 border-red-200 text-red-700'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}>
-                            <div className="text-sm font-medium">{day.label}</div>
+                          <div
+                            className={`p-3 border-2 rounded-lg text-center cursor-pointer transition-all ${
+                              recurringExcludedDays.includes(day.id)
+                                ? `${day.color} border-current`
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className={`text-sm font-medium ${recurringExcludedDays.includes(day.id) ? 'text-black' : 'text-current'}`}>
+                              {day.label}
+                            </div>
                           </div>
                         </label>
                       ))}
@@ -861,34 +846,7 @@ export const EventTypeSection = ({
         )}
       </div>
 
-      {/* Step 3: Language Selection */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
-            3
-          </div>
-          <h3 className="text-lg font-semibold">Event Language</h3>
-        </div>
-        <p className="text-white mb-6">
-          Select primary language for your event
-        </p>
-        
-        <div className="max-w-md">
-          <select
-            value={language}
-            onChange={(e) => onLanguageChange(e.target.value)}
-            className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
-          >
-            {languages.map((lang) => (
-              <option key={lang.code} value={lang.code} className="text-black">
-                {lang.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Step 4: Event Type Tips */}
+      {/* Step 3: Event Type Tips */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h4 className="font-semibold text-gray-900 mb-2">💡 Pro Tips</h4>
         <ul className="text-sm text-gray-800 space-y-1">

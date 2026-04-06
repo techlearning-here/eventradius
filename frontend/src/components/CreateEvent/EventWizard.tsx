@@ -8,8 +8,6 @@ import { Badge } from '@/components/ui/badge';
 // Import existing components
 import { BasicInfo } from './BasicInfo';
 import { EventTypeSection } from './EventTypeSection';
-import { DateTimeSection } from './DateTimeSection';
-import { LocationSection } from './LocationSection';
 import { ImageUpload } from './ImageUpload';
 import { ReviewSection } from './ReviewSection';
 import { ContactInfo } from './ContactInfo';
@@ -368,10 +366,12 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
               description={formData.description}
               isPaidEvent={formData.is_paid_event}
               ticketingUrl={formData.ticketing_website}
+              language={formData.language || ''}
               onEventNameChange={(title) => updateFormData({ title })}
               onDescriptionChange={(description) => updateFormData({ description })}
               onIsPaidEventChange={(is_paid_event) => updateFormData({ is_paid_event })}
               onTicketingUrlChange={(ticketing_website) => updateFormData({ ticketing_website })}
+              onLanguageChange={(language) => updateFormData({ language })}
             />
             <div className="flex justify-center">
               <ImageUpload
@@ -397,7 +397,6 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           <EventTypeSection
             eventType={formData.event_type}
             eventFormat={formData.event_format}
-            language={formData.language}
             venueAddress={formData.venue_address}
             venueStreet={formData.venue_street}
             venueCity={formData.venue_city}
@@ -421,7 +420,6 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
             multiDateEvents={formData.multi_date_events || []}
             onEventTypeChange={(event_type) => updateFormData({ event_type })}
             onEventFormatChange={(event_format) => updateFormData({ event_format })}
-            onLanguageChange={(language) => updateFormData({ language })}
             onVenueAddressChange={(venue_address) => updateFormData({ venue_address })}
             onVenueStreetChange={(venue_street) => updateFormData({ venue_street })}
             onVenueCityChange={(venue_city) => updateFormData({ venue_city })}
@@ -446,45 +444,14 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           />
         );
 
-      case 'datetime':
+      case 'contact':
         return (
-          <div className="space-y-8">
-            <DateTimeSection
-              startDate={formData.start_time || undefined}
-              endDate={formData.end_time || undefined}
-              startTime={formData.start_time ? formData.start_time.toTimeString().slice(0, 5) : ''}
-              endTime={formData.end_time ? formData.end_time.toTimeString().slice(0, 5) : ''}
-              timezone={formData.timezone || ''}
-              onStartDateChange={(start_time) => updateFormData({ start_time })}
-              onEndDateChange={(end_time) => updateFormData({ end_time })}
-              onStartTimeChange={(timeString) => {
-                if (formData.start_time) {
-                  const [hours, minutes] = timeString.split(':').map(Number);
-                  const newDate = new Date(formData.start_time);
-                  newDate.setHours(hours, minutes, 0, 0);
-                  updateFormData({ start_time: newDate });
-                }
-              }}
-              onEndTimeChange={(timeString) => {
-                if (formData.end_time) {
-                  const [hours, minutes] = timeString.split(':').map(Number);
-                  const newDate = new Date(formData.end_time);
-                  newDate.setHours(hours, minutes, 0, 0);
-                  updateFormData({ end_time: newDate });
-                }
-              }}
-              onTimezoneChange={(timezone) => updateFormData({ timezone })}
-            />
-            
-            <LocationSection
-              location={formData.location}
-              isVirtual={formData.is_virtual}
-              virtualEventDetails={formData.virtual_event_details}
-              onLocationChange={(location) => updateFormData({ location })}
-              onIsVirtualChange={(is_virtual) => updateFormData({ is_virtual })}
-              onVirtualEventDetailsChange={(virtual_event_details) => updateFormData({ virtual_event_details })}
-            />
-          </div>
+          <ContactInfo
+            contactPhone={formData.event_contact_phone || ''}
+            contactEmail={formData.event_contact_email || ''}
+            onContactPhoneChange={(phone) => updateFormData({ event_contact_phone: phone })}
+            onContactEmailChange={(email) => updateFormData({ event_contact_email: email })}
+          />
         );
 
       case 'review':
@@ -517,12 +484,12 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-            {lastSaved && (
-              <Badge variant="outline" className="text-xs">
-                Saved {lastSaved.toLocaleTimeString()}
-              </Badge>
-            )}
-          </div>
+              {lastSaved && (
+                <Badge variant="outline" className="text-xs">
+                  Saved {lastSaved.toLocaleTimeString()}
+                </Badge>
+              )}
+            </div>
             
             <div className="flex items-center gap-2">
               <Button
@@ -551,14 +518,14 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           {/* Progress Bar */}
           <div className="mt-4">
             <Progress value={getStepProgress()} className="h-2 bg-blue-100 [&>div]:bg-green-500" />
-            <div className="mt-2 flex justify-between items-center text-xs text-black">
+            <div className="mt-2 flex justify-between items-center text-xs text-blue-700">
               <span>Step {getCurrentSubStepNumber()} of {getTotalSubSteps()}</span>
-              <span className="text-black">{Math.round(getStepProgress())}% Complete</span>
+              <span className="text-blue-700">{Math.round(getStepProgress())}% Complete</span>
             </div>
             <div className="mt-1">
-              <span className="text-sm font-medium text-black">{getCurrentSection().title} - {getCurrentSubStep().title}</span>
+              <span className="text-sm font-medium text-blue-800">{getCurrentSection().title} - {getCurrentSubStep().title}</span>
             </div>
-            <div className="text-xs text-white mt-1">
+            <div className="text-xs text-gray-600 mt-1">
               {getCurrentSubStep().description}
             </div>
           </div>
@@ -566,17 +533,17 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid xl:grid-cols-4 gap-8">
+        <div className="grid xl:grid-cols-5 gap-8">
           {/* Main Content */}
-          <div className="xl:col-span-3">
+          <div className="xl:col-span-4">
             <Card>
               <CardContent className="p-10">
                 {/* Step Header */}
                 <div className="mb-8">
-                  <h2 className="text-2xl font-bold mb-2">
+                  <h2 className="text-2xl font-bold mb-2 text-gray-900">
                     {getCurrentSubStep().title}
                   </h2>
-                  <p className="text-white">
+                  <p className="text-gray-600">
                     {getCurrentSubStep().description}
                   </p>
                 </div>
@@ -621,7 +588,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           </div>
 
           {/* Sidebar */}
-          <div className="xl:col-span-1">
+          <div className="xl:col-span-1 max-w-xs">
             <Card className="top-24">
               <CardContent className="p-6">
                 <h3 className="font-semibold mb-4 text-blue-600">Event Progress</h3>
@@ -646,7 +613,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
 
                 {/* Step Navigation */}
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-black mb-3">Quick Navigation</h4>
+                  <h4 className="text-sm font-medium text-blue-700 mb-3">Quick Navigation</h4>
                   {WIZARD_SECTIONS.map((section, sectionIndex) => (
                     <div key={section.id} className="mb-3">
                       <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
@@ -662,10 +629,10 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
                             onClick={() => goToSubStep(sectionIndex, subStepIndex)}
                             className={`w-full text-left p-2 rounded text-sm transition-colors mb-1 ${
                               isCurrent 
-                                ? 'bg-blue-100 text-blue-700 font-medium' 
+                                ? 'bg-blue-600 text-white font-medium' 
                                 : isCompleted
-                                ? 'text-gray-700 hover:bg-gray-50'
-                                : 'text-gray-500 hover:text-gray-600'
+                                ? 'text-gray-700 hover:bg-green-600 hover:text-white'
+                                : 'text-gray-500 hover:bg-green-500 hover:text-white'
                             }`}
                           >
                             <div className="flex items-center gap-2">

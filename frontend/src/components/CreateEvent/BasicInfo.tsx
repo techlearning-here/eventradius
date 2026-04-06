@@ -1,14 +1,17 @@
 import { useState } from 'react';
+import { EventLanguage } from './EventLanguage';
 
 interface BasicInfoProps {
   eventName: string;
   description: string;
   isPaidEvent: boolean;
   ticketingUrl?: string;
+  language?: string;
   onEventNameChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onIsPaidEventChange: (value: boolean) => void;
   onTicketingUrlChange: (value: string) => void;
+  onLanguageChange: (value: string) => void;
 }
 
 export const BasicInfo = ({ 
@@ -16,10 +19,12 @@ export const BasicInfo = ({
   description,
   isPaidEvent,
   ticketingUrl = '',
+  language = '',
   onEventNameChange, 
   onDescriptionChange,
   onIsPaidEventChange,
-  onTicketingUrlChange
+  onTicketingUrlChange,
+  onLanguageChange
 }: BasicInfoProps) => {
   const MAX_DESCRIPTION_LENGTH = 2000; // Reasonable limit for event descriptions
   
@@ -165,11 +170,17 @@ export const BasicInfo = ({
           </div>
         </div>
 
-        {/* Step 4: Event Image */}
+        {/* Step 4: Event Language */}
+        <EventLanguage
+          language={language || ''}
+          onLanguageChange={onLanguageChange}
+        />
+
+        {/* Step 5: Event Image */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
-              4
+              5
             </div>
             <h3 className="text-lg font-semibold">Event Image</h3>
           </div>

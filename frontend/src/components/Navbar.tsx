@@ -75,7 +75,7 @@ export const Navbar: React.FC = () => {
     <>
       {/* Site Name */}
       <div className="fixed top-4 left-4 md:left-8 z-[2000]">
-        <Link to="/" className="text-2xl font-bold text-foreground hover:opacity-80 transition-opacity">
+        <Link to="/" className="text-2xl font-bold text-white bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 transition-all hover:shadow-lg">
           EventRadius
         </Link>
       </div>
@@ -152,8 +152,8 @@ export const Navbar: React.FC = () => {
       {/* Mobile Full Screen Menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-[3000] flex flex-col animate-in slide-in-from-top duration-300">
-          <div className="bg-foreground flex items-center justify-center py-16">
-            <button onClick={() => setIsMobileMenuOpen(false)} className="text-primary-foreground text-[11px] font-medium uppercase tracking-wider">
+          <div className="bg-gray-900 flex items-center justify-center py-16">
+            <button onClick={() => setIsMobileMenuOpen(false)} className="text-white text-[11px] font-medium uppercase tracking-wider hover:text-red-400 transition-colors">
               CLOSE
             </button>
           </div>

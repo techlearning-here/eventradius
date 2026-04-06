@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { SEOHead } from '@/components/SEOHead';
 import { EventWizard, type EventFormData } from '@/components/CreateEvent/EventWizard';
