@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Starting backend server..."
-cd ../backend
+cd ./backend
 
 if [ ! -d "venv" ]; then
     echo "Creating virtual environment..."

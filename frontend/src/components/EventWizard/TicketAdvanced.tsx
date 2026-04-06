@@ -1,8 +1,26 @@
 import { Clock, Eye, DollarSign } from 'lucide-react';
 
+interface TicketType {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  quantity_available: number;
+  quantity_sold: number;
+  min_per_order: number;
+  max_per_order: number;
+  sales_start_time?: Date;
+  sales_end_time?: Date;
+  is_donation: boolean;
+  visibility: 'visible' | 'hidden' | 'hidden_when_not_on_sale';
+  absorb_fees: boolean;
+  delivery_options: string[];
+}
+
 interface TicketAdvancedProps {
-  ticketType: any;
-  onUpdate: (ticketType: any) => void;
+  ticketType: TicketType;
+  onUpdate: (ticketType: TicketType) => void;
 }
 
 export const TicketAdvanced = ({ ticketType, onUpdate }: TicketAdvancedProps) => {
@@ -47,7 +65,7 @@ export const TicketAdvanced = ({ ticketType, onUpdate }: TicketAdvancedProps) =>
           <label className="block text-sm font-medium mb-1">Visibility</label>
           <select
             value={ticketType.visibility || 'visible'}
-            onChange={(e) => onUpdate({ ...ticketType, visibility: e.target.value })}
+            onChange={(e) => onUpdate({ ...ticketType, visibility: e.target.value as TicketType['visibility'] })}
             className="w-full p-2 border rounded-md"
           >
             <option value="visible">Visible</option>

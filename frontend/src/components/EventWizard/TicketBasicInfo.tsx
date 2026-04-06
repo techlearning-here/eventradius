@@ -1,8 +1,23 @@
 import { DollarSign, Users, Clock } from 'lucide-react';
 
+interface TicketType {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  quantity_available: number;
+  quantity_sold: number;
+  min_per_order: number;
+  max_per_order: number;
+  sales_start_time?: Date;
+  sales_end_time?: Date;
+  is_donation: boolean;
+}
+
 interface TicketBasicInfoProps {
-  ticketType: any;
-  onUpdate: (ticketType: any) => void;
+  ticketType: TicketType;
+  onUpdate: (ticketType: TicketType) => void;
 }
 
 export const TicketBasicInfo = ({ ticketType, onUpdate }: TicketBasicInfoProps) => {

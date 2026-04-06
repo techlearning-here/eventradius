@@ -6,7 +6,7 @@ import { Navbar } from '@/components/Navbar';
 import { RoleSwitcher } from '@/components/RoleSwitcher';
 import { SEOHead } from '@/components/SEOHead';
 import { toast } from 'sonner';
-import { EventWizard, type EventFormData } from '@/components/CreateEvent/EventWizard';
+import { EventWizard, type EventFormData } from '@/components/EventWizard/EventWizard';
 import { useEventActions } from '@/hooks/useEvents';
 import { Sidebar } from '@/components/OrganizerDashboard/Sidebar';
 import { SectionHeader } from '@/components/OrganizerDashboard/SectionHeader';

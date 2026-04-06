@@ -1,9 +1,9 @@
 // Test for the new sub-step wizard structure
 import { render, screen, fireEvent } from '@testing-library/react';
-import { EventWizard, type EventFormData } from '../components/CreateEvent/EventWizard';
+import { EventWizard, type EventFormData } from '../components/EventWizard/EventWizard';
 
 // Mock all the components to focus on testing the sub-step structure
-jest.mock('../components/CreateEvent/BasicInfo', () => {
+jest.mock('../components/EventWizard/BasicInfo', () => {
   return function MockBasicInfo({ eventName, onEventNameChange, description, onDescriptionChange }: any) {
     return (
       <div>

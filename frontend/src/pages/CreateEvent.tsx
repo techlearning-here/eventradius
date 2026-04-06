@@ -1,6 +1,6 @@
 import { Navbar } from '@/components/Navbar';
 import { SEOHead } from '@/components/SEOHead';
-import { EventWizard, type EventFormData } from '@/components/CreateEvent/EventWizard';
+import { EventWizard, type EventFormData } from '@/components/EventWizard/EventWizard';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { useEventActions, type EventCreate } from '@/hooks/useEvents';
 

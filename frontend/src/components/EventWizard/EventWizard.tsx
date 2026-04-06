@@ -299,7 +299,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
     switch (subStepId) {
       case 'info':
         return formData.title.trim() !== '' && formData.description.trim() !== '';
-      case 'type':
+      case 'type': {
         const hasEventType = !!formData.event_type && !!formData.event_format;
         if (!hasEventType) return false;
         
@@ -307,12 +307,10 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
         if (formData.event_type === 'online') {
           if (!formData.virtual_event_url?.trim()) return false;
         } else if (formData.event_type === 'in_person') {
-          // Check all required venue fields for in-person events
           if (!formData.venue_street?.trim() || !formData.venue_city?.trim() || 
               !formData.venue_state?.trim() || !formData.venue_zip_code?.trim() || 
               !formData.venue_country?.trim()) return false;
         } else if (formData.event_type === 'hybrid') {
-          // Check both meeting link and all required venue fields for hybrid events
           if (!formData.virtual_event_url?.trim() || !formData.venue_street?.trim() || 
               !formData.venue_city?.trim() || !formData.venue_state?.trim() || 
               !formData.venue_zip_code?.trim() || !formData.venue_country?.trim()) return false;
@@ -337,6 +335,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           );
         }
         return false;
+      }
       case 'datetime':
         return !!formData.start_time && !!formData.end_time &&
                (formData.event_type === 'online' ? !!formData.virtual_event_url?.trim() : !!formData.location?.trim());
@@ -441,16 +440,6 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
             onRecurringDailyTypeChange={(recurring_daily_type) => updateFormData({ recurring_daily_type })}
             onRecurringExcludedDaysChange={(recurring_excluded_days) => updateFormData({ recurring_excluded_days })}
             onMultiDateEventsChange={(multi_date_events) => updateFormData({ multi_date_events })}
-          />
-        );
-
-      case 'contact':
-        return (
-          <ContactInfo
-            contactPhone={formData.event_contact_phone || ''}
-            contactEmail={formData.event_contact_email || ''}
-            onContactPhoneChange={(phone) => updateFormData({ event_contact_phone: phone })}
-            onContactEmailChange={(email) => updateFormData({ event_contact_email: email })}
           />
         );
 

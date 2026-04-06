@@ -30,7 +30,7 @@ export const TicketTypeEditor = ({
 }: TicketTypeEditorProps) => {
   const [expanded, setExpanded] = useState(false);
 
-  const updateField = (field: keyof TicketType, value: any) => {
+  const updateField = (field: keyof TicketType, value: TicketType[keyof TicketType]) => {
     onUpdate({ ...ticketType, [field]: value });
   };
 
@@ -201,7 +201,7 @@ export const TicketTypeEditor = ({
             <label className="block text-sm font-medium mb-1">Visibility</label>
             <select
               value={ticketType.visibility}
-              onChange={(e) => updateField('visibility', e.target.value as any)}
+              onChange={(e) => updateField('visibility', e.target.value as TicketType['visibility'])}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="visible">Visible</option>

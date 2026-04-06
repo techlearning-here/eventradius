@@ -1,9 +1,9 @@
 // Simple test to verify the simplified EventWizard works correctly
 import { render, screen, fireEvent } from '@testing-library/react';
-import { EventWizard, type EventFormData } from '../components/CreateEvent/EventWizard';
+import { EventWizard, type EventFormData } from '../components/EventWizard/EventWizard';
 
 // Mock the components to avoid dependency issues
-jest.mock('../components/CreateEvent/BasicInfo', () => {
+jest.mock('../components/EventWizard/BasicInfo', () => {
   return function MockBasicInfo({ eventName, onEventNameChange, description, onDescriptionChange }: any) {
     return (
       <div>

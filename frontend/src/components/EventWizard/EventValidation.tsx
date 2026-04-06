@@ -1,8 +1,9 @@
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { EventFormData } from './EventWizard';
 
 interface EventValidationProps {
-  formData: any;
+  formData: EventFormData;
   onEdit: (stepId: string) => void;
 }
 

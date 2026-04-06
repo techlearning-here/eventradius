@@ -37,7 +37,21 @@ interface TicketingSectionProps {
     is_donation?: boolean;
     delivery_options?: string[];
   }>;
-  onTicketTypesChange: (ticketTypes: typeof ticketTypes) => void;
+  onTicketTypesChange: (ticketTypes: Array<{
+    name: string;
+    description?: string;
+    price: number;
+    currency?: string;
+    quantity_available?: number | null;
+    min_per_order?: number;
+    max_per_order?: number;
+    sales_start_time?: Date | null;
+    sales_end_time?: Date | null;
+    visibility?: string;
+    absorb_fees?: boolean;
+    is_donation?: boolean;
+    delivery_options?: string[];
+  }>) => void;
 }
 
 export const TicketingSection = ({
@@ -59,7 +73,7 @@ export const TicketingSection = ({
     max_per_order: ticket.max_per_order || 10,
     sales_start_time: ticket.sales_start_time || null,
     sales_end_time: ticket.sales_end_time || null,
-    visibility: (ticket.visibility as any) || 'visible',
+    visibility: (ticket.visibility as TicketType['visibility']) || 'visible',
     absorb_fees: ticket.absorb_fees || false,
     is_donation: ticket.is_donation || false,
   }));

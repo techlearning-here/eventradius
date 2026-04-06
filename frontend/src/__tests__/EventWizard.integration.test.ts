@@ -1,5 +1,5 @@
 // Simple integration test for the simplified EventWizard
-import { EventWizard, type EventFormData } from '../components/CreateEvent/EventWizard';
+import { EventWizard, type EventFormData } from '../components/EventWizard/EventWizard';
 
 // Test the basic structure and data flow without rendering
 describe('EventWizard Structure', () => {

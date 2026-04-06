@@ -40,7 +40,7 @@ export const RegistrationPrivacySelector = ({
         return (
           <button
             key={option.id}
-            onClick={() => onEventPrivacyChange(option.id as any)}
+            onClick={() => onEventPrivacyChange(option.id as 'public' | 'private' | 'unlisted')}
             className={`p-4 border-2 rounded-lg text-left transition-all ${
               eventPrivacy === option.id
                 ? `${option.color} border-current`

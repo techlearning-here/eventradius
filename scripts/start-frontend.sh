@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Starting frontend server..."
-cd ../frontend
+cd ./frontend
 
 if [ ! -d "node_modules" ]; then
     echo "Installing dependencies..."

@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react';
-import { EventWizard, type EventFormData } from '@/components/CreateEvent/EventWizard';
+import { EventWizard, type EventFormData } from '@/components/EventWizard/EventWizard';
 
 interface EventWizardOverlayProps {
   isVisible: boolean;

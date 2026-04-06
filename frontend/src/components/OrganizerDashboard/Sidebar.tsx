@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Home, ChevronLeft, ChevronRight, LogOut, CalendarDays, BarChart3, Users, Megaphone, CreditCard, FileText, Settings, HelpCircle } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 
 interface SidebarItem {
   id: string;
   label: string;
-  icon: any;
+  icon: LucideIcon;
   description: string;
 }
 

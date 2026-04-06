@@ -264,7 +264,7 @@ export const EventTypeSection = ({
                   checked={eventType === type.id}
                   onChange={(e) => {
                     console.log('Event type selected:', type.id);
-                    onEventTypeChange(type.id as any);
+                    onEventTypeChange(type.id as 'online' | 'in_person' | 'hybrid');
                   }}
                   className="sr-only peer"
                 />
@@ -456,7 +456,7 @@ export const EventTypeSection = ({
                   checked={eventFormat === format.id}
                   onChange={(e) => {
                     console.log('Event format selected:', format.id);
-                    onEventFormatChange(format.id as any);
+                    onEventFormatChange(format.id as 'single' | 'recurring' | 'multi_date');
                   }}
                   className="sr-only peer"
                 />
@@ -545,7 +545,7 @@ export const EventTypeSection = ({
                 name="recurring-frequency"
                 value={frequency.id}
                 checked={recurringFrequency === frequency.id}
-                onChange={(e) => onRecurringFrequencyChange(frequency.id as any)}
+                onChange={(e) => onRecurringFrequencyChange(frequency.id as 'daily' | 'weekly' | 'monthly')}
                 className="sr-only peer"
               />
               <div
@@ -634,7 +634,7 @@ export const EventTypeSection = ({
                         name="daily-recurrence-type"
                         value={pattern.id}
                         checked={recurringDailyType === pattern.id}
-                        onChange={() => onRecurringDailyTypeChange(pattern.id as any)}
+                        onChange={() => onRecurringDailyTypeChange(pattern.id as 'all_days' | 'exclude_days')}
                         className="sr-only peer"
                       />
                       <div
