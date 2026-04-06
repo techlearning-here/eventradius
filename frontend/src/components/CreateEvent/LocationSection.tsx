@@ -100,7 +100,7 @@ export const LocationSection = ({
               b
             </div>
             <h3 className="text-lg font-semibold">
-              {isVirtual ? 'Virtual Event Details' : 'Event Location'}
+              {isVirtual ? 'Virtual Event Details' : 'Event Location'} <span className="text-red-500">*</span>
             </h3>
           </div>
           

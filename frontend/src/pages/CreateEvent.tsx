@@ -11,7 +11,7 @@ const CreateEvent = () => {
 
   const handleSaveDraft = async (data: EventFormData) => {
     try {
-      // Convert wizard data to API format
+      // Convert wizard data to API format (simplified for basic wizard)
       const eventData: EventCreate = {
         title: data.title,
         description: data.description,
@@ -24,7 +24,7 @@ const CreateEvent = () => {
         tags: data.tags,
         image_url: data.image_url,
         status: 'draft',
-        // Add new fields
+        // Basic fields only
         subtitle: data.subtitle,
         summary: data.summary,
         language: data.language,
@@ -32,20 +32,19 @@ const CreateEvent = () => {
         event_format: data.event_format,
         event_privacy: data.event_privacy,
         timezone: data.timezone,
-        doors_open_time: data.doors_open_time ? data.doors_open_time.toISOString() : undefined,
-        registration_start_time: data.registration_start_time ? data.registration_start_time.toISOString() : undefined,
-        registration_end_time: data.registration_end_time ? data.registration_end_time.toISOString() : undefined,
         virtual_event_url: data.virtual_event_url,
         virtual_event_platform: data.virtual_event_platform,
-        event_password: data.event_password,
-        age_restriction: data.age_restriction,
-        accessibility_options: data.accessibility_options,
-        event_website: data.event_website,
         event_contact_email: data.event_contact_email,
+        event_contact_phone: data.event_contact_phone,
         ticketing_website: data.ticketing_website,
-        refund_policy: data.refund_policy,
-        custom_refund_policy: data.custom_refund_policy,
-        ticket_pricing_description: data.ticket_pricing_description,
+        venue_address: data.venue_address,
+        // Structured venue fields
+        venue_street: data.venue_street,
+        venue_city: data.venue_city,
+        venue_state: data.venue_state,
+        venue_zip_code: data.venue_zip_code,
+        venue_country: data.venue_country,
+        venue_building_name: data.venue_building_name,
       };
 
       const result = await createEvent(eventData);
@@ -62,7 +61,7 @@ const CreateEvent = () => {
 
   const handlePublish = async (data: EventFormData) => {
     try {
-      // Convert wizard data to API format
+      // Convert wizard data to API format (simplified for basic wizard)
       const eventData: EventCreate = {
         title: data.title,
         description: data.description,
@@ -74,7 +73,7 @@ const CreateEvent = () => {
         is_public: data.is_public,
         image_url: data.image_url,
         status: 'published',
-        // Add new fields
+        // Basic fields only
         subtitle: data.subtitle,
         summary: data.summary,
         language: data.language,
@@ -82,20 +81,19 @@ const CreateEvent = () => {
         event_format: data.event_format,
         event_privacy: data.event_privacy,
         timezone: data.timezone,
-        doors_open_time: data.doors_open_time ? data.doors_open_time.toISOString() : undefined,
-        registration_start_time: data.registration_start_time ? data.registration_start_time.toISOString() : undefined,
-        registration_end_time: data.registration_end_time ? data.registration_end_time.toISOString() : undefined,
         virtual_event_url: data.virtual_event_url,
         virtual_event_platform: data.virtual_event_platform,
-        event_password: data.event_password,
-        age_restriction: data.age_restriction,
-        accessibility_options: data.accessibility_options,
-        event_website: data.event_website,
         event_contact_email: data.event_contact_email,
+        event_contact_phone: data.event_contact_phone,
         ticketing_website: data.ticketing_website,
-        refund_policy: data.refund_policy,
-        custom_refund_policy: data.custom_refund_policy,
-        ticket_pricing_description: data.ticket_pricing_description,
+        venue_address: data.venue_address,
+        // Structured venue fields
+        venue_street: data.venue_street,
+        venue_city: data.venue_city,
+        venue_state: data.venue_state,
+        venue_zip_code: data.venue_zip_code,
+        venue_country: data.venue_country,
+        venue_building_name: data.venue_building_name,
       };
 
       const result = await createEvent(eventData);

@@ -11,9 +11,6 @@ import { EventTypeSection } from './EventTypeSection';
 import { DateTimeSection } from './DateTimeSection';
 import { LocationSection } from './LocationSection';
 import { ImageUpload } from './ImageUpload';
-import { RegistrationSection } from './RegistrationSection';
-import { TicketingSection } from './TicketingSection';
-import { AdvancedSection } from './AdvancedSection';
 import { ReviewSection } from './ReviewSection';
 import { ContactInfo } from './ContactInfo';
 
@@ -45,6 +42,33 @@ export interface EventFormData {
   virtual_event_details?: string;
   virtual_event_url?: string;
   virtual_event_platform?: string;
+  venue_address?: string;
+  // Structured venue fields
+  venue_street?: string;
+  venue_city?: string;
+  venue_state?: string;
+  venue_zip_code?: string;
+  venue_country?: string;
+  venue_building_name?: string;
+  
+  // Scheduling fields based on event format
+  single_event_date?: string;
+  single_event_start_time?: string;
+  single_event_end_time?: string;
+  recurring_event_day?: string;
+  recurring_event_start_time?: string;
+  recurring_event_end_time?: string;
+  recurring_frequency?: 'daily' | 'weekly' | 'monthly';
+  recurring_end_date?: string;
+  recurring_has_end_date?: boolean;
+  recurring_daily_type?: 'all_days' | 'exclude_days';
+  recurring_excluded_days?: string[];
+  multi_date_events?: Array<{
+    id: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+  }>;
   
   // Priority 2: Important Fields
   // Registration Settings
@@ -137,6 +161,28 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
     virtual_event_details: '',
     virtual_event_url: '',
     virtual_event_platform: '',
+    venue_address: '',
+    // Structured venue fields
+    venue_street: '',
+    venue_city: '',
+    venue_state: '',
+    venue_zip_code: '',
+    venue_country: '',
+    venue_building_name: '',
+    
+    // Scheduling fields
+    single_event_date: '',
+    single_event_start_time: '',
+    single_event_end_time: '',
+    recurring_event_day: '',
+    recurring_event_start_time: '',
+    recurring_event_end_time: '',
+    recurring_frequency: 'daily',
+    recurring_end_date: '',
+    recurring_has_end_date: false,
+    recurring_daily_type: 'all_days',
+    recurring_excluded_days: [],
+    multi_date_events: [],
     
     // Priority 2: Advanced Fields - Set sensible defaults
     subtitle: '',
@@ -256,18 +302,50 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
       case 'info':
         return formData.title.trim() !== '' && formData.description.trim() !== '';
       case 'type':
-        return !!formData.event_type && !!formData.event_format;
+        const hasEventType = !!formData.event_type && !!formData.event_format;
+        if (!hasEventType) return false;
+        
+        // Validate based on event type
+        if (formData.event_type === 'online') {
+          if (!formData.virtual_event_url?.trim()) return false;
+        } else if (formData.event_type === 'in_person') {
+          // Check all required venue fields for in-person events
+          if (!formData.venue_street?.trim() || !formData.venue_city?.trim() || 
+              !formData.venue_state?.trim() || !formData.venue_zip_code?.trim() || 
+              !formData.venue_country?.trim()) return false;
+        } else if (formData.event_type === 'hybrid') {
+          // Check both meeting link and all required venue fields for hybrid events
+          if (!formData.virtual_event_url?.trim() || !formData.venue_street?.trim() || 
+              !formData.venue_city?.trim() || !formData.venue_state?.trim() || 
+              !formData.venue_zip_code?.trim() || !formData.venue_country?.trim()) return false;
+        }
+        
+        // Validate based on event format
+        if (formData.event_format === 'single') {
+          return !!formData.single_event_date?.trim() && 
+                 !!formData.single_event_start_time?.trim() && 
+                 !!formData.single_event_end_time?.trim();
+        } else if (formData.event_format === 'recurring') {
+          return !!formData.recurring_event_start_time?.trim() && 
+                 !!formData.recurring_event_end_time?.trim() &&
+                 !!formData.recurring_frequency &&
+                 (formData.recurring_frequency === 'daily' || !!formData.recurring_event_day?.trim()) &&
+                 (!formData.recurring_has_end_date || !!formData.recurring_end_date?.trim()) &&
+                 (formData.recurring_frequency !== 'daily' || formData.recurring_daily_type === 'all_days' || (formData.recurring_daily_type === 'exclude_days' && formData.recurring_excluded_days && formData.recurring_excluded_days.length > 0));
+        } else if (formData.event_format === 'multi_date') {
+          if (!formData.multi_date_events || formData.multi_date_events.length === 0) return false;
+          return formData.multi_date_events.every(event => 
+            !!event.date?.trim() && !!event.startTime?.trim() && !!event.endTime?.trim()
+          );
+        }
+        return false;
       case 'datetime':
         return !!formData.start_time && !!formData.end_time &&
                (formData.event_type === 'online' ? !!formData.virtual_event_url?.trim() : !!formData.location?.trim());
       case 'contact':
         return true; // Contact info is optional
-      case 'registration':
-        return true; // Optional
-      case 'ticketing':
-        return true; // Optional
-      case 'settings':
-        return true; // Optional
+      case 'review':
+        return true; // Review is always complete
       default:
         return false;
     }
@@ -289,9 +367,11 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
               eventName={formData.title}
               description={formData.description}
               isPaidEvent={formData.is_paid_event}
+              ticketingUrl={formData.ticketing_website}
               onEventNameChange={(title) => updateFormData({ title })}
               onDescriptionChange={(description) => updateFormData({ description })}
               onIsPaidEventChange={(is_paid_event) => updateFormData({ is_paid_event })}
+              onTicketingUrlChange={(ticketing_website) => updateFormData({ ticketing_website })}
             />
             <div className="flex justify-center">
               <ImageUpload
@@ -318,9 +398,51 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
             eventType={formData.event_type}
             eventFormat={formData.event_format}
             language={formData.language}
+            venueAddress={formData.venue_address}
+            venueStreet={formData.venue_street}
+            venueCity={formData.venue_city}
+            venueState={formData.venue_state}
+            venueZipCode={formData.venue_zip_code}
+            venueCountry={formData.venue_country}
+            venueBuildingName={formData.venue_building_name}
+            onlineMeetingLink={formData.virtual_event_url}
+            // Scheduling fields
+            singleEventDate={formData.single_event_date}
+            singleEventStartTime={formData.single_event_start_time}
+            singleEventEndTime={formData.single_event_end_time}
+            recurringEventDay={formData.recurring_event_day}
+            recurringEventStartTime={formData.recurring_event_start_time}
+            recurringEventEndTime={formData.recurring_event_end_time}
+            recurringFrequency={formData.recurring_frequency}
+            recurringEndDate={formData.recurring_end_date}
+            recurringHasEndDate={formData.recurring_has_end_date}
+            recurringDailyType={formData.recurring_daily_type}
+            recurringExcludedDays={formData.recurring_excluded_days || []}
+            multiDateEvents={formData.multi_date_events || []}
             onEventTypeChange={(event_type) => updateFormData({ event_type })}
             onEventFormatChange={(event_format) => updateFormData({ event_format })}
             onLanguageChange={(language) => updateFormData({ language })}
+            onVenueAddressChange={(venue_address) => updateFormData({ venue_address })}
+            onVenueStreetChange={(venue_street) => updateFormData({ venue_street })}
+            onVenueCityChange={(venue_city) => updateFormData({ venue_city })}
+            onVenueStateChange={(venue_state) => updateFormData({ venue_state })}
+            onVenueZipCodeChange={(venue_zip_code) => updateFormData({ venue_zip_code })}
+            onVenueCountryChange={(venue_country) => updateFormData({ venue_country })}
+            onVenueBuildingNameChange={(venue_building_name) => updateFormData({ venue_building_name })}
+            onOnlineMeetingLinkChange={(virtual_event_url) => updateFormData({ virtual_event_url })}
+            // Scheduling handlers
+            onSingleEventDateChange={(single_event_date) => updateFormData({ single_event_date })}
+            onSingleEventStartTimeChange={(single_event_start_time) => updateFormData({ single_event_start_time })}
+            onSingleEventEndTimeChange={(single_event_end_time) => updateFormData({ single_event_end_time })}
+            onRecurringEventDayChange={(recurring_event_day) => updateFormData({ recurring_event_day })}
+            onRecurringEventStartTimeChange={(recurring_event_start_time) => updateFormData({ recurring_event_start_time })}
+            onRecurringEventEndTimeChange={(recurring_event_end_time) => updateFormData({ recurring_event_end_time })}
+            onRecurringFrequencyChange={(recurring_frequency) => updateFormData({ recurring_frequency })}
+            onRecurringEndDateChange={(recurring_end_date) => updateFormData({ recurring_end_date })}
+            onRecurringHasEndDateChange={(recurring_has_end_date) => updateFormData({ recurring_has_end_date })}
+            onRecurringDailyTypeChange={(recurring_daily_type) => updateFormData({ recurring_daily_type })}
+            onRecurringExcludedDaysChange={(recurring_excluded_days) => updateFormData({ recurring_excluded_days })}
+            onMultiDateEventsChange={(multi_date_events) => updateFormData({ multi_date_events })}
           />
         );
 
@@ -328,22 +450,30 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
         return (
           <div className="space-y-8">
             <DateTimeSection
-              startDate={formData.start_time}
-              endDate={formData.end_time}
-              startTime={formData.start_time}
-              endTime={formData.end_time}
-              timezone={formData.timezone}
-              doorsOpenTime={formData.doors_open_time}
-              registrationStartTime={formData.registration_start_time}
-              registrationEndTime={formData.registration_end_time}
+              startDate={formData.start_time || undefined}
+              endDate={formData.end_time || undefined}
+              startTime={formData.start_time ? formData.start_time.toTimeString().slice(0, 5) : ''}
+              endTime={formData.end_time ? formData.end_time.toTimeString().slice(0, 5) : ''}
+              timezone={formData.timezone || ''}
               onStartDateChange={(start_time) => updateFormData({ start_time })}
               onEndDateChange={(end_time) => updateFormData({ end_time })}
-              onStartTimeChange={(start_time) => updateFormData({ start_time })}
-              onEndTimeChange={(end_time) => updateFormData({ end_time })}
+              onStartTimeChange={(timeString) => {
+                if (formData.start_time) {
+                  const [hours, minutes] = timeString.split(':').map(Number);
+                  const newDate = new Date(formData.start_time);
+                  newDate.setHours(hours, minutes, 0, 0);
+                  updateFormData({ start_time: newDate });
+                }
+              }}
+              onEndTimeChange={(timeString) => {
+                if (formData.end_time) {
+                  const [hours, minutes] = timeString.split(':').map(Number);
+                  const newDate = new Date(formData.end_time);
+                  newDate.setHours(hours, minutes, 0, 0);
+                  updateFormData({ end_time: newDate });
+                }
+              }}
               onTimezoneChange={(timezone) => updateFormData({ timezone })}
-              onDoorsOpenTimeChange={(doors_open_time) => updateFormData({ doors_open_time })}
-              onRegistrationStartTimeChange={(registration_start_time) => updateFormData({ registration_start_time })}
-              onRegistrationEndTimeChange={(registration_end_time) => updateFormData({ registration_end_time })}
             />
             
             <LocationSection
@@ -357,63 +487,22 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           </div>
         );
 
-      case 'registration':
+      case 'review':
         return (
-          <RegistrationSection
-            eventPrivacy={formData.event_privacy}
-            eventPassword={formData.event_password}
-            ageRestriction={formData.age_restriction}
-            accessibilityOptions={formData.accessibility_options}
-            eventContactEmail={formData.event_contact_email}
-            registrationStartTime={formData.registration_start_time}
-            registrationEndTime={formData.registration_end_time}
-            onEventPrivacyChange={(event_privacy) => updateFormData({ event_privacy })}
-            onEventPasswordChange={(event_password) => updateFormData({ event_password })}
-            onAgeRestrictionChange={(age_restriction) => updateFormData({ age_restriction })}
-            onAccessibilityOptionsChange={(accessibility_options) => updateFormData({ accessibility_options })}
-            onEventContactEmailChange={(event_contact_email) => updateFormData({ event_contact_email })}
-            onRegistrationStartTimeChange={(registration_start_time) => updateFormData({ registration_start_time })}
-            onRegistrationEndTimeChange={(registration_end_time) => updateFormData({ registration_end_time })}
+          <ReviewSection
+            formData={formData}
+            onEdit={(stepId) => {
+              // Find the section and sub-step for the given stepId
+              WIZARD_SECTIONS.forEach((section, sectionIndex) => {
+                const subStepIndex = section.subSteps.findIndex(subStep => subStep.id === stepId);
+                if (subStepIndex !== -1) {
+                  goToSubStep(sectionIndex, subStepIndex);
+                }
+              });
+            }}
+            onPublish={handlePublish}
+            isPublishing={isPublishing}
           />
-        );
-
-      case 'ticketing':
-        return (
-          <TicketingSection
-            ticketTypes={formData.ticket_types || []}
-            onTicketTypesChange={(ticket_types) => updateFormData({ ticket_types })}
-          />
-        );
-
-      case 'settings':
-        return (
-          <div className="space-y-8">
-            <AdvancedSection
-              eventWebsite={formData.event_website}
-              eventContactEmail={formData.event_contact_email}
-              refundPolicy={formData.refund_policy}
-              customRefundPolicy={formData.custom_refund_policy}
-              onEventWebsiteChange={(event_website) => updateFormData({ event_website })}
-              onEventContactEmailChange={(event_contact_email) => updateFormData({ event_contact_email })}
-              onRefundPolicyChange={(refund_policy) => updateFormData({ refund_policy: refund_policy as any })}
-              onCustomRefundPolicyChange={(custom_refund_policy) => updateFormData({ custom_refund_policy })}
-            />
-            
-            <ReviewSection
-              formData={formData}
-              onEdit={(stepId) => {
-                // Find the section and sub-step for the given stepId
-                WIZARD_SECTIONS.forEach((section, sectionIndex) => {
-                  const subStepIndex = section.subSteps.findIndex(subStep => subStep.id === stepId);
-                  if (subStepIndex !== -1) {
-                    goToSubStep(sectionIndex, subStepIndex);
-                  }
-                });
-              }}
-              onPublish={handlePublish}
-              isPublishing={isPublishing}
-            />
-          </div>
         );
 
       default:
@@ -636,14 +725,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
                   </Button>
                 </div>
               </div>
-              <div className="p-6">
-                <PreviewSection
-                  eventName={formData.title}
-                  description={formData.description}
-                  location={formData.location}
-                  imagePreview={formData.image_url}
-                />
-              </div>
+              {/* Preview removed for simplified wizard */}
             </div>
           </div>
         )}

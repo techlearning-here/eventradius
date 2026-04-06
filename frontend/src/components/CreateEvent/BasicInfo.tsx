@@ -4,18 +4,22 @@ interface BasicInfoProps {
   eventName: string;
   description: string;
   isPaidEvent: boolean;
+  ticketingUrl?: string;
   onEventNameChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onIsPaidEventChange: (value: boolean) => void;
+  onTicketingUrlChange: (value: string) => void;
 }
 
 export const BasicInfo = ({ 
   eventName, 
   description,
   isPaidEvent,
+  ticketingUrl = '',
   onEventNameChange, 
   onDescriptionChange,
-  onIsPaidEventChange
+  onIsPaidEventChange,
+  onTicketingUrlChange
 }: BasicInfoProps) => {
   const MAX_DESCRIPTION_LENGTH = 2000; // Reasonable limit for event descriptions
   
@@ -29,7 +33,7 @@ export const BasicInfo = ({
             <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
               1
             </div>
-            <h3 className="text-lg font-semibold">Event Name</h3>
+            <h3 className="text-lg font-semibold">Event Name <span className="text-red-500">*</span></h3>
           </div>
           <p className="text-white mb-4">Choose a clear, descriptive title for your event</p>
           <input
@@ -102,13 +106,41 @@ export const BasicInfo = ({
           </div>
         </div>
 
+        {/* External Ticketing URL (shown only for paid events) */}
+        {isPaidEvent && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+                2a
+              </div>
+              <h3 className="text-lg font-semibold">External Ticketing System</h3>
+            </div>
+            <p className="text-white mb-4">Provide a link to your external ticketing system where attendees can purchase tickets</p>
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-white mb-2">
+                Ticketing URL <span className="text-gray-400">(Optional)</span>
+              </label>
+              <input
+                type="url"
+                placeholder="https://your-ticketing-system.com/event-tickets"
+                className="w-full text-black text-base leading-relaxed focus:outline-none bg-white border border-gray-300 rounded-md p-3 placeholder:text-gray-400 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                value={ticketingUrl}
+                onChange={(e) => onTicketingUrlChange(e.target.value)}
+              />
+              <p className="text-xs text-white">
+                If you're using an external ticketing platform like Eventbrite, Ticketmaster, or custom solution, provide the link here. Attendees will be redirected to this URL to purchase tickets.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Step 3: Event Description */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
               3
             </div>
-            <h3 className="text-lg font-semibold">Event Description</h3>
+            <h3 className="text-lg font-semibold">Event Description <span className="text-red-500">*</span></h3>
           </div>
           <p className="text-white mb-4">Provide a detailed description of what attendees can expect</p>
           <div className="relative">

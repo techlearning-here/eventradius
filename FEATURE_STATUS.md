@@ -14,25 +14,49 @@ EventRadius is a comprehensive event management platform with user authenticatio
 - **Profile Management** ✅
 - **Session Management** ✅
 
-### ✅ **Event Creation Wizard (5-Step)**
-- **Step 1: Event Type & Basic Info** ✅
-  - Event type selection (Standard/Preview)
-  - Title, description, category, price
-  - Kid-friendly option
-- **Step 2: Date & Time** ✅
-  - Calendar date picker
-  - Start/end time inputs (24-hour format)
-  - Timezone selection (12 common timezones)
-- **Step 3: Location** ✅
-  - City search with autocomplete
-  - Full address fields (street, state, ZIP, country)
-- **Step 4: Event Image & Terms** ✅
-  - Optional image upload (JPG/PNG/WebP, max 5MB)
-  - Terms & conditions checkbox
-- **Step 5: Review & Submit** ✅
-  - Complete preview of all event details
-  - Organized by category for easy review
-  - Editable via back navigation
+### ✅ **Event Creation Wizard (Simplified 5-Step)**
+- **Step 1: Event Info** ✅
+  - Event title and description
+  - Image upload with preview
+  - Rich text editing capabilities
+- **Step 2: Type & Format** ✅
+  - Event type selection (Online/In-Person/Hybrid)
+  - Event format (Single/Recurring/Multi-Date)
+  - Privacy settings (Public/Private/Unlisted)
+  - Language selection
+- **Step 3: Date & Location** ✅
+  - Start/end date and time pickers
+  - Timezone selection with auto-detection
+  - Physical address or virtual event URL
+  - Platform selection for online events
+- **Step 4: Contact Info** ✅
+  - Contact phone number
+  - Contact email address
+  - Optional field validation
+- **Step 5: Review & Publish** ✅
+  - Complete event preview
+  - Validation checks
+  - Save draft or publish options
+  - Social sharing configuration
+
+### 🚧 **Advanced Event Features (Temporarily Disabled)**
+- **Registration Settings** ⏸️
+  - Privacy controls and timing
+  - Password protection
+  - Age restrictions
+  - Accessibility options
+- **Ticketing System** ⏸️
+  - Multiple ticket types
+  - Pricing and currency support
+  - Quantity management
+  - Revenue projections
+- **Advanced Settings** ⏸️
+  - Refund policies
+  - Custom policies
+  - Website integration
+  - External ticketing links
+
+**Note**: Advanced features have been temporarily disabled for initial testing and validation. They will be re-enabled in later iterations based on user feedback and testing results.
 
 ### ✅ **Event Management**
 - **Event Dashboard** ✅
@@ -186,7 +210,7 @@ EventRadius is a comprehensive event management platform with user authenticatio
 
 ### ✅ **Core Features Complete**
 - User authentication & role management
-- Event creation wizard (5-step)
+- **Simplified event creation wizard (5-step)**
 - Organizer onboarding
 - Basic event management
 - Responsive UI/UX
@@ -196,16 +220,22 @@ EventRadius is a comprehensive event management platform with user authenticatio
 2. **Participant Management** endpoints
 3. **Public Event Browser** development
 4. **Advanced Search & Filtering**
+5. **Advanced Event Features Re-Enable** (based on testing feedback)
+   - Registration settings
+   - Ticketing system
+   - Advanced policies
 
 ### 🎯 **MVP Ready**
 The platform is **MVP-ready** with core event creation and management functionality complete. Users can:
 - Register and authenticate
 - Complete organizer onboarding
-- Create events with comprehensive details
+- **Create events with essential details** (simplified wizard)
 - Manage their events
 - Handle basic event operations
 
+**Current Focus**: Testing and validation of the simplified event creation flow before re-enabling advanced features.
+
 ---
 
-*Last Updated: April 4, 2026*
-*Status: Actively in Development*
+*Last Updated: April 5, 2026*
+*Status: Simplified Wizard Ready for Testing*

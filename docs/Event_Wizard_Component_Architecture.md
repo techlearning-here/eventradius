@@ -1,8 +1,10 @@
-# Event Wizard Component Architecture Documentation
+# Event Wizard Component Architecture Documentation (Simplified Version)
 
 ## 📋 Overview
 
-This document provides a comprehensive overview of the Event Wizard component architecture, including all components, their purposes, relationships, and data flow within the event creation system.
+This document provides a comprehensive overview of the **simplified** Event Wizard component architecture, including all components, their purposes, relationships, and data flow within the event creation system.
+
+**Note**: Advanced Options section has been temporarily disabled for initial testing and validation. It will be re-enabled in later iterations.
 
 ## 🎯 Main Wizard Component
 
@@ -17,10 +19,10 @@ This document provides a comprehensive overview of the Event Wizard component ar
 - Controls step progression and completion
 
 **Key Features**:
-- 8-step wizard flow with progress tracking
+- **5-step wizard flow** with progress tracking (simplified from 8 steps)
 - Auto-save every 30 seconds
 - Step validation and completion checks
-- Preview modal functionality
+- Preview modal functionality (simplified)
 - Save draft and publish actions
 - Responsive design with sidebar navigation
 
@@ -35,169 +37,49 @@ interface EventWizardProps {
 
 ---
 
-## 🧩 Split Components (New Modular Architecture)
+## 🧩 Current Wizard Structure (Simplified)
 
-### Registration Section Components
+### Single Section: Basic Event Details
+The wizard now consists of **5 sub-steps** within a single section:
 
-#### RegistrationPrivacySelector.tsx (~2KB)
-**Purpose**: Handles event privacy settings
+#### Step 1: Event Info
+- **Components**: BasicInfo + ImageUpload
+- **Purpose**: Core event information collection
+- **Fields**: Title, description, image upload, event cost, external ticketing URL
+- **Mandatory Fields**: Title (*), Description (*)
+- **Conditional Fields**: External Ticketing URL (shown only for paid events)
 
-**Functionality**:
-- Controls who can find and register for events
-- Visual card-based selection with icons
-- Three privacy levels with detailed descriptions
+#### Step 2: Type & Format  
+- **Components**: EventTypeSection
+- **Purpose**: Event format and delivery method selection
+- **Fields**: Event type (online/in-person/hybrid), format, privacy, structured venue address, online meeting link, conditional scheduling
+- **Mandatory Fields**: Event Type (*), Event Format (*), Structured Venue Address (* for in-person/hybrid), Online Meeting Link (* for online/hybrid), Scheduling Fields (* based on format)
+- **Conditional Fields**: Structured venue address, meeting link, and scheduling based on event type and format
+- **Structured Venue Fields**: Building Name (optional), Street Address (*), City (*), State/Province (*), ZIP/Postal Code (*), Country (*)
+- **Scheduling Options**:
+  - **Single Event**: Date, start time, end time
+  - **Recurring Event**: Day of week/month, start time, end time, frequency (daily/weekly/monthly), end date options (indefinite or specific date)
+  - **Multi-Date Event**: Up to 7 separate events with individual dates and times
 
-**Privacy Options**:
-- **Public**: Anyone can find and register
-- **Private**: Only people with the link can register
-- **Unlisted**: Not searchable, only accessible via direct link
+#### Step 3: Date & Location
+- **Components**: DateTimeSection + LocationSection
+- **Purpose**: Event scheduling and venue management
+- **Fields**: Start/end times, timezone, location or virtual URL
+- **Mandatory Fields**: Start Date & Time (*), End Date & Time (*), Location (*)
 
-**Props Interface**:
-```typescript
-interface RegistrationPrivacySelectorProps {
-  eventPrivacy: 'public' | 'private' | 'unlisted';
-  onEventPrivacyChange: (value: 'public' | 'private' | 'unlisted') => void;
-}
-```
+#### Step 4: Contact Info
+- **Components**: ContactInfo
+- **Purpose**: Contact information for attendees
+- **Fields**: Contact phone and email
+- **Mandatory Fields**: None (optional)
 
-#### RegistrationTiming.tsx (~2KB)
-**Purpose**: Manages registration period settings
-
-**Functionality**:
-- Sets when registration opens and closes
-- DateTime pickers with timezone support
-- Validation for logical time sequences
-- Optional end time support
-
-**Features**:
-- Registration start time (optional)
-- Registration end time (optional)
-- Timezone-aware datetime handling
-- Clear date formatting
-
-**Props Interface**:
-```typescript
-interface RegistrationTimingProps {
-  registrationStartTime: Date | null;
-  registrationEndTime: Date | null;
-  onRegistrationStartTimeChange: (value: Date | null) => void;
-  onRegistrationEndTimeChange: (value: Date | null) => void;
-}
-```
-
-#### RegistrationSettings.tsx (~2KB)
-**Purpose**: Handles additional registration requirements
-
-**Functionality**:
-- Password protection for private events
-- Age restriction settings
-- Contact email configuration
-- Conditional field display
-
-**Features**:
-- Password field (only for private events)
-- Age restriction dropdown (13+, 16+, 18+, 21+, custom)
-- Contact email input with validation
-- Contextual help text
-
-**Props Interface**:
-```typescript
-interface RegistrationSettingsProps {
-  eventPrivacy: 'public' | 'private' | 'unlisted';
-  eventPassword: string;
-  ageRestriction: string;
-  eventContactEmail: string;
-  onEventPasswordChange: (value: string) => void;
-  onAgeRestrictionChange: (value: string) => void;
-  onEventContactEmailChange: (value: string) => void;
-}
-```
-
-#### AccessibilityFeatures.tsx (~2KB)
-**Purpose**: Manages accessibility options for events
-
-**Functionality**:
-- Lists available accessibility features
-- Checkbox-based selection interface
-- Stores comma-separated feature list
-- Grid layout for easy scanning
-
-**Accessibility Features**:
-- Wheelchair accessible
-- Accessible parking
-- Accessible restrooms
-- Elevator access
-- Ramp access
-- Sign language interpreter
-- Closed captions
-- Audio description
-- Quiet space available
-- Service animals welcome
-
-**Props Interface**:
-```typescript
-interface AccessibilityFeaturesProps {
-  accessibilityOptions: string;
-  onAccessibilityOptionsChange: (value: string) => void;
-}
-```
+#### Step 5: Review & Publish
+- **Components**: ReviewSection
+- **Purpose**: Event preview and publishing
+- **Fields**: Complete event review and publishing options
+- **Mandatory Fields**: None (review step)
 
 ---
-
-### Ticketing Section Components
-
-#### TicketTypeEditor.tsx (~4KB)
-**Purpose**: Individual ticket type management interface
-
-**Functionality**:
-- Create, edit, and delete individual ticket types
-- Comprehensive ticket configuration options
-- Advanced settings with collapsible interface
-- Real-time validation and updates
-
-**Features**:
-- **Basic Settings**: Name, description, price, currency
-- **Quantity Management**: Available quantity, min/max per order
-- **Sales Timing**: Sales start/end times
-- **Advanced Options**: Donation tickets, fee absorption, visibility
-- **Currency Support**: USD, EUR, GBP, CAD, AUD, JPY
-
-**Props Interface**:
-```typescript
-interface TicketTypeEditorProps {
-  ticketType: TicketType;
-  onUpdate: (ticketType: TicketType) => void;
-  onDelete: () => void;
-}
-```
-
-#### TicketingOverview.tsx (~3KB)
-**Purpose**: High-level ticketing dashboard
-
-**Functionality**:
-- Quick overview of all ticket types
-- Revenue projection calculations
-- Quick actions for ticket management
-- Empty state handling
-
-**Features**:
-- **Summary Cards**: Revenue projection, ticket count, pricing overview
-- **Quick Actions**: Add new ticket type button
-- **Ticket List**: Compact view of all ticket types
-- **Empty State**: Guidance for first-time users
-
-**Props Interface**:
-```typescript
-interface TicketingOverviewProps {
-  ticketTypes: TicketType[];
-  onAddTicket: () => void;
-  totalRevenue?: number;
-}
-```
-
----
-
-## 🎨 Original Components (Existing Architecture)
 
 ### Basic Info Components
 
@@ -215,14 +97,27 @@ interface TicketingOverviewProps {
 - Description textarea with rich text support
 - Required field validation
 - Auto-save integration
+- **Event Cost Selection**: Free vs Paid event toggle
+- **External Ticketing Integration**: URL field for external ticketing systems (appears for paid events)
+
+**External Ticketing Feature**:
+- **Conditional Display**: Only shown when "Paid Event" is selected
+- **URL Validation**: Accepts valid URL format
+- **Optional Field**: Organizers can leave blank if not using external system
+- **Popular Platforms**: Supports Eventbrite, Ticketmaster, custom solutions
+- **User Guidance**: Clear placeholder text and help instructions
 
 **Props Interface**:
 ```typescript
 interface BasicInfoProps {
-  title: string;
+  eventName: string;
   description: string;
-  onTitleChange: (value: string) => void;
+  isPaidEvent: boolean;
+  ticketingUrl?: string;
+  onEventNameChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
+  onIsPaidEventChange: (value: boolean) => void;
+  onTicketingUrlChange: (value: string) => void;
 }
 ```
 
@@ -278,9 +173,57 @@ interface EventTypeSectionProps {
   eventType: 'online' | 'in_person' | 'hybrid';
   eventFormat: 'single' | 'recurring' | 'multi_date';
   eventPrivacy: 'public' | 'private' | 'unlisted';
+  language: string;
+  venueAddress?: string;
+  // Structured venue fields
+  venueStreet?: string;
+  venueCity?: string;
+  venueState?: string;
+  venueZipCode?: string;
+  venueCountry?: string;
+  venueBuildingName?: string;
+  onlineMeetingLink?: string;
+  // Scheduling fields based on event format
+  singleEventDate?: string;
+  singleEventStartTime?: string;
+  singleEventEndTime?: string;
+  recurringEventDay?: string;
+  recurringEventStartTime?: string;
+  recurringEventEndTime?: string;
+  recurringFrequency?: 'daily' | 'weekly' | 'monthly';
+  recurringEndDate?: string;
+  recurringHasEndDate?: boolean;
+  multiDateEvents?: Array<{
+    id: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+  }>;
+  // Event type handlers
   onEventTypeChange: (value: 'online' | 'in_person' | 'hybrid') => void;
   onEventFormatChange: (value: 'single' | 'recurring' | 'multi_date') => void;
   onEventPrivacyChange: (value: 'public' | 'private' | 'unlisted') => void;
+  onLanguageChange: (value: string) => void;
+  // Venue handlers
+  onVenueAddressChange: (value: string) => void;
+  onVenueStreetChange: (value: string) => void;
+  onVenueCityChange: (value: string) => void;
+  onVenueStateChange: (value: string) => void;
+  onVenueZipCodeChange: (value: string) => void;
+  onVenueCountryChange: (value: string) => void;
+  onVenueBuildingNameChange: (value: string) => void;
+  onOnlineMeetingLinkChange: (value: string) => void;
+  // Scheduling handlers
+  onSingleEventDateChange: (value: string) => void;
+  onSingleEventStartTimeChange: (value: string) => void;
+  onSingleEventEndTimeChange: (value: string) => void;
+  onRecurringEventDayChange: (value: string) => void;
+  onRecurringEventStartTimeChange: (value: string) => void;
+  onRecurringEventEndTimeChange: (value: string) => void;
+  onRecurringFrequencyChange: (value: 'daily' | 'weekly' | 'monthly') => void;
+  onRecurringEndDateChange: (value: string) => void;
+  onRecurringHasEndDateChange: (value: boolean) => void;
+  onMultiDateEventsChange: (events: Array<{id: string; date: string; startTime: string; endTime: string}>) => void;
 }
 ```
 
@@ -294,27 +237,27 @@ interface EventTypeSectionProps {
 **Functionality**:
 - Event start and end time configuration
 - Timezone selection and detection
-- Doors open time setting
 - Date validation and sequencing
 
 **Features**:
 - Start/end datetime pickers
 - Automatic timezone detection
-- Doors open time configuration
 - Date validation (end after start)
 - Timezone support
 
 **Props Interface**:
 ```typescript
 interface DateTimeSectionProps {
-  startTime: Date | null;
-  endTime: Date | null;
+  startDate: Date | undefined;
+  endDate: Date | undefined;
+  startTime: string;
+  endTime: string;
   timezone: string;
-  doorsOpenTime: Date | null;
-  onStartTimeChange: (value: Date | null) => void;
-  onEndTimeChange: (value: Date | null) => void;
-  onTimezoneChange: (value: string) => void;
-  onDoorsOpenTimeChange: (value: Date | null) => void;
+  onStartDateChange: (date: Date | undefined) => void;
+  onEndDateChange: (date: Date | undefined) => void;
+  onStartTimeChange: (time: string) => void;
+  onEndTimeChange: (time: string) => void;
+  onTimezoneChange: (timezone: string) => void;
 }
 ```
 
@@ -341,44 +284,39 @@ interface DateTimeSectionProps {
 ```typescript
 interface LocationSectionProps {
   location: string;
-  virtualEventUrl: string;
-  virtualEventPlatform: string;
+  isVirtual: boolean;
+  virtualEventDetails: string;
   onLocationChange: (value: string) => void;
-  onVirtualEventUrlChange: (value: string) => void;
-  onVirtualEventPlatformChange: (value: string) => void;
+  onIsVirtualChange: (value: boolean) => void;
+  onVirtualEventDetailsChange: (value: string) => void;
 }
 ```
 
 ---
 
-### Advanced Components
+### Contact Components
 
-#### AdvancedSection.tsx (7.9KB)
-**Purpose**: Additional event settings and policies
+#### ContactInfo.tsx (~2KB)
+**Purpose**: Contact information management for events
 
 **Functionality**:
-- Refund policy configuration
-- Custom refund policy setup
-- Event website and contact info
-- Policy template management
+- Contact phone and email configuration
+- Validation for contact information
+- Optional field handling
 
 **Features**:
-- **Refund Policies**: No refunds, 7 days, 24 hours, 1 hour, custom
-- **Custom Policies**: Rich text editor for custom terms
-- **Contact Info**: Website and email configuration
-- **Policy Templates**: Pre-configured policy options
+- Phone number input with validation
+- Email input with validation
+- Optional field indicators
+- Clear help text
 
 **Props Interface**:
 ```typescript
-interface AdvancedSectionProps {
-  eventWebsite: string;
-  eventContactEmail: string;
-  refundPolicy: 'no_refunds' | 'refund_up_to_7_days' | 'refund_up_to_24_hours' | 'refund_up_to_1_hour' | 'custom';
-  customRefundPolicy: string;
-  onEventWebsiteChange: (value: string) => void;
-  onEventContactEmailChange: (value: string) => void;
-  onRefundPolicyChange: (value: any) => void;
-  onCustomRefundPolicyChange: (value: string) => void;
+interface ContactInfoProps {
+  contactPhone: string;
+  contactEmail: string;
+  onContactPhoneChange: (value: string) => void;
+  onContactEmailChange: (value: string) => void;
 }
 ```
 
@@ -409,29 +347,6 @@ interface ReviewSectionProps {
   onEdit: (stepId: string) => void;
   onSave: () => void;
   onPublish: () => void;
-}
-```
-
-#### PreviewSection.tsx (1KB)
-**Purpose**: Quick event preview modal
-
-**Functionality**:
-- Shows how event will appear to attendees
-- Responsive preview design
-- Social card preview
-- Modal-based interface
-
-**Features**:
-- Event card preview
-- Social media preview
-- Responsive design
-- Modal overlay
-
-**Props Interface**:
-```typescript
-interface PreviewSectionProps {
-  formData: EventFormData;
-  onClose: () => void;
 }
 ```
 
@@ -496,95 +411,17 @@ interface ButtonProps {
 }
 ```
 
-### Toggle.tsx (637B)
-**Purpose**: Toggle switch component
-
-**Functionality**:
-- Boolean setting configuration
-- Animated transitions
-- Accessibility support
-- Custom styling
-
-**Features**:
-- **States**: On/off with smooth transitions
-- **Labels**: Optional text labels
-- **Accessibility**: ARIA labels, keyboard navigation
-- **Styling**: Customizable appearance
-
-**Props Interface**:
-```typescript
-interface ToggleProps {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  label?: string;
-  disabled?: boolean;
-}
-```
-
 ---
 
-## 📱 Navigation Components
-
-### SidePanel.tsx (4KB)
-**Purpose**: Wizard navigation and progress tracking
-
-**Functionality**:
-- Step navigation between wizard sections
-- Progress indicator and percentage
-- Step completion status display
-- Quick access to all wizard steps
-
-**Features**:
-- **Step Navigation**: Click to jump to any step
-- **Progress Tracking**: Visual progress bar and percentage
-- **Completion Status**: Visual indicators for completed steps
-- **Quick Actions**: Save, preview, publish buttons
-- **Responsive Design**: Collapsible on mobile
-
-**Props Interface**:
-```typescript
-interface SidePanelProps {
-  currentStep: number;
-  totalSteps: number;
-  stepProgress: number;
-  isStepComplete: (stepId: string) => boolean;
-  goToStep: (step: number) => void;
-  onSave: () => void;
-  onPreview: () => void;
-}
-```
-
----
-
-## 🏷️ Legacy Components (To Be Removed/Updated)
-
-### CategorySection.tsx (7.2KB)
-**Purpose**: Event categorization (deprecated)
-
-**Status**: Being replaced by enhanced EventTypeSection
-**Migration Path**: Moving category functionality into EventTypeSection
-**Reason**: Redundant with new event_type field structure
-
----
-
-## 🎯 Component Usage Flow
+## 🎯 Component Usage Flow (Simplified)
 
 ### Step-by-Step Component Usage
 ```
-1. Basic Info: BasicInfo + ImageUpload
-2. Event Type: EventTypeSection  
-3. Date & Time: DateTimeSection
-4. Location: LocationSection
-5. Registration: 
-   - RegistrationPrivacySelector
-   - RegistrationTiming
-   - RegistrationSettings
-   - AccessibilityFeatures
-6. Ticketing: 
-   - TicketingOverview
-   - TicketTypeEditor (multiple instances)
-7. Advanced: AdvancedSection
-8. Review: ReviewSection + PreviewSection
+1. Event Info: BasicInfo + ImageUpload
+2. Type & Format: EventTypeSection  
+3. Date & Location: DateTimeSection + LocationSection
+4. Contact Info: ContactInfo
+5. Review & Publish: ReviewSection
 ```
 
 ### Shared Components (Used Across All Steps)
@@ -604,73 +441,63 @@ State Management → Component Props → Data Aggregation → Backend
 
 ---
 
-## 🚀 Architecture Benefits
+## 🚀 Simplified Architecture Benefits
 
-### Modular Design
-- **Single Responsibility**: Each component has one clear purpose
-- **Reusability**: Components can be used in different contexts
-- **Maintainability**: Easy to update individual components
-- **Testing**: Smaller components are easier to unit test
-- **Performance**: Better code splitting and lazy loading
+### Reduced Complexity
+- **Faster Development**: Fewer steps to implement and test
+- **Better User Experience**: Quicker event creation process
+- **Easier Validation**: Simpler data structure to validate
+- **Faster Loading**: Fewer components to load
+
+### Core Functionality Focus
+- **Essential Features**: Focus on most important event creation aspects
+- **Quick Validation**: Faster testing and feedback cycles
+- **Stable Foundation**: Solid base for future enhancements
+- **Cleaner Code**: More maintainable codebase
 
 ### User Experience
-- **Progressive Disclosure**: Show relevant fields at each step
-- **Clear Validation**: Immediate feedback on each section
-- **Professional Flow**: Industry-standard event creation process
-- **Accessibility**: WCAG compliant components
-- **Responsive Design**: Works on all device sizes
-
-### Developer Experience
-- **Type Safety**: Strong TypeScript interfaces
-- **Component Isolation**: Clear boundaries between components
-- **Debugging**: Easy to identify and fix issues
-- **Documentation**: Clear props and usage examples
-- **Consistency**: Standardized patterns and conventions
+- **Streamlined Flow**: 5 steps instead of 8
+- **Quick Setup**: Get events created faster
+- **Essential Fields**: Focus on what matters most
+- **Clear Progress**: Better progress indication
 
 ---
 
-## 📊 Component Size Analysis
+## 📊 Component Size Analysis (Simplified)
 
-### Before Splitting
+### Active Components
 ```
-Large Components (>5KB):
+Core Components:
 ✓ EventWizard.tsx (23KB) - Main wizard component
-✓ RegistrationSection.tsx (12.7KB) - Registration settings
-✓ TicketingSection.tsx (12.9KB) - Ticket management
-✓ ReviewSection.tsx (17.6KB) - Review and preview
-✓ AdvancedSection.tsx (7.9KB) - Advanced options
-✓ CategorySection.tsx (7.2KB) - Category and settings
+✓ BasicInfo.tsx (1.6KB) - Event information
+✓ ImageUpload.tsx (2.6KB) - Image management
 ✓ EventTypeSection.tsx (6.7KB) - Event type selection
+✓ DateTimeSection.tsx (4.1KB) - Scheduling
+✓ LocationSection.tsx (1KB) - Location management
+✓ ContactInfo.tsx (~2KB) - Contact information
+✓ ReviewSection.tsx (17.6KB) - Review and preview
 ```
 
-### After Splitting
+### Temporarily Disabled Components
 ```
-Split Components:
-✓ RegistrationPrivacySelector.tsx (~2KB)
-✓ RegistrationTiming.tsx (~2KB)
-✓ RegistrationSettings.tsx (~2KB)
-✓ AccessibilityFeatures.tsx (~2KB)
-✓ TicketTypeEditor.tsx (~4KB)
-✓ TicketingOverview.tsx (~3KB)
-✓ Updated RegistrationSection.tsx (~3KB)
-✓ Updated TicketingSection.tsx (~4KB)
+Advanced Components (Disabled for now):
+✗ RegistrationSection.tsx (12.7KB) - Registration settings
+✗ TicketingSection.tsx (12.9KB) - Ticket management
+✗ AdvancedSection.tsx (7.9KB) - Advanced options
+✗ CategorySection.tsx (7.2KB) - Category and settings
+✗ All Registration sub-components
+✗ All Ticketing sub-components
 ```
-
-### Size Reduction Benefits
-- **Faster Loading**: Smaller components load quicker
-- **Better Caching**: Individual components can be cached separately
-- **Code Splitting**: Better lazy loading opportunities
-- **Memory Usage**: Reduced memory footprint
-- **Development Speed**: Faster rebuilds and hot reloads
 
 ---
 
 ## 🔮 Future Enhancements
 
-### Remaining Large Components to Split
-- **ReviewSection.tsx** (17.6KB) → Preview, Validation, Publishing components
-- **AdvancedSection.tsx** (7.9KB) → Settings, Policies, Contact components
-- **EventTypeSection.tsx** (6.7KB) → Type, Format, Privacy components
+### Re-enabling Advanced Features
+When ready to re-enable advanced options:
+- **Registration Section**: Privacy settings, timing, accessibility
+- **Ticketing Section**: Multiple ticket types, pricing, revenue tracking
+- **Advanced Settings**: Refund policies, custom fields, integrations
 
 ### Potential New Components
 - **EventPreview.tsx** - Enhanced preview functionality
@@ -689,12 +516,17 @@ Split Components:
 
 ## 📝 Conclusion
 
-This modular component architecture provides a robust, scalable foundation for the event creation wizard. The separation of concerns, clear interfaces, and reusable components make the system maintainable and extensible while providing an excellent user experience for event organizers.
+This simplified event wizard architecture provides a focused, efficient foundation for event creation. By temporarily disabling advanced features, we can:
 
-The architecture follows modern React best practices and provides a solid foundation for future enhancements and improvements.
+1. **Validate Core Functionality**: Ensure basic event creation works perfectly
+2. **Gather User Feedback**: Get feedback on the essential flow
+3. **Iterative Development**: Add advanced features based on user needs
+4. **Stable Platform**: Build on a solid, tested foundation
+
+The simplified architecture maintains the same high-quality component design and user experience while focusing on the most critical event creation features.
 
 ---
 
 *Last Updated: April 2026*
-*Version: 1.0*
+*Version: 1.0 (Simplified)*
 *Author: EventRadius Development Team*
