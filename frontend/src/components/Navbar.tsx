@@ -75,12 +75,12 @@ export const Navbar: React.FC = () => {
     <>
       {/* Site Name */}
       <div className="fixed top-4 left-4 md:left-8 z-[2000]">
-        <Link to="/" className="text-2xl font-bold text-white bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 transition-all hover:shadow-lg">
+        <Link to="/" className="text-2xl font-bold text-white hover:shadow-lg transition-all">
           EventRadius
         </Link>
       </div>
 
-      <nav className="fixed top-12 left-4 md:left-8 z-[2000] flex items-center gap-0">
+      <nav className="fixed top-12 right-4 md:right-8 z-[2000] flex items-center gap-1">
         {/* Logo */}
         <Link to="/" className="bg-foreground text-primary-foreground h-[34px] w-[34px] border border-foreground flex items-center justify-center">
           <Zap className="w-4 h-4" />
@@ -134,12 +134,8 @@ export const Navbar: React.FC = () => {
           )}
         </div>
 
-        {/* Account Details - Right side fixed position */}
-        {user && (
-          <div className="fixed top-4 right-8 md:right-8 z-[2000] flex items-center gap-0">
-            <AccountDetails />
-          </div>
-        )}
+        {/* Account Details - Always visible in nav */}
+        {user && <AccountDetails />}
 
         {/* Mobile Menu Button */}
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -188,6 +184,18 @@ export const Navbar: React.FC = () => {
                 </button>
               )
             ))}
+            {/* Logout button for mobile menu */}
+            {user && (
+              <button
+                onClick={() => {
+                  signOut();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex-1 flex items-center justify-center text-red-500 text-[17px] font-medium uppercase border-b border-border tracking-[-0.34px]"
+              >
+                Sign Out
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -8,6 +8,7 @@ interface ImageUploadProps {
 
 export const ImageUpload = ({ imagePreview, onImageUpload }: ImageUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(imagePreview);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -24,6 +25,10 @@ export const ImageUpload = ({ imagePreview, onImageUpload }: ImageUploadProps) =
       return;
     }
 
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setPreview(previewUrl);
+
     onImageUpload(file);
   };
 
@@ -38,9 +43,9 @@ export const ImageUpload = ({ imagePreview, onImageUpload }: ImageUploadProps) =
         </p>
       </div>
       
-      <label className="w-full aspect-[4/3] border border-black bg-[#D9D9D9] flex items-center justify-center cursor-pointer hover:bg-[#CECECE] transition-colors">
-        {imagePreview ? (
-          <img src={imagePreview} alt="Event preview" className="w-full h-full object-cover" />
+      <label className="w-full aspect-[16/9] border border-black bg-[#D9D9D9] flex items-center justify-center cursor-pointer hover:bg-[#CECECE] transition-colors">
+        {preview ? (
+          <img src={preview} alt="Event preview" className="w-full h-full object-cover" />
         ) : (
           <div className="text-center">
             <span className="text-black text-[11px] font-medium uppercase tracking-wider">
@@ -60,7 +65,7 @@ export const ImageUpload = ({ imagePreview, onImageUpload }: ImageUploadProps) =
         />
       </label>
 
-      {imagePreview && (
+      {preview && (
         <button
           onClick={() => fileInputRef.current?.click()}
           className="px-4 py-3 text-[13px] font-medium uppercase tracking-wider border border-black bg-white hover:bg-black hover:text-white transition-colors"
@@ -69,7 +74,7 @@ export const ImageUpload = ({ imagePreview, onImageUpload }: ImageUploadProps) =
         </button>
       )}
       
-      {!imagePreview && (
+      {!preview && (
         <button
           onClick={() => fileInputRef.current?.click()}
           className="px-4 py-3 text-[13px] font-medium uppercase tracking-wider border border-gray-300 text-gray-600 hover:border-black hover:text-black transition-colors"

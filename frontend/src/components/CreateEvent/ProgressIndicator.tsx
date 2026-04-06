@@ -30,12 +30,12 @@ export const ProgressIndicator = ({ currentSectionIndex, currentSubStepIndex }: 
           style={{ width: `${getProgress()}%` }}
         />
       </div>
-      <div className="mt-2 flex justify-between items-center text-xs text-gray-600">
+      <div className="mt-2 flex justify-between items-center text-xs text-black">
         <span>Step {getCurrentSubStepNumber()} of {getTotalSubSteps()}</span>
         <span>{Math.round(getProgress())}% Complete</span>
       </div>
       <div className="mt-1">
-        <span className="text-sm font-medium text-gray-900">
+        <span className="text-sm font-medium text-black">
           {getCurrentSection().title} - {getCurrentSubStep().title}
         </span>
       </div>

@@ -518,12 +518,12 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           {/* Progress Bar */}
           <div className="mt-4">
             <Progress value={getStepProgress()} className="h-2 bg-blue-100 [&>div]:bg-green-500" />
-            <div className="mt-2 flex justify-between items-center text-xs text-blue-700">
+            <div className="mt-2 flex justify-between items-center text-xs text-gray-800">
               <span>Step {getCurrentSubStepNumber()} of {getTotalSubSteps()}</span>
-              <span className="text-blue-700">{Math.round(getStepProgress())}% Complete</span>
+              <span className="text-gray-800">{Math.round(getStepProgress())}% Complete</span>
             </div>
             <div className="mt-1">
-              <span className="text-sm font-medium text-blue-800">{getCurrentSection().title} - {getCurrentSubStep().title}</span>
+              <span className="text-sm font-medium text-gray-800">{getCurrentSection().title} - {getCurrentSubStep().title}</span>
             </div>
             <div className="text-xs text-gray-600 mt-1">
               {getCurrentSubStep().description}
@@ -591,29 +591,29 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           <div className="xl:col-span-1 max-w-xs">
             <Card className="top-24">
               <CardContent className="p-6">
-                <h3 className="font-semibold mb-4 text-blue-600">Event Progress</h3>
+                <h3 className="font-semibold mb-4 text-black">Event Progress</h3>
                 
                 {/* Current Step Info */}
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-blue-600">
+                    <span className="text-sm font-medium text-gray-800">
                       Step {getCurrentSubStepNumber()} of {getTotalSubSteps()}
                     </span>
-                    <span className="text-xs text-blue-600">
+                    <span className="text-xs text-gray-800">
                       {Math.round(getStepProgress())}%
                     </span>
                   </div>
-                  <div className="text-sm font-semibold text-blue-600">
+                  <div className="text-sm font-semibold text-gray-800">
                     {getCurrentSection().title}
                   </div>
-                  <div className="text-xs text-blue-600 mt-1">
+                  <div className="text-xs text-gray-800 mt-1">
                     {getCurrentSubStep().title}
                   </div>
                 </div>
 
                 {/* Step Navigation */}
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-blue-700 mb-3">Quick Navigation</h4>
+                  <h4 className="text-sm font-medium text-black mb-3">Quick Navigation</h4>
                   {WIZARD_SECTIONS.map((section, sectionIndex) => (
                     <div key={section.id} className="mb-3">
                       <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">

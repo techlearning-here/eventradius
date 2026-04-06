@@ -53,18 +53,19 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
   }
 
   return (
-    <div className={`relative pt-12 ${className}`}>
+    <div className={`relative ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-background text-foreground h-[34px] px-3 border border-foreground hover:border-foreground/80 transition-colors"
+        className="relative overflow-hidden bg-background text-foreground h-[34px] px-3 flex items-center text-[11px] font-medium uppercase border border-foreground leading-none group"
       >
         <div className="w-5 h-5 rounded-full bg-[#ff6bff] flex items-center justify-center">
           <User className="w-3 h-3 text-black" />
         </div>
-        <span className="text-[11px] font-medium uppercase hidden md:block">
+        <span className="relative z-10 text-[11px] font-medium uppercase hidden md:block">
           {userProfile?.full_name || user.email?.split('@')[0] || 'User'}
         </span>
         <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <span className="absolute inset-0 bg-[hsl(295,100%,73%)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
       </button>
 
       {isOpen && (
@@ -76,7 +77,7 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
           />
 
           {/* Dropdown */}
-          <div className="absolute top-full right-0 mt-1 w-64 bg-background border border-foreground rounded-lg shadow-lg z-[2001] overflow-hidden">
+          <div className="absolute top-full left-0 mt-1 w-64 bg-background border border-foreground rounded-lg shadow-lg z-[2001] overflow-hidden">
             {/* User Info Header */}
             <div className="p-4 border-b border-border">
               <div className="flex items-center gap-3">
