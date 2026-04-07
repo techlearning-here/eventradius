@@ -1,6 +1,16 @@
 import { Plus } from 'lucide-react';
 import { EventWizard, type EventFormData } from '@/components/EventWizard/EventWizard';
-import { type Event } from '@/integrations/backend/api';
+
+interface OrgEvent {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  city?: string;
+  category: string;
+  status: 'preview' | 'cancelled' | 'approved' | 'pending' | 'rejected' | 'deactivated';
+  admin_remark?: string;
+}
 
 interface EventWizardOverlayProps {
   isVisible: boolean;
@@ -9,7 +19,7 @@ interface EventWizardOverlayProps {
   onPublish: (data: EventFormData) => Promise<void>;
   onEdit?: (data: EventFormData) => Promise<void>;
   onPublishEdit?: (data: EventFormData) => Promise<void>;
-  editingEvent?: Event | null;
+  editingEvent?: OrgEvent | null;
   initialData?: Partial<EventFormData> | null;
 }
 

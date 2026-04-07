@@ -11,47 +11,36 @@ import { useEventActions } from '@/hooks/useEvents';
 import { Sidebar } from '@/components/OrganizerDashboard/Sidebar';
 import { SectionHeader } from '@/components/OrganizerDashboard/SectionHeader';
 import { EventsList } from '@/components/OrganizerDashboard/EventsList';
+import { OrganizerEventsGrid } from '@/components/OrganizerDashboard/OrganizerEventsGrid';
 import { EventWizardOverlay } from '@/components/OrganizerDashboard/EventWizardOverlay';
-
-interface OrgEvent {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  city?: string;
-  category: string;
-  status: 'preview' | 'cancelled' | 'approved' | 'pending' | 'rejected' | 'deactivated';
-  admin_remark?: string;
-}
+import { type Event } from '@/integrations/backend/api';
 
 const OrganizerDashboard = () => {
   const { user, role, loading: authLoading } = useAuthWithBackend();
   const navigate = useNavigate();
   const { createEvent, updateEvent } = useEventActions();
-  const [events, setEvents] = useState<OrgEvent[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<OrgEvent | null>(null);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingEventInitialData, setEditingEventInitialData] = useState<Partial<EventFormData> | null>(null);
   const [activeSection, setActiveSection] = useState('events');
   const [sidebarIconized, setSidebarIconized] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Track which event is being previewed
+  const [previewEventId, setPreviewEventId] = useState<string | null>(null);
+
+  const handlePreviewEvent = (event: Event) => {
+    setPreviewEventId(event.id);
+  };
 
   const fetchEvents = async () => {
     try {
       setLoading(true);
       const response = await apiClient.getEvents();
-      // Transform Event[] to OrgEvent[] by adding missing fields
-      const transformedEvents = (response || []).map(event => ({
-        id: event.id,
-        title: event.title,
-        date: event.start_time ? new Date(event.start_time).toLocaleDateString() : '',
-        time: event.start_time ? new Date(event.start_time).toLocaleTimeString() : '',
-        city: event.location, // Map location to city for display
-        category: event.category || 'general', // Provide default
-        status: 'preview' as const, // Default status since API doesn't provide it
-        admin_remark: undefined // Not available from API
-      }));
-      setEvents(transformedEvents);
+      // API returns Event[] directly - use as-is
+      setEvents(response || []);
     } catch (error) {
       console.error('Failed to fetch events:', error);
       toast.error('Failed to load events');
@@ -258,7 +247,7 @@ const OrganizerDashboard = () => {
     }
   };
 
-  const handleWizardEdit = async (event: OrgEvent) => {
+  const handleWizardEdit = async (event: Event) => {
     // Fetch full event details before opening wizard
     const fullEventDetails = await fetchFullEventDetails(event.id);
     if (!fullEventDetails) return;
@@ -371,13 +360,59 @@ const OrganizerDashboard = () => {
               initialData={editingEventInitialData}
             />
 
-            {/* Events List */}
+            {/* Events Display with View Toggle */}
             {activeSection === 'events' && (
-              <EventsList
-                events={events}
-                onDelete={handleDelete}
-                onEdit={handleWizardEdit}
-              />
+              <>
+                {/* View Mode Toggle */}
+                <div className="flex items-center justify-end gap-2 mb-4">
+                  <span className="text-sm text-muted-foreground">View:</span>
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded-md transition-colors ${
+                      viewMode === 'grid' 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'hover:bg-muted text-muted-foreground'
+                    }`}
+                    title="Grid view"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-md transition-colors ${
+                      viewMode === 'list' 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'hover:bg-muted text-muted-foreground'
+                    }`}
+                    title="List view"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Events Grid or List */}
+                {viewMode === 'grid' ? (
+                  <OrganizerEventsGrid
+                    events={events}
+                    onDelete={handleDelete}
+                    onEdit={handleWizardEdit}
+                    onPreview={handlePreviewEvent}
+                    viewMode="grid"
+                    isLoading={loading}
+                  />
+                ) : (
+                  <EventsList
+                    events={events}
+                    onDelete={handleDelete}
+                    onEdit={handleWizardEdit}
+                    onView={handlePreviewEvent}
+                  />
+                )}
+              </>
             )}
 
             {/* Placeholder for other sections */}
