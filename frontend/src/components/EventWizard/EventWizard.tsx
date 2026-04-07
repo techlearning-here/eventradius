@@ -11,6 +11,7 @@ import { EventTypeSection } from './EventTypeSection';
 import { ImageUpload } from './ImageUpload';
 import { ReviewSection } from './ReviewSection';
 import { ContactInfo } from './ContactInfo';
+import { EventPreview } from './EventPreview';
 
 // Types for enhanced event data - aligned with database schema
 export interface EventFormData {
@@ -218,17 +219,6 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
   const [isPublishing, setIsPublishing] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-
-  // Auto-save draft every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (formData.title || formData.description) {
-        handleSaveDraft();
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [formData]);
 
   const handleSaveDraft = async () => {
     setIsSaving(true);
@@ -552,6 +542,17 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
                   </Button>
 
                   <div className="flex items-center gap-2">
+                    {/* Preview Button */}
+                    <Button
+                      variant="secondary"
+                      onClick={() => setShowPreview(true)}
+                      size="sm"
+                      className="bg-purple-600 hover:bg-purple-700 text-white border-purple-600"
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Preview Event
+                    </Button>
+
                     {currentSectionIndex === WIZARD_SECTIONS.length - 1 && currentSubStepIndex === getCurrentSection().subSteps.length - 1 ? (
                       <Button
                         onClick={handlePublish}
@@ -666,24 +667,12 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           </div>
         </div>
 
-        {/* Preview Modal/Panel */}
+        {/* Preview Modal */}
         {showPreview && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold">Event Preview</h3>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowPreview(false)}
-                  >
-                    Close
-                  </Button>
-                </div>
-              </div>
-              {/* Preview removed for simplified wizard */}
-            </div>
-          </div>
+          <EventPreview 
+            formData={formData} 
+            onClose={() => setShowPreview(false)} 
+          />
         )}
       </div>
     </div>

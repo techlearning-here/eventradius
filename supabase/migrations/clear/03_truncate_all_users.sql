@@ -13,21 +13,31 @@ SET session_replication_role = 'replica';
 
 -- Truncate user-related tables in order of dependencies
 
--- 1. Event-related data (depends on users)
+-- 1. Comprehensive event management data (depends on users and events)
+TRUNCATE TABLE public.event_schedule CASCADE;
+TRUNCATE TABLE public.event_tags CASCADE;
+TRUNCATE TABLE public.event_notifications CASCADE;
+TRUNCATE TABLE public.event_media CASCADE;
+TRUNCATE TABLE public.registration_fields CASCADE;
+TRUNCATE TABLE public.ticket_types CASCADE;
+TRUNCATE TABLE public.event_venues CASCADE;
+TRUNCATE TABLE public.venues CASCADE;
+
+-- 2. Core event data (depends on users)
 TRUNCATE TABLE public.event_audit CASCADE;
 TRUNCATE TABLE public.event_registrations CASCADE;
 TRUNCATE TABLE public.event_categories CASCADE;
 TRUNCATE TABLE public.event_participants CASCADE;
 TRUNCATE TABLE public.events CASCADE;
 
--- 2. User preferences and roles
+-- 3. User preferences and roles
 TRUNCATE TABLE public.user_preferences CASCADE;
 TRUNCATE TABLE public.user_roles CASCADE;
 
--- 3. User profiles
+-- 4. User profiles
 TRUNCATE TABLE public.profiles CASCADE;
 
--- 4. Core authentication users table
+-- 5. Core authentication users table
 -- This removes all user accounts from the auth system
 TRUNCATE TABLE auth.users CASCADE;
 
@@ -57,7 +67,7 @@ SELECT
     n_dead_tup as dead_rows
 FROM pg_stat_user_tables 
 WHERE schemaname IN ('public', 'auth') 
-    AND relname IN ('users', 'profiles', 'user_roles', 'user_preferences', 'events', 'event_participants', 'event_registrations', 'event_categories', 'event_audit')
+    AND relname IN ('users', 'profiles', 'user_roles', 'user_preferences', 'venues', 'events', 'event_participants', 'event_registrations', 'event_categories', 'event_audit', 'event_venues', 'ticket_types', 'registration_fields', 'event_media', 'event_notifications', 'event_tags', 'event_schedule')
 ORDER BY schemaname, relname;
 
 -- Show that tables are empty
@@ -74,6 +84,9 @@ SELECT
     'user_preferences' as table_name, COUNT(*) as row_count FROM public.user_preferences
 UNION ALL
 SELECT 
+    'venues' as table_name, COUNT(*) as row_count FROM public.venues
+UNION ALL
+SELECT 
     'events' as table_name, COUNT(*) as row_count FROM public.events
 UNION ALL
 SELECT 
@@ -87,6 +100,27 @@ SELECT
 UNION ALL
 SELECT 
     'event_audit' as table_name, COUNT(*) as row_count FROM public.event_audit
+UNION ALL
+SELECT 
+    'event_venues' as table_name, COUNT(*) as row_count FROM public.event_venues
+UNION ALL
+SELECT 
+    'ticket_types' as table_name, COUNT(*) as row_count FROM public.ticket_types
+UNION ALL
+SELECT 
+    'registration_fields' as table_name, COUNT(*) as row_count FROM public.registration_fields
+UNION ALL
+SELECT 
+    'event_media' as table_name, COUNT(*) as row_count FROM public.event_media
+UNION ALL
+SELECT 
+    'event_notifications' as table_name, COUNT(*) as row_count FROM public.event_notifications
+UNION ALL
+SELECT 
+    'event_tags' as table_name, COUNT(*) as row_count FROM public.event_tags
+UNION ALL
+SELECT 
+    'event_schedule' as table_name, COUNT(*) as row_count FROM public.event_schedule
 ORDER BY table_name;
 
 -- =====================================================
@@ -98,17 +132,27 @@ ORDER BY table_name;
 --
 -- Tables truncated:
 -- ✅ auth.users (core authentication table)
+-- ✅ event_schedule
+-- ✅ event_tags
+-- ✅ event_notifications
+-- ✅ event_media
+-- ✅ registration_fields
+-- ✅ ticket_types
+-- ✅ event_venues
+-- ✅ venues
 -- ✅ event_audit
 -- ✅ event_registrations  
 -- ✅ event_categories
 -- ✅ event_participants
 -- ✅ events
--- ✅ user_preferences
+-- ✅ user_preferences (including organizer onboarding fields)
 -- ✅ user_roles
 -- ✅ profiles
 --
 -- Next steps:
 -- 1. Test user registration with Google OAuth
 -- 2. Verify onboarding flow works correctly
--- 3. Test event creation and participation
+-- 3. Test organizer onboarding and business information
+-- 4. Test comprehensive event creation with venues, tickets, media
+-- 5. Test event notifications and scheduling
 -- =====================================================

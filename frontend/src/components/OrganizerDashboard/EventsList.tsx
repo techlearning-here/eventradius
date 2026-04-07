@@ -16,12 +16,11 @@ interface OrgEvent {
 interface EventsListProps {
   events: OrgEvent[];
   onDelete?: (id: string) => void;
-  onConvertToStandard?: (event: OrgEvent) => void;
   onEdit?: (event: OrgEvent) => void;
   onView?: (event: OrgEvent) => void;
 }
 
-export const EventsList = ({ events, onDelete, onConvertToStandard, onEdit, onView }: EventsListProps) => {
+export const EventsList = ({ events, onDelete, onEdit, onView }: EventsListProps) => {
   const [showMenu, setShowMenu] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
@@ -92,7 +91,7 @@ export const EventsList = ({ events, onDelete, onConvertToStandard, onEdit, onVi
                       </button>
                     )}
                     
-                    {onEdit && event.status === 'preview' && (
+                    {onEdit && (
                       <button
                         onClick={() => {
                           onEdit(event);
@@ -102,19 +101,6 @@ export const EventsList = ({ events, onDelete, onConvertToStandard, onEdit, onVi
                       >
                         <Edit className="w-4 h-4" />
                         Edit
-                      </button>
-                    )}
-                    
-                    {onConvertToStandard && event.status === 'preview' && (
-                      <button
-                        onClick={() => {
-                          onConvertToStandard(event);
-                          setShowMenu(null);
-                        }}
-                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50 transition-colors"
-                      >
-                        <span className="w-4 h-4">📋</span>
-                        Convert to Standard
                       </button>
                     )}
                     
@@ -150,14 +136,6 @@ export const EventsList = ({ events, onDelete, onConvertToStandard, onEdit, onVi
           {/* Quick action buttons for preview events */}
           {event.status === 'preview' && (
             <div className="flex gap-2 mt-2">
-              {onConvertToStandard && (
-                <button
-                  onClick={() => onConvertToStandard(event)}
-                  className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                >
-                  Convert to Standard
-                </button>
-              )}
               <button
                 onClick={() => handleDelete(event.id)}
                 className="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"

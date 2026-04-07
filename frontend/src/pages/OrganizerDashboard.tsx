@@ -27,10 +27,12 @@ interface OrgEvent {
 const OrganizerDashboard = () => {
   const { user, role, loading: authLoading } = useAuthWithBackend();
   const navigate = useNavigate();
-  const { createEvent } = useEventActions();
+  const { createEvent, updateEvent } = useEventActions();
   const [events, setEvents] = useState<OrgEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<OrgEvent | null>(null);
+  const [editingEventInitialData, setEditingEventInitialData] = useState<Partial<EventFormData> | null>(null);
   const [activeSection, setActiveSection] = useState('events');
   const [sidebarIconized, setSidebarIconized] = useState(false);
 
@@ -38,7 +40,18 @@ const OrganizerDashboard = () => {
     try {
       setLoading(true);
       const response = await apiClient.getEvents();
-      setEvents(response || []);
+      // Transform Event[] to OrgEvent[] by adding missing fields
+      const transformedEvents = (response || []).map(event => ({
+        id: event.id,
+        title: event.title,
+        date: event.start_time ? new Date(event.start_time).toLocaleDateString() : '',
+        time: event.start_time ? new Date(event.start_time).toLocaleTimeString() : '',
+        city: event.location, // Map location to city for display
+        category: event.category || 'general', // Provide default
+        status: 'preview' as const, // Default status since API doesn't provide it
+        admin_remark: undefined // Not available from API
+      }));
+      setEvents(transformedEvents);
     } catch (error) {
       console.error('Failed to fetch events:', error);
       toast.error('Failed to load events');
@@ -96,14 +109,45 @@ const OrganizerDashboard = () => {
       }
       
       toast.success('Draft saved successfully');
-      setShowCreateWizard(false);
-      // Restore sidebar state when wizard closes
-      setSidebarIconized(false);
       fetchEvents();
     } catch (error) {
       console.error('Failed to save draft:', error);
       toast.error('Failed to save draft');
       throw error;
+    }
+  };
+
+  const handleEditEvent = async (data: EventFormData) => {
+    if (!editingEvent) return;
+    
+    try {
+      // Only use fields supported by EventUpdate interface
+      const eventData = {
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        start_time: data.start_time ? data.start_time.toISOString() : undefined,
+        end_time: data.end_time ? data.end_time.toISOString() : undefined,
+        image_url: data.image_url,
+        category: data.category,
+        max_participants: data.max_participants,
+        is_public: data.is_public,
+      };
+
+      const result = await updateEvent(editingEvent.id, eventData);
+      if (!result) {
+        throw new Error('Failed to update event');
+      }
+      
+      toast.success('Event updated successfully!');
+      setShowCreateWizard(false);
+      setEditingEvent(null);
+      // Restore sidebar state when wizard closes
+      setSidebarIconized(false);
+      fetchEvents();
+    } catch (error) {
+      console.error('Failed to update event:', error);
+      toast.error('Failed to update event');
     }
   };
 
@@ -151,6 +195,41 @@ const OrganizerDashboard = () => {
       
       toast.success('Event created and published successfully!');
       setShowCreateWizard(false);
+      setEditingEvent(null);
+      // Restore sidebar state when wizard closes
+      setSidebarIconized(false);
+      fetchEvents();
+    } catch (error) {
+      console.error('Failed to publish event:', error);
+      toast.error(`Error: ${error.message}`);
+    }
+  };
+
+  const handlePublishEdit = async (data: EventFormData) => {
+    if (!editingEvent) return;
+    
+    try {
+      // Only use fields supported by EventUpdate interface
+      const eventData = {
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        start_time: data.start_time ? data.start_time.toISOString() : undefined,
+        end_time: data.end_time ? data.end_time.toISOString() : undefined,
+        image_url: data.image_url,
+        category: data.category,
+        max_participants: data.max_participants,
+        is_public: data.is_public,
+      };
+
+      const result = await updateEvent(editingEvent.id, eventData);
+      if (!result) {
+        throw new Error('Failed to publish event');
+      }
+      
+      toast.success('Event updated and published successfully!');
+      setShowCreateWizard(false);
+      setEditingEvent(null);
       // Restore sidebar state when wizard closes
       setSidebarIconized(false);
       fetchEvents();
@@ -163,12 +242,83 @@ const OrganizerDashboard = () => {
   // Handle wizard visibility changes
   const handleWizardOpen = () => {
     setShowCreateWizard(true);
+    setEditingEvent(null);
+    // Auto-collapse sidebar when wizard opens
+    setSidebarIconized(true);
+  };
+
+  const fetchFullEventDetails = async (eventId: string) => {
+    try {
+      const fullEvent = await apiClient.getEvent(eventId);
+      return fullEvent;
+    } catch (error) {
+      console.error('Failed to fetch full event details:', error);
+      toast.error('Failed to load event details');
+      return null;
+    }
+  };
+
+  const handleWizardEdit = async (event: OrgEvent) => {
+    // Fetch full event details before opening wizard
+    const fullEventDetails = await fetchFullEventDetails(event.id);
+    if (!fullEventDetails) return;
+
+    // Map full event data to EventFormData format
+    const initialData: Partial<EventFormData> = {
+      title: fullEventDetails.title || '',
+      description: fullEventDetails.description || '',
+      location: fullEventDetails.location || '',
+      category: fullEventDetails.category || '',
+      max_participants: fullEventDetails.max_participants,
+      is_public: fullEventDetails.is_public,
+      image_url: fullEventDetails.image_url || '',
+      // Map dates from ISO strings to Date objects
+      start_time: fullEventDetails.start_time ? new Date(fullEventDetails.start_time) : null,
+      end_time: fullEventDetails.end_time ? new Date(fullEventDetails.end_time) : null,
+      // Set default values for other fields
+      language: 'en',
+      event_type: 'in_person',
+      event_format: 'single',
+      event_privacy: 'public',
+      is_paid_event: false,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      venue_address: fullEventDetails.location || '',
+      venue_city: '',
+      venue_state: '',
+      venue_zip_code: '',
+      venue_country: '',
+      subtitle: '',
+      summary: '',
+      doors_open_time: null,
+      registration_start_time: null,
+      registration_end_time: null,
+      virtual_event_url: '',
+      virtual_event_platform: '',
+      event_password: '',
+      age_restriction: '',
+      accessibility_options: '',
+      event_website: '',
+      event_contact_email: '',
+      ticketing_website: '',
+      refund_policy: 'no_refunds',
+      custom_refund_policy: '',
+      ticket_pricing_description: '',
+      tags: [],
+      image_file: null,
+      status: 'draft',
+    };
+
+    setEditingEventInitialData(initialData);
+    setEditingEvent({ ...event, ...fullEventDetails });
+    setShowCreateWizard(true);
     // Auto-collapse sidebar when wizard opens
     setSidebarIconized(true);
   };
 
   const handleWizardClose = () => {
     setShowCreateWizard(false);
+    setEditingEvent(null);
+    setEditingEventInitialData(null);
     // Restore sidebar when wizard closes
     setSidebarIconized(false);
   };
@@ -181,19 +331,6 @@ const OrganizerDashboard = () => {
       fetchEvents();
     } catch (error) {
       toast.error('Failed to delete event');
-    }
-  };
-
-  const handleConvertToStandard = async (event: OrgEvent) => {
-    if (!confirm('Confirm & convert this Preview Event to a Standard Event? All participants and messages will be kept.')) return;
-    try {
-      await apiClient.updateEvent(event.id, {
-        status: 'approved'
-      });
-      toast.success('Event converted to standard');
-      fetchEvents();
-    } catch (error) {
-      toast.error('Failed to convert event');
     }
   };
 
@@ -228,6 +365,10 @@ const OrganizerDashboard = () => {
               onClose={handleWizardClose}
               onSave={handleSaveDraft}
               onPublish={handlePublish}
+              onEdit={handleEditEvent}
+              onPublishEdit={handlePublishEdit}
+              editingEvent={editingEvent}
+              initialData={editingEventInitialData}
             />
 
             {/* Events List */}
@@ -235,7 +376,7 @@ const OrganizerDashboard = () => {
               <EventsList
                 events={events}
                 onDelete={handleDelete}
-                onConvertToStandard={handleConvertToStandard}
+                onEdit={handleWizardEdit}
               />
             )}
 

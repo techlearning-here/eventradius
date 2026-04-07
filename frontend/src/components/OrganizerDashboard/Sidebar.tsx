@@ -29,7 +29,7 @@ const sidebarItems: SidebarItem[] = [
 
 export const Sidebar = ({ activeSection, onSectionChange, sidebarIconized, onToggleSidebar }: SidebarProps) => {
   return (
-    <div className={`bg-black border-r border-gray-200 transition-all duration-300 ease-in-out pt-12 ${
+    <div className={`bg-sidebar-background border-r border-sidebar-border transition-all duration-300 ease-in-out pt-12 ${
       sidebarIconized ? 'w-16' : 'w-64'
     }`}>
       <div className="p-4 pt-12">
@@ -37,18 +37,18 @@ export const Sidebar = ({ activeSection, onSectionChange, sidebarIconized, onTog
         <div className="flex items-center justify-between mb-6">
           {!sidebarIconized && (
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                <Home className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
+                <Home className="w-4 h-4 text-sidebar-primary-foreground" />
               </div>
               <div>
-                <h2 className="font-semibold text-sm text-white">Event Publisher</h2>
-                <p className="text-xs text-gray-400">Organizer Dashboard</p>
+                <h2 className="font-semibold text-sm text-sidebar-foreground">Event Publisher</h2>
+                <p className="text-xs text-sidebar-accent-foreground">Organizer Dashboard</p>
               </div>
             </div>
           )}
           <button
             onClick={onToggleSidebar}
-            className="p-2 rounded-lg hover:bg-gray-800 text-white transition-colors"
+            className="p-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground transition-colors"
             title={sidebarIconized ? "Expand sidebar" : "Iconize sidebar"}
           >
             {sidebarIconized ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
@@ -67,16 +67,16 @@ export const Sidebar = ({ activeSection, onSectionChange, sidebarIconized, onTog
                 onClick={() => onSectionChange(item.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                   isActive
-                    ? 'bg-blue-100 text-black border border-blue-200'
-                    : 'text-white hover:bg-gray-800 hover:text-white'
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground border border-sidebar-border'
+                    : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground'
                 }`}
                 title={sidebarIconized ? `${item.label} - ${item.description}` : ''}
               >
                 <Icon className="w-4 h-4 flex-shrink-0" />
                 {!sidebarIconized && (
                   <div className="flex-1 min-w-0">
-                    <div className={`text-sm font-medium ${isActive ? 'text-black' : 'text-white'}`}>{item.label}</div>
-                    <div className={`text-xs truncate ${isActive ? 'text-black' : 'text-white'}`}>{item.description}</div>
+                    <div className={`text-sm font-medium ${isActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'}`}>{item.label}</div>
+                    <div className={`text-xs truncate ${isActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-accent-foreground'}`}>{item.description}</div>
                   </div>
                 )}
               </button>
@@ -85,13 +85,13 @@ export const Sidebar = ({ activeSection, onSectionChange, sidebarIconized, onTog
         </nav>
 
         {/* Bottom Actions */}
-        <div className="mt-8 pt-4 border-t border-gray-200">
+        <div className="mt-8 pt-4 border-t border-sidebar-border">
           <button
             onClick={() => {
               // Handle logout - will be passed as prop
               window.location.href = '/';
             }}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-white hover:bg-red-600 hover:text-white transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sidebar-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
             title={sidebarIconized ? "Logout" : ""}
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />

@@ -51,33 +51,80 @@ FROM temp_users_to_delete;
 
 -- Delete data in order of dependencies
 
--- 1. Event audit entries for these users
+-- 1. Comprehensive event management data for these users
+DELETE FROM public.event_schedule 
+WHERE event_id IN (
+    SELECT id FROM public.events 
+    WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete)
+);
+
+DELETE FROM public.event_tags 
+WHERE event_id IN (
+    SELECT id FROM public.events 
+    WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete)
+);
+
+DELETE FROM public.event_notifications 
+WHERE event_id IN (
+    SELECT id FROM public.events 
+    WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete)
+);
+
+DELETE FROM public.event_media 
+WHERE event_id IN (
+    SELECT id FROM public.events 
+    WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete)
+);
+
+DELETE FROM public.registration_fields 
+WHERE event_id IN (
+    SELECT id FROM public.events 
+    WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete)
+);
+
+DELETE FROM public.ticket_types 
+WHERE event_id IN (
+    SELECT id FROM public.events 
+    WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete)
+);
+
+DELETE FROM public.event_venues 
+WHERE event_id IN (
+    SELECT id FROM public.events 
+    WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete)
+);
+
+-- Delete venues owned by these users
+DELETE FROM public.venues 
+WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete);
+
+-- 2. Event audit entries for these users
 DELETE FROM public.event_audit 
 WHERE changed_by IN (SELECT user_id FROM temp_users_to_delete);
 
--- 2. Event registrations and participants
+-- 3. Event registrations and participants
 DELETE FROM public.event_registrations 
 WHERE user_id IN (SELECT user_id FROM temp_users_to_delete);
 
 DELETE FROM public.event_participants 
 WHERE user_id IN (SELECT user_id FROM temp_users_to_delete);
 
--- 3. Events organized by these users
+-- 4. Events organized by these users
 DELETE FROM public.events 
 WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete);
 
--- 4. User preferences and roles
+-- 5. User preferences and roles
 DELETE FROM public.user_preferences 
 WHERE user_id IN (SELECT user_id FROM temp_users_to_delete);
 
 DELETE FROM public.user_roles 
 WHERE user_id IN (SELECT user_id FROM temp_users_to_delete);
 
--- 5. User profiles
+-- 6. User profiles
 DELETE FROM public.profiles 
 WHERE user_id IN (SELECT user_id FROM temp_users_to_delete);
 
--- 6. Finally, delete from auth.users
+-- 7. Finally, delete from auth.users
 DELETE FROM auth.users 
 WHERE id IN (SELECT user_id FROM temp_users_to_delete);
 
@@ -97,8 +144,77 @@ WHERE u.email IN (SELECT email FROM temp_emails_to_delete);
 
 -- Show what was deleted (summary)
 SELECT 
-    'event_audit deleted rows' as table_name, 
+    'event_schedule deleted rows' as table_name, 
     COUNT(*) as deleted_count
+FROM public.event_schedule es
+WHERE es.event_id IN (
+    SELECT id FROM public.events 
+    WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete)
+)
+UNION ALL
+SELECT 
+    'event_tags deleted rows', 
+    COUNT(*)
+FROM public.event_tags et
+WHERE et.event_id IN (
+    SELECT id FROM public.events 
+    WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete)
+)
+UNION ALL
+SELECT 
+    'event_notifications deleted rows', 
+    COUNT(*)
+FROM public.event_notifications en
+WHERE en.event_id IN (
+    SELECT id FROM public.events 
+    WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete)
+)
+UNION ALL
+SELECT 
+    'event_media deleted rows', 
+    COUNT(*)
+FROM public.event_media em
+WHERE em.event_id IN (
+    SELECT id FROM public.events 
+    WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete)
+)
+UNION ALL
+SELECT 
+    'registration_fields deleted rows', 
+    COUNT(*)
+FROM public.registration_fields rf
+WHERE rf.event_id IN (
+    SELECT id FROM public.events 
+    WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete)
+)
+UNION ALL
+SELECT 
+    'ticket_types deleted rows', 
+    COUNT(*)
+FROM public.ticket_types tt
+WHERE tt.event_id IN (
+    SELECT id FROM public.events 
+    WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete)
+)
+UNION ALL
+SELECT 
+    'event_venues deleted rows', 
+    COUNT(*)
+FROM public.event_venues ev
+WHERE ev.event_id IN (
+    SELECT id FROM public.events 
+    WHERE organizer_id IN (SELECT user_id FROM temp_users_to_delete)
+)
+UNION ALL
+SELECT 
+    'venues deleted rows', 
+    COUNT(*)
+FROM public.venues v
+WHERE v.organizer_id IN (SELECT user_id FROM temp_users_to_delete)
+UNION ALL
+SELECT 
+    'event_audit deleted rows', 
+    COUNT(*)
 FROM public.event_audit ea
 WHERE ea.changed_by IN (SELECT user_id FROM temp_users_to_delete)
 UNION ALL
@@ -157,11 +273,19 @@ DROP TABLE IF EXISTS temp_users_to_delete;
 --
 -- Tables affected:
 -- ✅ auth.users (core authentication table)
+-- ✅ event_schedule (event agenda/schedule items)
+-- ✅ event_tags (event discovery tags)
+-- ✅ event_notifications (automated notifications)
+-- ✅ event_media (images, videos, banners)
+-- ✅ registration_fields (custom registration forms)
+-- ✅ ticket_types (advanced ticketing system)
+-- ✅ event_venues (event-venue relationships)
+-- ✅ venues (detailed venue information)
 -- ✅ event_audit
 -- ✅ event_registrations  
 -- ✅ event_participants
 -- ✅ events
--- ✅ user_preferences
+-- ✅ user_preferences (including organizer onboarding fields)
 -- ✅ user_roles
 -- ✅ profiles
 --
@@ -170,4 +294,6 @@ DROP TABLE IF EXISTS temp_users_to_delete;
 -- 2. Test re-registration with the same emails
 -- 3. Verify onboarding flow works for new users
 -- 4. Test that other users' data is unaffected
+-- 5. Test comprehensive event creation for new users
+-- 6. Verify venue management and ticketing systems work
 -- =====================================================

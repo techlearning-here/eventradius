@@ -41,8 +41,14 @@ const EventCard = ({ event }: { event: Event }) => {
   return (
     <div className="relative cursor-pointer group" onClick={() => navigate(`/event/${event.id}`)}>
       <div className="overflow-hidden mb-3">
-        <div className="aspect-square bg-muted bg-cover bg-center transition-transform duration-500 ease-out group-hover:scale-110"
-          style={{ backgroundImage: `url(${event.image_url || '/placeholder.svg'})` }} />
+        {event.image_url && event.image_url.trim() !== '' ? (
+          <div className="aspect-[4/3] bg-cover bg-center transition-transform duration-500 ease-out group-hover:scale-110"
+            style={{ backgroundImage: `url(${event.image_url})` }} />
+        ) : (
+          <div className="aspect-[4/3] bg-muted flex items-center justify-center transition-transform duration-500 ease-out group-hover:scale-110">
+            <div className="text-muted-foreground text-4xl opacity-30">📅</div>
+          </div>
+        )}
       </div>
       <div className="absolute top-4 left-4 flex flex-col gap-0">
         {event.start_time && (

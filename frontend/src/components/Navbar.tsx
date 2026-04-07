@@ -6,6 +6,7 @@ import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { AuthSheet } from './AuthSheet';
 import { RoleSwitcher } from './RoleSwitcher';
 import { AccountDetails } from './AccountDetails';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { toast } from 'sonner';
 
 export const Navbar: React.FC = () => {
@@ -75,7 +76,7 @@ export const Navbar: React.FC = () => {
     <>
       {/* Site Name */}
       <div className="fixed top-4 left-4 md:left-8 z-[2000]">
-        <Link to="/" className="text-2xl font-bold text-white hover:shadow-lg transition-all">
+        <Link to="/" className="text-2xl font-bold text-foreground hover:shadow-lg transition-all">
           EventRadius
         </Link>
       </div>
@@ -89,6 +90,7 @@ export const Navbar: React.FC = () => {
         {/* Desktop */}
         <div className="hidden md:flex items-center">
           {user && canSwitchRole && <RoleSwitcher />}
+          <ThemeToggle />
           {links.map((link, i) => (
             link.to ? (
               <Link
@@ -154,6 +156,9 @@ export const Navbar: React.FC = () => {
             </button>
           </div>
           <div className="flex-1 flex flex-col bg-background">
+            <div className="flex justify-center py-6 border-b border-border">
+              <ThemeToggle />
+            </div>
             {user && canSwitchRole && (
               <div className="flex justify-center py-6 border-b border-border">
                 <RoleSwitcher />
