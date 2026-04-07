@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { useEvents } from '@/hooks/useEvents';
 import { CalendarIcon, MapPin, Plus, ArrowRight } from 'lucide-react';
+import { dummyEvents } from '@/data/demoEvents';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CATEGORIES } from '@/data/cities';
@@ -46,41 +47,66 @@ const EventCard = ({ event }: { event: Event }) => {
   };
 
   return (
-    <div className="relative cursor-pointer group" onClick={handleEventClick}>
+    <div className="relative cursor-pointer group group-hover:active:scale-95 transition-transform duration-150" onClick={handleEventClick}>
       <EventDetailOverlay eventId={event.id} isOpen={isOverlayOpen} onClose={() => setIsOverlayOpen(false)} />
-      <div className="absolute top-4 left-4 flex flex-col gap-0">
-        {event.start_time && (
-          <div className="bg-background border border-foreground px-3 h-[23px] flex items-center">
-            <div className="text-[11px] font-medium uppercase leading-none">
-              {format(new Date(event.start_time), 'MMM d')}
-            </div>
+      
+      {/* Main Card Content */}
+      <div className="border border-border rounded-lg overflow-hidden bg-card hover:shadow-lg hover:bg-accent/50 transition-all duration-300 ease-in-out group-hover:shadow-xl group-hover:-translate-y-1">
+        {/* Event Image */}
+        {event.image_url && (
+          <div className="relative h-48 w-full overflow-hidden border-b border-border">
+            <img 
+              src={event.image_url} 
+              alt=""
+              className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
+              onError={(e) => {
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1540555700478-5be5d670b71d?w=800&h=400&fit=crop&auto=format&dpr=2';
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </div>
         )}
-        {event.start_time && (
-          <div className="bg-background border border-t-0 border-foreground px-3 h-[23px] flex items-center">
-            <div className="text-[11px] font-medium leading-none">
-              {format(new Date(event.start_time), 'h:mm a')}
+        
+        {/* Event Details */}
+        <div className="p-4 space-y-3 bg-background border-t border-border">
+          <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase font-medium text-muted-foreground transition-colors duration-300 group-hover:text-foreground">{catLabel}</span>
+              {!event.is_paid_event && (
+                <span className="text-[10px] font-semibold text-green-400 transition-colors duration-300 group-hover:text-green-300">FREE</span>
+              )}
+            </div>
+            <div className="text-[10px] text-muted-foreground">
+              {event.max_participants && `${event.max_participants} max` || 'Open'}
             </div>
           </div>
-        )}
-      </div>
-      <div className="absolute top-4 right-4 flex flex-col gap-1">
-        {!event.is_public && (
-          <span className="bg-blue-500/20 border border-blue-500/30 px-2 h-[23px] flex items-center text-[10px] font-medium uppercase text-blue-400">
-            Private
-          </span>
-        )}
-      </div>
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-[10px] uppercase font-medium text-muted-foreground">{catLabel}</span>
-        <span className="text-[10px] font-semibold text-green-400">FREE</span>
-      </div>
-      <h3 className="text-lg font-medium text-foreground">{event.title}</h3>
-      <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1 text-foreground/80">
-        <MapPin className="w-3 h-3" /> {event.location || 'Online'}
-      </p>
-      <div className="mt-1">
-        <EventParticipationCounts eventId={event.id} />
+          
+          <h3 className="text-lg font-medium text-foreground line-clamp-2 leading-tight transition-colors duration-300 group-hover:text-primary mb-3">{event.title}</h3>
+          
+          {event.start_time && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+              <CalendarIcon className="w-4 h-4" />
+              <span>{format(new Date(event.start_time), 'MMM d, yyyy')}</span>
+              <span>at</span>
+              <span>{format(new Date(event.start_time), 'h:mm a')}</span>
+            </div>
+          )}
+          
+          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1 text-foreground/80 transition-colors duration-300 group-hover:text-foreground mb-3">
+            <MapPin className="w-3 h-3 transition-colors duration-300 group-hover:text-primary" /> {event.location || 'Online'}
+          </p>
+          
+          <div className="pt-3 border-t border-border bg-muted/20 rounded-b-lg">
+            <div className="flex items-center justify-between p-2">
+              <div className="flex items-center gap-2">
+                <EventParticipationCounts eventId={event.id} />
+              </div>
+              <div className="text-[10px] text-muted-foreground font-medium">
+                {event.current_participants || 0} going
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -91,7 +117,7 @@ const Discover = () => {
   const navigate = useNavigate();
   const [date, setDate] = useState<Date | undefined>(undefined);
   const { events, loading, error, refetch } = useEvents();
-  const [showDemoEvent, setShowDemoEvent] = useState(false);
+  const [showDemoEvent, setShowDemoEvent] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('Discover redirect check:', { user: !!user, role, onboardingCompleted });
@@ -257,15 +283,22 @@ const Discover = () => {
 
         <section className="px-4 md:px-8 pb-16">
           <div className="max-w-6xl mx-auto">
-            {/* Demo Event Button - Only in development */}
+            {/* Demo Event Cards - Only in development */}
             {import.meta.env.DEV && (
-              <div className="mb-6 text-center">
-                <button
-                  onClick={() => setShowDemoEvent(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 shadow-lg"
-                >
-                  View Demo Event (Full Features)
-                </button>
+              <div className="mb-8 space-y-6 bg-muted/30 rounded-lg p-6 border border-border">
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-foreground mb-2">Family Event Demos (Full Features)</h3>
+                  <p className="text-muted-foreground">Click any event to see full details and participation features</p>
+                </div>
+                
+                {/* Demo Events Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-1">
+                  {Object.values(dummyEvents).map((event, i) => (
+                    <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${i * 0.1}s`, animationFillMode: 'both' }}>
+                      <EventCard event={event} />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -287,13 +320,13 @@ const Discover = () => {
                   <p className="text-muted-foreground mb-4">
                     {events.length === 0 ? (
                       <>
-                        We couldn't find any events matching your criteria. 
-                        <span className="text-foreground font-medium">Try adjusting your filters</span> or check back later.
+                        There are no events available at the moment. 
+                        Please check back later or try adjusting your filters.
                       </>
                     ) : (
                       <>
-                        There was an issue loading events. 
-                        Please try again or contact support if the problem persists.
+                        No events match your current filters. 
+                        Try adjusting your criteria or clear all filters.
                       </>
                     )}
                   </p>
@@ -320,11 +353,51 @@ const Discover = () => {
         </section>
       </div>
 
-      {/* Demo Event Overlay */}
+      {/* Demo Event Overlays */}
       <EventDetailOverlay 
-        eventId="demo" 
-        isOpen={showDemoEvent} 
-        onClose={() => setShowDemoEvent(false)} 
+        eventId="demo-single-free" 
+        isOpen={showDemoEvent === 'demo-single-free'} 
+        onClose={() => setShowDemoEvent(null)} 
+      />
+      <EventDetailOverlay 
+        eventId="demo-single-paid" 
+        isOpen={showDemoEvent === 'demo-single-paid'} 
+        onClose={() => setShowDemoEvent(null)} 
+      />
+      <EventDetailOverlay 
+        eventId="demo-online-free" 
+        isOpen={showDemoEvent === 'demo-online-free'} 
+        onClose={() => setShowDemoEvent(null)} 
+      />
+      <EventDetailOverlay 
+        eventId="demo-online-paid" 
+        isOpen={showDemoEvent === 'demo-online-paid'} 
+        onClose={() => setShowDemoEvent(null)} 
+      />
+      <EventDetailOverlay 
+        eventId="demo-hybrid-free" 
+        isOpen={showDemoEvent === 'demo-hybrid-free'} 
+        onClose={() => setShowDemoEvent(null)} 
+      />
+      <EventDetailOverlay 
+        eventId="demo-recurring-free" 
+        isOpen={showDemoEvent === 'demo-recurring-free'} 
+        onClose={() => setShowDemoEvent(null)} 
+      />
+      <EventDetailOverlay 
+        eventId="demo-recurring-paid" 
+        isOpen={showDemoEvent === 'demo-recurring-paid'} 
+        onClose={() => setShowDemoEvent(null)} 
+      />
+      <EventDetailOverlay 
+        eventId="demo-multi-date-free" 
+        isOpen={showDemoEvent === 'demo-multi-date-free'} 
+        onClose={() => setShowDemoEvent(null)} 
+      />
+      <EventDetailOverlay 
+        eventId="demo-multi-date-paid" 
+        isOpen={showDemoEvent === 'demo-multi-date-paid'} 
+        onClose={() => setShowDemoEvent(null)} 
       />
     </>
   );

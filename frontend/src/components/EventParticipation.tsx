@@ -18,10 +18,22 @@ export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
   const [counts, setCounts] = useState({ interested: 0, going: 0 });
   const [loading, setLoading] = useState(false);
 
+  // Check if this is a demo event
+  const isDemoEvent = eventId && eventId.startsWith('demo-');
+
   useEffect(() => {
-    fetchCounts();
-    if (user) fetchMyStatus();
-  }, [eventId, user]);
+    if (isDemoEvent) {
+      // Use mock data for demo events
+      setCounts({
+        interested: Math.floor(Math.random() * 10) + 5,
+        going: Math.floor(Math.random() * 20) + 10
+      });
+      setCurrentStatus(null); // Demo events start with no participation
+    } else {
+      fetchCounts();
+      if (user) fetchMyStatus();
+    }
+  }, [eventId, user, isDemoEvent]);
 
   const fetchCounts = async () => {
     const { data } = await supabase
@@ -48,6 +60,25 @@ export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
   };
 
   const handleClick = async (status: ParticipationStatus) => {
+    if (isDemoEvent) {
+      // Mock participation for demo events
+      if (currentStatus === status) {
+        setCurrentStatus(null);
+        setCounts(prev => ({
+          ...prev,
+          [status]: Math.max(0, prev[status] - 1)
+        }));
+      } else {
+        setCurrentStatus(status);
+        setCounts(prev => ({
+          interested: currentStatus ? prev.interested - 1 : prev.interested,
+          going: currentStatus ? prev.going - 1 : prev.going,
+          [status]: prev[status] + 1
+        }));
+      }
+      return;
+    }
+
     if (!user) {
       onAuthRequired?.();
       return;
@@ -62,24 +93,20 @@ export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
           .eq('event_id', eventId)
           .eq('user_id', user.id);
         setCurrentStatus(null);
-      } else if (currentStatus) {
-        // Update
-        await supabase
-          .from('event_participants')
-          .update({ status })
-          .eq('event_id', eventId)
-          .eq('user_id', user.id);
-        setCurrentStatus(status);
       } else {
-        // Insert
+        // Add or update participation
         await supabase
           .from('event_participants')
-          .insert({ event_id: eventId, user_id: user.id, status });
+          .upsert({
+            event_id: eventId,
+            user_id: user.id,
+            status,
+          });
         setCurrentStatus(status);
       }
       await fetchCounts();
-    } catch (e: unknown) {
-      toast.error(getErrorMessage(e) || 'Failed to update');
+    } catch (error) {
+      console.error('Error updating participation:', error);
     } finally {
       setLoading(false);
     }
@@ -121,21 +148,32 @@ export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
 export const EventParticipationCounts = ({ eventId }: { eventId: string }) => {
   const [counts, setCounts] = useState({ interested: 0, going: 0 });
 
+  // Check if this is a demo event
+  const isDemoEvent = eventId && eventId.startsWith('demo-');
+
   useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase
-        .from('event_participants')
-        .select('status')
-        .eq('event_id', eventId);
-      if (data) {
-        setCounts({
-          interested: data.filter(p => p.status === 'interested').length,
-          going: data.filter(p => p.status === 'going').length,
-        });
-      }
-    };
-    fetch();
-  }, [eventId]);
+    if (isDemoEvent) {
+      // Use mock data for demo events
+      setCounts({
+        interested: Math.floor(Math.random() * 10) + 5,
+        going: Math.floor(Math.random() * 20) + 10
+      });
+    } else {
+      const fetch = async () => {
+        const { data } = await supabase
+          .from('event_participants')
+          .select('status')
+          .eq('event_id', eventId);
+        if (data) {
+          setCounts({
+            interested: data.filter(p => p.status === 'interested').length,
+            going: data.filter(p => p.status === 'going').length,
+          });
+        }
+      };
+      fetch();
+    }
+  }, [eventId, isDemoEvent]);
 
   if (counts.interested === 0 && counts.going === 0) return null;
 

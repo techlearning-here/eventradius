@@ -18,6 +18,7 @@ export interface Event {
   created_at: string;
   updated_at: string;
   current_participants?: number;
+  is_paid_event?: boolean;
 }
 
 export interface EventCreate {

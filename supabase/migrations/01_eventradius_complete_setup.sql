@@ -149,7 +149,23 @@ CREATE TABLE IF NOT EXISTS public.events (
   event_website TEXT,
   event_contact_email TEXT,
   ticketing_website TEXT,
-  primary_venue_id UUID REFERENCES public.venues(id) ON DELETE SET NULL
+  primary_venue_id UUID REFERENCES public.venues(id) ON DELETE SET NULL,
+  
+  -- Structured venue fields from EventWizard
+  venue_street TEXT,
+  venue_city TEXT,
+  venue_state TEXT,
+  venue_zip_code TEXT,
+  venue_country TEXT,
+  venue_building_name TEXT,
+  
+  -- Event type and payment fields
+  is_virtual BOOLEAN DEFAULT false,
+  is_paid_event BOOLEAN DEFAULT false,
+  ticket_pricing_description TEXT,
+  tags TEXT[] DEFAULT '{}',
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  event_status TEXT DEFAULT 'published'
 );
 
 -- 2.4 User preferences table for onboarding data
@@ -301,6 +317,7 @@ CREATE TABLE IF NOT EXISTS public.event_participants (
   event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   registered_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  status TEXT NOT NULL DEFAULT 'going',
   UNIQUE(event_id, user_id) -- Prevent duplicate registrations
 );
 
@@ -1381,6 +1398,12 @@ CREATE INDEX IF NOT EXISTS idx_user_preferences_is_organizer ON public.user_pref
 CREATE INDEX IF NOT EXISTS idx_event_participants_event_id ON public.event_participants(event_id);
 CREATE INDEX IF NOT EXISTS idx_event_participants_user_id ON public.event_participants(user_id);
 CREATE INDEX IF NOT EXISTS idx_event_participants_registered_at ON public.event_participants(registered_at);
+CREATE INDEX IF NOT EXISTS idx_event_participants_status ON public.event_participants(status);
+
+-- Add check constraint for valid status values
+ALTER TABLE public.event_participants 
+ADD CONSTRAINT event_participants_status_check 
+CHECK (status IN ('interested', 'going', 'not_going'));
 
 -- 8.6 Event categories indexes
 CREATE INDEX IF NOT EXISTS idx_event_categories_event_id ON public.event_categories(event_id);
