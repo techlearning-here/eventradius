@@ -338,16 +338,17 @@ async def get_user_events(user: dict = Depends(get_current_user)):
     Get events created by the current user.
     """
     try:
-        # Events created by user
+        # Events created by user (excluding soft-deleted)
         created_events = (
             get_table("events")
             .select("*")
             .eq("organizer_id", user["id"])
+            .is_("deleted_at", "null")
             .order("created_at", desc=True)
             .execute()
         )
 
-        # Events user is participating in
+        # Events user is participating in (excluding soft-deleted)
         participation_response = (
             get_table("event_participants")
             .select("event_id")
@@ -363,6 +364,7 @@ async def get_user_events(user: dict = Depends(get_current_user)):
                 get_table("events")
                 .select("*")
                 .in_("id", event_ids)
+                .is_("deleted_at", "null")
                 .order("created_at", desc=True)
                 .execute()
             )

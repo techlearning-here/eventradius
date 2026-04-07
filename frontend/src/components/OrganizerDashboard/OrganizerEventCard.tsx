@@ -43,11 +43,7 @@ export const OrganizerEventCard: React.FC<OrganizerEventCardProps> = ({
   };
 
   const handleDelete = () => {
-    const confirmMessage = `Delete "${event.title}"? This will permanently remove the event and all associated data. This action cannot be undone.`;
-    
-    if (confirm(confirmMessage)) {
-      onDelete?.(event.id);
-    }
+    onDelete?.(event.id);
   };
 
   const handlePreview = () => {

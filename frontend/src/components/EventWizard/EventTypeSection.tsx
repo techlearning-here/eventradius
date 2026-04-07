@@ -296,7 +296,7 @@ export const EventTypeSection = ({
               <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
                 1a
               </div>
-              <h3 className="text-lg font-semibold">Venue Address <span className="text-red-500">*</span></h3>
+              <h3 className="text-lg font-semibold flex items-center gap-1">Venue Address <span className="text-red-500">*</span></h3>
             </div>
             <p className="text-white mb-4">
               {eventType === 'hybrid' 
@@ -307,7 +307,7 @@ export const EventTypeSection = ({
             <div className="space-y-3">
               {/* Building Name (Optional) */}
               <div>
-                <label className="block text-sm font-medium text-white mb-2">
+                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
                   Building Name <span className="text-gray-400">(Optional)</span>
                 </label>
                 <input
@@ -321,7 +321,7 @@ export const EventTypeSection = ({
 
               {/* Street Address */}
               <div>
-                <label className="block text-sm font-medium text-white mb-2">
+                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
                   Street Address <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -336,7 +336,7 @@ export const EventTypeSection = ({
               {/* City and State */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
                     City <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -348,7 +348,7 @@ export const EventTypeSection = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
                     State/Province <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -364,7 +364,7 @@ export const EventTypeSection = ({
               {/* ZIP Code and Country */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
                     ZIP/Postal Code <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -376,7 +376,7 @@ export const EventTypeSection = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
                     Country <span className="text-red-500">*</span>
                   </label>
                   <input

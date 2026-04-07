@@ -24,9 +24,10 @@ interface EventDetailOverlayProps {
   eventId: string;
   isOpen: boolean;
   onClose: () => void;
+  isDeleted?: boolean;
 }
 
-export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId, isOpen, onClose }) => {
+export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId, isOpen, onClose, isDeleted = false }) => {
   const [isRegistered, setIsRegistered] = useState(false);
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +40,9 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId,
       
       if (isDummyEvent(eventId)) {
         data = getDummyEvent(eventId);
+      } else if (isDeleted) {
+        // Use special endpoint for deleted events
+        data = await apiClient.getDeletedEvent(eventId);
       } else {
         data = eventId
           ? await apiClient.getEvent(eventId)

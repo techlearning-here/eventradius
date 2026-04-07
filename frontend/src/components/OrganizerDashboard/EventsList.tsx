@@ -14,11 +14,7 @@ interface EventsListProps {
 export const EventsList = ({ events, onDelete, onEdit, onView }: EventsListProps) => {
   const [showMenu, setShowMenu] = useState<string | null>(null);
 
-  const handleDelete = async (id: string) => {
-    const event = events.find(e => e.id === id);
-    const confirmMessage = `Delete "${event?.title}"? This will permanently remove the event and all associated data. This action cannot be undone.`;
-    
-    if (!confirm(confirmMessage)) return;
+  const handleDelete = (id: string) => {
     setShowMenu(null);
     onDelete?.(id);
   };

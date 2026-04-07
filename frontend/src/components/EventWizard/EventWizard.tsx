@@ -220,10 +220,80 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showPreview, setShowPreview] = useState(false);
 
+  // Helper to build proper location string from venue fields
+  const buildLocation = (): string => {
+    const parts = [
+      formData.venue_street,
+      formData.venue_city,
+      formData.venue_state,
+      formData.venue_zip_code,
+      formData.venue_country,
+    ].filter(Boolean);
+    return parts.join(', ');
+  };
+
+  // Helper to build start/end Date objects from format-specific fields
+  const buildEventDates = (): { start_time: Date | null; end_time: Date | null } => {
+    if (formData.event_format === 'single' && formData.single_event_date) {
+      const startDateTime = formData.single_event_start_time
+        ? new Date(`${formData.single_event_date}T${formData.single_event_start_time}`)
+        : new Date(formData.single_event_date);
+      const endDateTime = formData.single_event_end_time
+        ? new Date(`${formData.single_event_date}T${formData.single_event_end_time}`)
+        : new Date(formData.single_event_date);
+      return { start_time: startDateTime, end_time: endDateTime };
+    }
+    // For recurring and multi-date, use first occurrence as primary dates
+    if (formData.event_format === 'recurring' && formData.recurring_frequency) {
+      // Default to next occurrence logic or current date for now
+      const now = new Date();
+      return { start_time: now, end_time: now };
+    }
+    if (formData.event_format === 'multi_date' && formData.multi_date_events?.length) {
+      const firstEvent = formData.multi_date_events[0];
+      const startDateTime = firstEvent.startTime
+        ? new Date(`${firstEvent.date}T${firstEvent.startTime}`)
+        : new Date(firstEvent.date);
+      const endDateTime = firstEvent.endTime
+        ? new Date(`${firstEvent.date}T${firstEvent.endTime}`)
+        : new Date(firstEvent.date);
+      return { start_time: startDateTime, end_time: endDateTime };
+    }
+    return { start_time: formData.start_time, end_time: formData.end_time };
+  };
+
+  // Helper to derive category from event type
+  const buildCategory = (): string => {
+    // Map event types to categories
+    const typeToCategory: Record<string, string> = {
+      'online': 'education',
+      'in_person': 'party',
+      'hybrid': 'conference',
+    };
+    return typeToCategory[formData.event_type] || 'other';
+  };
+
+  // Build complete event data with proper field mapping
+  const buildEventData = (status: 'draft' | 'published'): EventFormData => {
+    const location = buildLocation();
+    const { start_time, end_time } = buildEventDates();
+    const category = buildCategory();
+    
+    return {
+      ...formData,
+      location,
+      start_time,
+      end_time,
+      category,
+      status,
+      is_public: formData.event_privacy === 'public',
+    };
+  };
+
   const handleSaveDraft = async () => {
     setIsSaving(true);
     try {
-      const draftData = { ...formData, status: 'draft' as const };
+      const draftData = buildEventData('draft');
       if (onSave) {
         await onSave(draftData);
       }
@@ -238,7 +308,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
   const handlePublish = async () => {
     setIsPublishing(true);
     try {
-      const publishData = { ...formData, status: 'published' as const };
+      const publishData = buildEventData('published');
       if (onPublish) {
         await onPublish(publishData);
       }

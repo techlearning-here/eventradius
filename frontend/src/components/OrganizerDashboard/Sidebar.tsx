@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, ChevronLeft, ChevronRight, LogOut, CalendarDays, BarChart3, Users, Megaphone, CreditCard, FileText, Settings, HelpCircle } from 'lucide-react';
+import { Home, ChevronLeft, ChevronRight, LogOut, CalendarDays, BarChart3, Users, Megaphone, CreditCard, FileText, Settings, HelpCircle, Trash2 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
 interface SidebarItem {
@@ -25,6 +25,10 @@ const sidebarItems: SidebarItem[] = [
   { id: 'resources', label: 'Resources', icon: FileText, description: 'Guides & documentation' },
   { id: 'settings', label: 'Settings', icon: Settings, description: 'Account preferences' },
   { id: 'help', label: 'Help & Support', icon: HelpCircle, description: 'Get assistance' },
+];
+
+const bottomItems: SidebarItem[] = [
+  { id: 'recycle-bin', label: 'Recycle Bin', icon: Trash2, description: 'Restore deleted events' },
 ];
 
 export const Sidebar = ({ activeSection, onSectionChange, sidebarIconized, onToggleSidebar }: SidebarProps) => {
@@ -85,10 +89,37 @@ export const Sidebar = ({ activeSection, onSectionChange, sidebarIconized, onTog
         </nav>
 
         {/* Bottom Actions */}
-        <div className="mt-8 pt-4 border-t border-sidebar-border">
+        <div className="mt-8 pt-4 border-t border-sidebar-border space-y-1">
+          {/* Recycle Bin */}
+          {bottomItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeSection === item.id;
+            
+            return (
+              <button
+                key={item.id}
+                onClick={() => onSectionChange(item.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                  isActive
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground border border-sidebar-border'
+                    : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                }`}
+                title={sidebarIconized ? `${item.label} - ${item.description}` : ''}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                {!sidebarIconized && (
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-sm font-medium ${isActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground'}`}>{item.label}</div>
+                    <div className={`text-xs truncate ${isActive ? 'text-sidebar-primary-foreground' : 'text-sidebar-accent-foreground'}`}>{item.description}</div>
+                  </div>
+                )}
+              </button>
+            );
+          })}
+          
+          {/* Logout */}
           <button
             onClick={() => {
-              // Handle logout - will be passed as prop
               window.location.href = '/';
             }}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sidebar-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"

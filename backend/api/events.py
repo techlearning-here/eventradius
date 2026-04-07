@@ -76,21 +76,20 @@ async def get_events(
     Public events are visible to all, private events only to organizers.
     """
     try:
-        filters = {}
+        table = get_table("events")
+        query = table.select("*")
 
         # Apply filters
         if category:
-            filters["category"] = category
+            query = query.eq("category", category)
 
         if is_public is not None:
-            filters["is_public"] = is_public
+            query = query.eq("is_public", is_public)
 
-        # If user is not authenticated, we would filter by is_public
-        # but the column doesn't exist in the current schema
-        # For now, show all events regardless of authentication
-        # TODO: Add is_public column or implement proper visibility logic
+        # Exclude soft-deleted events
+        query = query.is_("deleted_at", "null")
 
-        response = fetch_records("events", filters, limit, offset)
+        response = query.limit(limit).offset(offset).execute()
 
         # Transform data
         events = []
@@ -115,14 +114,15 @@ async def get_event(event_id: str, user: Optional[dict] = Depends(optional_auth)
     Get a specific event by ID.
     """
     try:
-        response = fetch_single_record("events", event_id)
+        table = get_table("events")
+        response = table.select("*").eq("id", event_id).is_("deleted_at", "null").execute()
 
-        if not response.data:
+        if not response.data or len(response.data) == 0:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
             )
 
-        event = response.data
+        event = response.data[0]
 
         # Check if user can view private event
         if not event.get("is_public") and (
@@ -251,7 +251,7 @@ async def update_event(
 @router.delete("/{event_id}")
 async def delete_event(event_id: str, user: dict = Depends(get_current_user)):
     """
-    Delete an event.
+    Soft delete an event (move to recycle bin).
     Only the event organizer can delete.
     """
     try:
@@ -271,13 +271,11 @@ async def delete_event(event_id: str, user: dict = Depends(get_current_user)):
                 detail="You don't have permission to delete this event",
             )
 
-        # Delete event participants first (cascade)
-        get_table("event_participants").delete().eq("event_id", event_id).execute()
+        # Soft delete: set deleted_at timestamp
+        from datetime import datetime
+        update_record("events", event_id, {"deleted_at": datetime.now().isoformat()})
 
-        # Delete event
-        delete_record("events", event_id)
-
-        return {"message": "Event deleted successfully"}
+        return {"message": "Event moved to recycle bin"}
     except HTTPException:
         raise
     except Exception as e:
@@ -285,6 +283,132 @@ async def delete_event(event_id: str, user: dict = Depends(get_current_user)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete event",
+        )
+
+
+@router.post("/{event_id}/restore", response_model=EventResponse)
+async def restore_event(event_id: str, user: dict = Depends(get_current_user)):
+    """
+    Restore a soft-deleted event from recycle bin.
+    Only the event organizer can restore.
+    """
+    try:
+        # Check if event exists, is deleted, and user is organizer
+        table = get_table("events")
+        response = table.select("*").eq("id", event_id).execute()
+
+        if not response.data or len(response.data) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+            )
+
+        event = response.data[0]
+
+        if event.get("organizer_id") != user["id"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to restore this event",
+            )
+
+        if event.get("deleted_at") is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Event is not in recycle bin",
+            )
+
+        # Restore: clear deleted_at
+        update_response = update_record("events", event_id, {"deleted_at": None})
+
+        if not update_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to restore event",
+            )
+
+        restored_event = update_response.data[0]
+        restored_event["current_participants"] = 0
+
+        return restored_event
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error restoring event {event_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to restore event",
+        )
+
+
+@router.get("/deleted/me", response_model=List[EventResponse])
+async def get_deleted_events(
+    user: dict = Depends(get_current_user),
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+):
+    """
+    Get soft-deleted events for the current user (recycle bin).
+    """
+    try:
+        table = get_table("events")
+        response = (
+            table.select("*")
+            .eq("organizer_id", user["id"])
+            .not_.is_("deleted_at", "null")
+            .order("deleted_at", desc=True)
+            .limit(limit)
+            .offset(offset)
+            .execute()
+        )
+
+        events = []
+        for event in response.data:
+            event["current_participants"] = 0
+            events.append(event)
+
+        return events
+    except Exception as e:
+        logger.error(f"Error fetching deleted events: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch deleted events",
+        )
+
+
+@router.get("/deleted/{event_id}", response_model=EventResponse)
+async def get_deleted_event(
+    event_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """
+    Get a specific soft-deleted event by ID (for recycle bin preview).
+    Only the event organizer can view their deleted events.
+    """
+    try:
+        table = get_table("events")
+        response = (
+            table.select("*")
+            .eq("id", event_id)
+            .eq("organizer_id", user["id"])
+            .not_.is_("deleted_at", "null")
+            .execute()
+        )
+
+        if not response.data or len(response.data) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+            )
+
+        event = response.data[0]
+        event["current_participants"] = 0
+
+        return event
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching deleted event {event_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch deleted event",
         )
 
 
@@ -378,13 +502,13 @@ async def leave_event(event_id: str, user: dict = Depends(get_current_user)):
 
 
 @router.get("/{event_id}")
-async def get_event(event_id: str):
+async def get_event_by_id(event_id: str):
     """
     Get a single event by ID.
     """
     try:
         table = get_table("events")
-        response = table.select("*").eq("id", event_id).execute()
+        response = table.select("*").eq("id", event_id).is_("deleted_at", "null").execute()
 
         if not response.data or len(response.data) == 0:
             raise HTTPException(
@@ -424,8 +548,8 @@ async def send_event_message(
     Send a message in event chat.
     """
     try:
-        # Verify user is participant or organizer
-        event_response = get_table("events").select("*").eq("id", event_id).execute()
+        # Verify user is participant or organizer (check event is not deleted)
+        event_response = get_table("events").select("*").eq("id", event_id).is_("deleted_at", "null").execute()
         if not event_response.data or len(event_response.data) == 0:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"

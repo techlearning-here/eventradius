@@ -19,6 +19,7 @@ export interface Event {
   updated_at: string;
   current_participants?: number;
   is_paid_event?: boolean;
+  deleted_at?: string;
 }
 
 export interface EventCreate {
@@ -174,6 +175,20 @@ class ApiClient {
     return this.request<{ message: string }>(`/api/events/${eventId}`, {
       method: 'DELETE',
     });
+  }
+
+  async restoreEvent(eventId: string): Promise<Event> {
+    return this.request<Event>(`/api/events/${eventId}/restore`, {
+      method: 'POST',
+    });
+  }
+
+  async getDeletedEvents(): Promise<Event[]> {
+    return this.request<Event[]>('/api/events/deleted/me');
+  }
+
+  async getDeletedEvent(eventId: string): Promise<Event> {
+    return this.request<Event>(`/api/events/deleted/${eventId}`);
   }
 
   async participateEvent(eventId: string): Promise<{ message: string }> {

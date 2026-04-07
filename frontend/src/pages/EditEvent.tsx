@@ -13,6 +13,16 @@ import { AuthSheet } from '@/components/AuthSheet';
 import { SEOHead } from '@/components/SEOHead';
 import { Trash2 } from 'lucide-react';
 import { z } from 'zod';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type EventRegistrationRow = {
   registered_at: string;
@@ -43,6 +53,9 @@ const EditEvent = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [registrants, setRegistrants] = useState<Array<{ display_name: string; registered_at: string }>>([]);
+
+  // State for delete confirmation dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
 
   const locationInputRef = useRef<HTMLInputElement>(null);
@@ -309,11 +322,11 @@ const EditEvent = () => {
     }
   };
 
-  const handleDeleteEvent = async () => {
-    if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
-      return;
-    }
+  const handleDeleteEvent = () => {
+    setDeleteDialogOpen(true);
+  };
 
+  const confirmDelete = async () => {
     try {
       const { error } = await supabase
         .from('events')
@@ -327,6 +340,8 @@ const EditEvent = () => {
     } catch (error) {
       if (import.meta.env.DEV) console.error('Error deleting event:', error);
       toast.error('Failed to delete event');
+    } finally {
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -566,6 +581,24 @@ const EditEvent = () => {
             </div>
           </div>
         ) : null}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Event</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this event? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </>
   );

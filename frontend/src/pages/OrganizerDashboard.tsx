@@ -13,7 +13,19 @@ import { SectionHeader } from '@/components/OrganizerDashboard/SectionHeader';
 import { EventsList } from '@/components/OrganizerDashboard/EventsList';
 import { OrganizerEventsGrid } from '@/components/OrganizerDashboard/OrganizerEventsGrid';
 import { EventWizardOverlay } from '@/components/OrganizerDashboard/EventWizardOverlay';
+import { EventDetailOverlay } from '@/components/EventDetailPage';
 import { type Event } from '@/integrations/backend/api';
+import { Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const OrganizerDashboard = () => {
   const { user, role, loading: authLoading } = useAuthWithBackend();
@@ -30,6 +42,26 @@ const OrganizerDashboard = () => {
 
   // Track which event is being previewed
   const [previewEventId, setPreviewEventId] = useState<string | null>(null);
+
+  // State for delete confirmation dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<string | null>(null);
+
+  // State for recycle bin
+  const [deletedEvents, setDeletedEvents] = useState<Event[]>([]);
+  const [loadingDeleted, setLoadingDeleted] = useState(false);
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [eventToRestore, setEventToRestore] = useState<string | null>(null);
+
+  // Helper to calculate days remaining until permanent deletion
+  const getDaysRemaining = (deletedAt: string | undefined): number => {
+    if (!deletedAt) return 30;
+    const deleted = new Date(deletedAt);
+    const now = new Date();
+    const diffTime = now.getTime() - deleted.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(30 - diffDays, 0);
+  };
 
   const handlePreviewEvent = (event: Event) => {
     setPreviewEventId(event.id);
@@ -312,14 +344,56 @@ const OrganizerDashboard = () => {
     setSidebarIconized(false);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this event?')) return;
+  const handleDelete = (id: string) => {
+    setEventToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!eventToDelete) return;
     try {
-      await apiClient.deleteEvent(id);
-      toast.success('Event deleted');
+      await apiClient.deleteEvent(eventToDelete);
+      toast.success('Event moved to recycle bin');
       fetchEvents();
     } catch (error) {
       toast.error('Failed to delete event');
+    } finally {
+      setDeleteDialogOpen(false);
+      setEventToDelete(null);
+    }
+  };
+
+  // Recycle bin functions
+  const fetchDeletedEvents = async () => {
+    try {
+      setLoadingDeleted(true);
+      const events = await apiClient.getDeletedEvents();
+      setDeletedEvents(events);
+    } catch (error) {
+      console.error('Failed to fetch deleted events:', error);
+      toast.error('Failed to load recycle bin');
+    } finally {
+      setLoadingDeleted(false);
+    }
+  };
+
+  const handleRestore = (id: string) => {
+    setEventToRestore(id);
+    setRestoreDialogOpen(true);
+  };
+
+  const confirmRestore = async () => {
+    if (!eventToRestore) return;
+    try {
+      await apiClient.restoreEvent(eventToRestore);
+      toast.success('Event restored successfully');
+      fetchDeletedEvents();
+      fetchEvents();
+    } catch (error) {
+      toast.error('Failed to restore event');
+    } finally {
+      setRestoreDialogOpen(false);
+      setEventToRestore(null);
     }
   };
 
@@ -415,8 +489,131 @@ const OrganizerDashboard = () => {
               </>
             )}
 
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Move to Recycle Bin</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to move this event to the recycle bin? You can restore it later.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setEventToDelete(null)}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+                    Move to Bin
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Restore Confirmation Dialog */}
+            <AlertDialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Restore Event</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to restore this event? It will be moved back to your active events.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setEventToRestore(null)}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={confirmRestore} className="bg-green-600 hover:bg-green-700">
+                    Restore
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Recycle Bin Section */}
+            {activeSection === 'recycle-bin' && (
+              <>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-semibold">Recycle Bin</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Events are permanently deleted after 30 days
+                    </p>
+                  </div>
+                  <button
+                    onClick={fetchDeletedEvents}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                  >
+                    Refresh
+                  </button>
+                </div>
+                
+                {loadingDeleted ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">Loading...</p>
+                  </div>
+                ) : deletedEvents.length === 0 ? (
+                  <div className="text-center py-12 bg-muted rounded-lg">
+                    <Trash2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No events in recycle bin</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {deletedEvents.map((event) => {
+                      const daysRemaining = getDaysRemaining(event.deleted_at);
+                      return (
+                        <div
+                          key={event.id}
+                          className="relative flex flex-col gap-2 p-4 bg-background border border-border rounded-lg"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-sm mb-1">{event.title}</h3>
+                              <p className="text-xs text-muted-foreground">
+                                Deleted {event.deleted_at ? new Date(event.deleted_at).toLocaleDateString() : 'unknown'}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <span className={`text-xs font-medium px-2 py-1 rounded ${
+                                daysRemaining <= 5 
+                                  ? 'bg-red-100 text-red-700' 
+                                  : daysRemaining <= 10 
+                                    ? 'bg-yellow-100 text-yellow-700' 
+                                    : 'bg-muted text-muted-foreground'
+                              }`}>
+                                {daysRemaining} days left
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-end gap-2 mt-2">
+                            <button
+                              onClick={() => handlePreviewEvent(event)}
+                              className="px-3 py-1.5 text-xs bg-muted hover:bg-muted/80 rounded transition-colors"
+                            >
+                              Preview
+                            </button>
+                            <button
+                              onClick={() => handleRestore(event.id)}
+                              className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
+                            >
+                              Restore
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Event Detail Preview Overlay */}
+            {previewEventId && (
+              <EventDetailOverlay
+                eventId={previewEventId}
+                isOpen={!!previewEventId}
+                onClose={() => setPreviewEventId(null)}
+                isDeleted={activeSection === 'recycle-bin'}
+              />
+            )}
+
             {/* Placeholder for other sections */}
-            {activeSection !== 'events' && (
+            {activeSection !== 'events' && activeSection !== 'recycle-bin' && (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">This section is under development.</p>
               </div>
