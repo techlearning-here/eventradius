@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarIcon, MapPin, Eye, Edit, Trash2, MoreVertical } from 'lucide-react';
+import { CalendarIcon, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { EventDetailOverlay } from '@/components/EventDetailPage';
 import { EventParticipationCounts } from '@/components/EventParticipation';
 import { CATEGORIES } from '@/data/cities';
 import { type Event } from '@/integrations/backend/api';
 import { cn } from '@/lib/utils';
+import { EventCardContainer } from './EventCardContainer';
 
 interface OrganizerEventCardProps {
   event: Event;
@@ -37,16 +38,11 @@ export const OrganizerEventCard: React.FC<OrganizerEventCardProps> = ({
     onPreview?.(event);
   };
 
-  const handleEdit = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowMenu(false);
+  const handleEdit = () => {
     onEdit?.(event);
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowMenu(false);
-    
+  const handleDelete = () => {
     const confirmMessage = `Delete "${event.title}"? This will permanently remove the event and all associated data. This action cannot be undone.`;
     
     if (confirm(confirmMessage)) {
@@ -54,79 +50,23 @@ export const OrganizerEventCard: React.FC<OrganizerEventCardProps> = ({
     }
   };
 
-  const handlePreview = (e: React.ReactEvent) => {
-    e.stopPropagation();
-    setShowMenu(false);
+  const handlePreview = () => {
     setIsOverlayOpen(true);
     onPreview?.(event);
-  };
-
-  const getStatusColor = (status?: string) => {
-    // Simplified status colors - actual Event type doesn't have event_status
-    return 'bg-muted text-muted-foreground border-border';
   };
 
   const isCompact = variant === 'compact';
 
   return (
     <>
-      <div 
+      <EventCardContainer
+        onPreview={handlePreview}
+        onEdit={onEdit ? handleEdit : undefined}
+        onDelete={onDelete ? handleDelete : undefined}
         className={cn(
-          "relative group border border-border rounded-lg overflow-hidden bg-card hover:shadow-lg hover:bg-accent/50 transition-all duration-300 ease-in-out",
           isCompact ? "hover:shadow-md" : "hover:shadow-xl hover:-translate-y-1"
         )}
       >
-        {/* Status Badge - Hidden since Event type doesn't have event_status */}
-
-        {/* Action Menu - Top Right */}
-        <div className="absolute top-3 right-3 z-20 event-menu">
-          <div className="relative">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowMenu(!showMenu);
-              }}
-              className="p-1.5 rounded-md bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-background hover:border-border transition-all"
-            >
-              <MoreVertical className="w-4 h-4 text-muted-foreground" />
-            </button>
-            
-            {showMenu && (
-              <div className="absolute right-0 top-8 bg-background border border-border rounded-lg shadow-lg z-30 min-w-[140px]">
-                <div className="py-1">
-                  <button
-                    onClick={handlePreview}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted transition-colors"
-                  >
-                    <Eye className="w-4 h-4" />
-                    Preview
-                  </button>
-                  
-                  {onEdit && (
-                    <button
-                      onClick={handleEdit}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted transition-colors"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Edit
-                    </button>
-                  )}
-                  
-                  {onDelete && (
-                    <button
-                      onClick={handleDelete}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Clickable Card Content */}
         <div 
           className={cn(
@@ -237,7 +177,7 @@ export const OrganizerEventCard: React.FC<OrganizerEventCardProps> = ({
             )}
           </div>
         </div>
-      </div>
+      </EventCardContainer>
 
       {/* Event Detail Overlay */}
       <EventDetailOverlay 
