@@ -38,9 +38,9 @@ const OrganizerDashboard = () => {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.getEvents();
-      // API returns Event[] directly - use as-is
-      setEvents(response || []);
+      // Use getUserEvents to fetch only the current user's created events
+      const response = await apiClient.getUserEvents();
+      setEvents(response.created || []);
     } catch (error) {
       console.error('Failed to fetch events:', error);
       toast.error('Failed to load events');
