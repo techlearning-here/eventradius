@@ -30,6 +30,7 @@ interface EventDetailOverlayProps {
 export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId, isOpen, onClose, isDeleted = false }) => {
   const [isRegistered, setIsRegistered] = useState(false);
   const [event, setEvent] = useState<Event | null>(null);
+  const [organizerProfile, setOrganizerProfile] = useState<{ business_name?: string; full_name?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -52,6 +53,17 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId,
       if (data) {
         setEvent(data);
         setError(null);
+        
+        // Fetch organizer profile to get business name
+        if (data.organizer_id) {
+          try {
+            const profile = await apiClient.getUserPreferences();
+            setOrganizerProfile(profile as { business_name?: string; full_name?: string });
+          } catch (profileErr) {
+            console.error('Error fetching organizer profile:', profileErr);
+            setOrganizerProfile(null);
+          }
+        }
       } else {
         setEvent(null);
         setError('Event not found');
@@ -108,7 +120,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId,
       onClick={onClose}
     >
       <div 
-        className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90vw] h-[95vh] md:w-[80vw] md:h-[90vh] lg:w-[70vw] lg:h-[85vh] xl:w-[60vw] xl:h-[80vh] bg-background rounded-2xl shadow-2xl relative flex flex-col"
+        className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95vw] h-[98vh] md:w-[90vw] md:h-[95vh] lg:w-[85vw] lg:h-[92vh] xl:w-[80vw] xl:h-[90vh] 2xl:w-[75vw] 2xl:h-[88vh] bg-background rounded-2xl shadow-2xl relative flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <EventDetailCloseButton onClose={onClose} />
@@ -122,7 +134,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId,
             <div className="flex-shrink-0">
               <EventDetailTitle 
                 title={event.title}
-                creator={event.creator}
+                creator={organizerProfile?.business_name || event.creator}
                 organizer_email={event.organizer_email}
               />
             </div>
@@ -167,6 +179,73 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId,
                 </div>
 
                 <div className="space-y-6">
+                  {/* Organizer Contact Section */}
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
+                    <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <div className="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      Organizer Contact
+                    </h3>
+                    
+                    <div className="space-y-3">
+                      {/* Business Name */}
+                      {organizerProfile?.business_name && (
+                        <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-blue-100">
+                          <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase font-medium tracking-wider">Business</p>
+                            <p className="font-semibold text-gray-900">{organizerProfile.business_name}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Phone Number */}
+                      {event.event_contact_phone && (
+                        <a 
+                          href={`tel:${event.event_contact_phone_country_code || ''}${event.event_contact_phone}`}
+                          className="flex items-center gap-3 p-3 bg-white rounded-xl border border-blue-100 hover:bg-blue-50 transition-colors"
+                        >
+                          <div className="w-8 h-8 bg-green-100 text-green-600 rounded-lg flex items-center justify-center">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase font-medium tracking-wider">Phone</p>
+                            <p className="font-semibold text-gray-900">
+                              {event.event_contact_phone_country_code || ''} {event.event_contact_phone}
+                            </p>
+                          </div>
+                        </a>
+                      )}
+                      
+                      {/* Email */}
+                      {event.event_contact_email && (
+                        <a 
+                          href={`mailto:${event.event_contact_email}`}
+                          className="flex items-center gap-3 p-3 bg-white rounded-xl border border-blue-100 hover:bg-blue-50 transition-colors"
+                        >
+                          <div className="w-8 h-8 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase font-medium tracking-wider">Email</p>
+                            <p className="font-semibold text-gray-900 text-sm truncate max-w-[200px]">{event.event_contact_email}</p>
+                          </div>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
                   <EventParticipation 
                     eventId={event.id} 
                     onAuthRequired={handleAuthRequired}

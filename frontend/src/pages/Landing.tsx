@@ -75,6 +75,14 @@ const Landing = () => {
           
           {/* Navigation actions */}
           <div className="flex items-center gap-4">
+            {/* Pricing Link */}
+            <button
+              onClick={() => navigate('/pricing')}
+              className="hidden sm:inline-flex items-center gap-2 px-3 py-2 font-medium text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Pricing
+            </button>
+
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
@@ -87,7 +95,7 @@ const Landing = () => {
                 <Moon className="w-4 h-4" />
               )}
             </button>
-            
+
             {user ? (
               <div className="flex items-center gap-3">
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-background/60 backdrop-blur-sm border border-border/50 rounded-lg">
@@ -194,6 +202,13 @@ const Landing = () => {
             <div className="group flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-accent/50 transition-colors duration-300 cursor-pointer">
               <Zap className="w-4 h-4 group-hover:text-primary transition-colors" />
               <span className="group-hover:text-foreground transition-colors">Real-time Updates</span>
+            </div>
+            <div 
+              onClick={() => navigate('/pricing')}
+              className="group flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 transition-colors duration-300 cursor-pointer border border-purple-500/20"
+            >
+              <Zap className="w-4 h-4 text-purple-600 group-hover:text-purple-500 transition-colors" />
+              <span className="text-purple-700 dark:text-purple-400 group-hover:text-purple-600 transition-colors font-medium">AI Dynamic Pricing</span>
             </div>
           </div>
         </div>

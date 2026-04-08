@@ -10,8 +10,8 @@ interface EventDetailOverlayProps {
 
 export const EventDetailOverlay = ({ eventId, onClose }: EventDetailOverlayProps) => {
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-background rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4">
+      <div className="bg-background rounded-2xl shadow-2xl w-[95vw] h-[95vh] sm:w-[92vw] sm:h-[92vh] md:w-[88vw] md:h-[90vh] lg:w-[85vw] lg:h-[88vh] xl:w-[80vw] xl:h-[85vh] 2xl:w-[75vw] 2xl:h-[82vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-semibold">Event Preview</h2>

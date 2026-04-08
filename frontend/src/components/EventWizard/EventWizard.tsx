@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Save, Eye, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -11,7 +11,6 @@ import { EventTypeSection } from './EventTypeSection';
 import { ImageUpload } from './ImageUpload';
 import { ReviewSection } from './ReviewSection';
 import { ContactInfo } from './ContactInfo';
-import { EventPreview } from './EventPreview';
 
 // Types for enhanced event data - aligned with database schema
 export interface EventFormData {
@@ -100,6 +99,7 @@ export interface EventFormData {
   event_website?: string;
   event_contact_email?: string;
   event_contact_phone?: string;
+  event_contact_phone_country_code?: string;
   ticketing_website?: string;
   
   // Legacy fields for compatibility
@@ -119,13 +119,12 @@ export interface EventFormData {
 
 interface EventWizardProps {
   initialData?: Partial<EventFormData>;
-  onSave?: (data: EventFormData) => void;
   onPublish?: (data: EventFormData) => void;
 }
 
 import { WIZARD_SECTIONS } from './wizardConfig';
 
-export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps) => {
+export const EventWizard = ({ initialData, onPublish }: EventWizardProps) => {
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [currentSubStepIndex, setCurrentSubStepIndex] = useState(0);
   
@@ -197,6 +196,8 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
     custom_refund_policy: '',
     event_website: '',
     event_contact_email: '',
+    event_contact_phone: '',
+    event_contact_phone_country_code: '+1',
     ticketing_website: '',
     
     // Legacy fields for compatibility
@@ -215,10 +216,8 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
     ...initialData,
   });
 
-  const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Helper to build proper location string from venue fields
   const buildLocation = (): string => {
@@ -262,47 +261,19 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
     return { start_time: formData.start_time, end_time: formData.end_time };
   };
 
-  // Helper to derive category from event type
-  const buildCategory = (): string => {
-    // Map event types to categories
-    const typeToCategory: Record<string, string> = {
-      'online': 'education',
-      'in_person': 'party',
-      'hybrid': 'conference',
-    };
-    return typeToCategory[formData.event_type] || 'other';
-  };
-
   // Build complete event data with proper field mapping
   const buildEventData = (status: 'draft' | 'published'): EventFormData => {
     const location = buildLocation();
     const { start_time, end_time } = buildEventDates();
-    const category = buildCategory();
     
     return {
       ...formData,
       location,
       start_time,
       end_time,
-      category,
       status,
       is_public: formData.event_privacy === 'public',
     };
-  };
-
-  const handleSaveDraft = async () => {
-    setIsSaving(true);
-    try {
-      const draftData = buildEventData('draft');
-      if (onSave) {
-        await onSave(draftData);
-      }
-      setLastSaved(new Date());
-    } catch (error) {
-      console.error('Failed to save draft:', error);
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   const handlePublish = async () => {
@@ -358,7 +329,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
   const isSubStepComplete = useCallback((subStepId: string) => {
     switch (subStepId) {
       case 'info':
-        return formData.title.trim() !== '' && formData.description.trim() !== '';
+        return formData.title.trim() !== '' && formData.description.trim() !== '' && formData.category !== '';
       case 'type': {
         const hasEventType = !!formData.event_type && !!formData.event_format;
         if (!hasEventType) return false;
@@ -426,11 +397,13 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
               isPaidEvent={formData.is_paid_event}
               ticketingUrl={formData.ticketing_website}
               language={formData.language || ''}
+              category={formData.category || ''}
               onEventNameChange={(title) => updateFormData({ title })}
               onDescriptionChange={(description) => updateFormData({ description })}
               onIsPaidEventChange={(is_paid_event) => updateFormData({ is_paid_event })}
               onTicketingUrlChange={(ticketing_website) => updateFormData({ ticketing_website })}
               onLanguageChange={(language) => updateFormData({ language })}
+              onCategoryChange={(category) => updateFormData({ category })}
             />
             <div className="flex justify-center">
               <ImageUpload
@@ -445,8 +418,10 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
         return (
           <ContactInfo
             contactPhone={formData.event_contact_phone || ''}
+            contactPhoneCountryCode={formData.event_contact_phone_country_code || '+1'}
             contactEmail={formData.event_contact_email || ''}
             onContactPhoneChange={(phone) => updateFormData({ event_contact_phone: phone })}
+            onContactPhoneCountryCodeChange={(code) => updateFormData({ event_contact_phone_country_code: code })}
             onContactEmailChange={(email) => updateFormData({ event_contact_email: email })}
           />
         );
@@ -518,6 +493,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
             }}
             onPublish={handlePublish}
             isPublishing={isPublishing}
+            onAgreedToTermsChange={setAgreedToTerms}
           />
         );
 
@@ -532,36 +508,6 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
       <div className="bg-white border-b-2 border-black">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {lastSaved && (
-                <Badge variant="outline" className="text-xs">
-                  Saved {lastSaved.toLocaleTimeString()}
-                </Badge>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPreview(!showPreview)}
-                className="flex items-center gap-2"
-              >
-                <Eye className="w-4 h-4" />
-                {showPreview ? 'Hide' : 'Show'} Preview
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSaveDraft}
-                disabled={isSaving}
-                className="flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                {isSaving ? 'Saving...' : 'Save Draft'}
-              </Button>
-            </div>
           </div>
           
           {/* Progress Bar */}
@@ -612,21 +558,10 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
                   </Button>
 
                   <div className="flex items-center gap-2">
-                    {/* Preview Button */}
-                    <Button
-                      variant="secondary"
-                      onClick={() => setShowPreview(true)}
-                      size="sm"
-                      className="bg-purple-600 hover:bg-purple-700 text-white border-purple-600"
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      Preview Event
-                    </Button>
-
                     {currentSectionIndex === WIZARD_SECTIONS.length - 1 && currentSubStepIndex === getCurrentSection().subSteps.length - 1 ? (
                       <Button
                         onClick={handlePublish}
-                        disabled={isPublishing || !canProceedToNext()}
+                        disabled={isPublishing || !canProceedToNext() || !agreedToTerms}
                         className="bg-green-600 hover:bg-green-700"
                       >
                         <Sparkles className="w-4 h-4 mr-2" />
@@ -737,13 +672,6 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
           </div>
         </div>
 
-        {/* Preview Modal */}
-        {showPreview && (
-          <EventPreview 
-            formData={formData} 
-            onClose={() => setShowPreview(false)} 
-          />
-        )}
       </div>
     </div>
   );

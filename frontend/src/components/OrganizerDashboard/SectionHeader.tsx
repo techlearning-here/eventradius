@@ -66,9 +66,12 @@ export const SectionHeader = ({ activeSection, onCreateEvent }: SectionHeaderPro
         <div className="flex gap-3">
           <button
             onClick={onCreateEvent}
-            className="flex items-center gap-2 px-5 py-3 bg-foreground text-background text-xs font-semibold uppercase tracking-wider hover:opacity-90 transition-opacity"
+            className="group relative flex items-center gap-2 px-6 py-3.5 bg-gradient-to-b from-emerald-500 to-emerald-700 text-white font-semibold text-sm rounded-xl shadow-[0_4px_0_0_#047857,0_8px_16px_rgba(4,120,87,0.4)] hover:shadow-[0_2px_0_0_#047857,0_4px_8px_rgba(4,120,87,0.4)] hover:translate-y-[2px] active:shadow-none active:translate-y-[4px] focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 transition-all duration-150"
           >
-            <Plus className="w-4 h-4" /> Create Event
+            <div className="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+              <Plus className="w-4 h-4" />
+            </div>
+            <span>Create Event</span>
           </button>
         </div>
       )}

@@ -10,10 +10,16 @@ interface ReviewSectionProps {
   onEdit: (stepId: string) => void;
   onPublish: () => void;
   isPublishing: boolean;
+  onAgreedToTermsChange?: (agreed: boolean) => void;
 }
 
-export const ReviewSection = ({ formData, onEdit, onPublish, isPublishing }: ReviewSectionProps) => {
+export const ReviewSection = ({ formData, onEdit, onPublish, isPublishing, onAgreedToTermsChange }: ReviewSectionProps) => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  const handleAgreedToTermsChange = (checked: boolean) => {
+    setAgreedToTerms(checked);
+    onAgreedToTermsChange?.(checked);
+  };
 
   const getEventTypeLabel = (type: string) => {
     const labels = {
@@ -75,7 +81,8 @@ export const ReviewSection = ({ formData, onEdit, onPublish, isPublishing }: Rev
 
   const reviewSections = [
     {
-      id: 'basic',
+      id: 'basic-info',
+      targetStepId: 'info',
       title: 'Basic Information',
       icon: Eye,
       content: (
@@ -100,7 +107,8 @@ export const ReviewSection = ({ formData, onEdit, onPublish, isPublishing }: Rev
       ),
     },
     {
-      id: 'type',
+      id: 'event-type',
+      targetStepId: 'type',
       title: 'Event Type & Format',
       icon: Calendar,
       content: (
@@ -117,7 +125,8 @@ export const ReviewSection = ({ formData, onEdit, onPublish, isPublishing }: Rev
       ),
     },
     {
-      id: 'datetime',
+      id: 'event-datetime',
+      targetStepId: 'type',
       title: 'Date & Time',
       icon: Clock,
       content: (
@@ -150,7 +159,8 @@ export const ReviewSection = ({ formData, onEdit, onPublish, isPublishing }: Rev
       ),
     },
     {
-      id: 'location',
+      id: 'event-location',
+      targetStepId: 'type',
       title: 'Location',
       icon: MapPin,
       content: (
@@ -175,7 +185,8 @@ export const ReviewSection = ({ formData, onEdit, onPublish, isPublishing }: Rev
       ),
     },
     {
-      id: 'category',
+      id: 'event-settings',
+      targetStepId: 'contact',
       title: 'Category & Settings',
       icon: Users,
       content: (
@@ -326,7 +337,7 @@ export const ReviewSection = ({ formData, onEdit, onPublish, isPublishing }: Rev
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onEdit(section.id)}
+                    onClick={() => onEdit(section.targetStepId)}
                     className="flex items-center gap-1"
                   >
                     <Edit className="w-3 h-3" />
@@ -401,37 +412,22 @@ export const ReviewSection = ({ formData, onEdit, onPublish, isPublishing }: Rev
       {/* Terms and Conditions */}
       <Card>
         <CardContent className="p-6">
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                id="terms"
-                checked={agreedToTerms}
-                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1"
-              />
-              <label htmlFor="terms" className="text-sm text-gray-700">
-                I agree to the EventRadius Terms of Service and Community Guidelines.
-                I understand that I am responsible for the accuracy of the information
-                provided and that false or misleading information may result in event removal.
-              </label>
-            </div>
+          <div className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="terms"
+              checked={agreedToTerms}
+              onChange={(e) => handleAgreedToTermsChange(e.target.checked)}
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1"
+            />
+            <label htmlFor="terms" className="text-sm text-gray-700">
+              I agree to the EventRadius Terms of Service and Community Guidelines.
+              I understand that I am responsible for the accuracy of the information
+              provided and that false or misleading information may result in event removal.
+            </label>
           </div>
         </CardContent>
       </Card>
-
-      {/* Publish Button */}
-      <div className="flex justify-center">
-        <Button
-          onClick={onPublish}
-          disabled={!validation.isValid || !agreedToTerms || isPublishing}
-          size="lg"
-          className="bg-green-600 hover:bg-green-700 px-8 py-3"
-        >
-          <Sparkles className="w-5 h-5 mr-2" />
-          {isPublishing ? 'Publishing...' : 'Publish Event'}
-        </Button>
-      </div>
 
       {/* Publishing Tips */}
       <Card className="bg-blue-50 border-blue-200">

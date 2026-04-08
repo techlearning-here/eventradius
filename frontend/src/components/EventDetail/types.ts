@@ -20,6 +20,10 @@ export interface Event {
   organizer_email?: string;
   organizer_phone?: string;
   organizer_website?: string;
+  // Event contact info from ContactInfo step
+  event_contact_email?: string;
+  event_contact_phone?: string;
+  event_contact_phone_country_code?: string;
   // Legacy fields for compatibility
   creator?: string;
   date?: string;

@@ -32,7 +32,10 @@ export const dummyEvents: Record<string, Event> = {
     address: 'Community Arts Center, 123 Main Street, San Francisco, CA 94102',
     target_date: '2026-07-15T10:00:00Z',
     event_type: 'in_person',
-    event_status: 'published'
+    event_status: 'published',
+    event_contact_email: 'contact@artscenter.org',
+    event_contact_phone: '(415) 555-1001',
+    event_contact_phone_country_code: '+1'
   },
   
   'demo-single-paid': {
@@ -64,7 +67,10 @@ export const dummyEvents: Record<string, Event> = {
     address: 'Magic Theater, 456 Entertainment Avenue, San Francisco, CA 94103',
     target_date: '2026-07-20T18:00:00Z',
     event_type: 'in_person',
-    event_status: 'published'
+    event_status: 'published',
+    event_contact_email: 'tickets@magictheater.com',
+    event_contact_phone: '(415) 555-2002',
+    event_contact_phone_country_code: '+1'
   },
 
   // Single Events - Online

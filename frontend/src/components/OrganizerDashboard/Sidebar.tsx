@@ -55,8 +55,7 @@ export const Sidebar = ({ activeSection, onSectionChange, shouldCollapse = false
           </div>
           {!effectiveCollapsed && (
             <div>
-              <h2 className="font-semibold text-sm text-sidebar-foreground tracking-tight">Event Publisher</h2>
-              <p className="text-[10px] text-sidebar-accent-foreground/80 font-medium uppercase tracking-wider">Organizer</p>
+              <h2 className="font-semibold text-sm text-sidebar-foreground tracking-tight">Event Organizer</h2>
             </div>
           )}
         </div>

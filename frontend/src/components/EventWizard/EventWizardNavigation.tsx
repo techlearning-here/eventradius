@@ -1,19 +1,16 @@
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Save, Eye, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 
 interface EventWizardNavigationProps {
   currentSectionIndex: number;
   currentSubStepIndex: number;
   totalSubSteps: number;
   stepProgress: number;
-  canSave: boolean;
   canPublish: boolean;
   isPublishing: boolean;
   goToPreviousSubStep: () => void;
   goToNextSubStep: () => void;
-  handleSaveDraft: () => void;
   handlePublish: () => void;
-  onTogglePreview: (show: boolean) => void;
 }
 
 export const EventWizardNavigation = ({
@@ -21,14 +18,11 @@ export const EventWizardNavigation = ({
   currentSubStepIndex,
   totalSubSteps,
   stepProgress,
-  canSave,
   canPublish,
   isPublishing,
   goToPreviousSubStep,
   goToNextSubStep,
-  handleSaveDraft,
   handlePublish,
-  onTogglePreview
 }: EventWizardNavigationProps) => {
   return (
     <div className="flex items-center justify-between mt-8 pt-8 border-t border-gray-200">
@@ -56,15 +50,6 @@ export const EventWizardNavigation = ({
 
       <div className="flex items-center gap-2">
         <Button
-          variant={canSave ? "default" : "outline"}
-          onClick={handleSaveDraft}
-          disabled={!canSave || isPublishing}
-        >
-          <Save className="w-4 h-4" />
-          Save Draft
-        </Button>
-        
-        <Button
           variant={canPublish ? "default" : "outline"}
           onClick={currentSectionIndex === 4 && currentSubStepIndex === 2 ? handlePublish : goToNextSubStep}
           disabled={isPublishing || !canPublish}
@@ -81,14 +66,6 @@ export const EventWizardNavigation = ({
               <ChevronRight className="w-4 h-4 ml-2" />
             </>
           )}
-        </Button>
-        
-        <Button
-          variant="outline"
-          onClick={() => onTogglePreview(true)}
-        >
-          <Eye className="w-4 h-4" />
-          Preview
         </Button>
       </div>
     </div>

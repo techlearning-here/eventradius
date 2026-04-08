@@ -2,15 +2,19 @@ import { Phone, Mail, MessageCircle } from 'lucide-react';
 
 interface ContactInfoProps {
   contactPhone?: string;
+  contactPhoneCountryCode?: string;
   contactEmail?: string;
   onContactPhoneChange?: (value: string) => void;
+  onContactPhoneCountryCodeChange?: (value: string) => void;
   onContactEmailChange?: (value: string) => void;
 }
 
 export const ContactInfo = ({ 
   contactPhone = '', 
+  contactPhoneCountryCode = '+1',
   contactEmail = '',
   onContactPhoneChange = () => {},
+  onContactPhoneCountryCodeChange = () => {},
   onContactEmailChange = () => {}
 }: ContactInfoProps) => {
   return (
@@ -56,17 +60,52 @@ export const ContactInfo = ({
                   Contact Phone
                 </label>
               </div>
-              <div className="relative group">
+              <div className="flex gap-3">
+                <div className="relative">
+                  <select
+                    value={contactPhoneCountryCode}
+                    onChange={(e) => onContactPhoneCountryCodeChange(e.target.value)}
+                    className="w-28 text-gray-900 text-base leading-relaxed focus:outline-none bg-white border-2 border-gray-200 rounded-xl p-4 pr-8 hover:border-green-300 focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all duration-300 shadow-sm appearance-none cursor-pointer"
+                  >
+                    <option value="+1">+1 (US)</option>
+                    <option value="+44">+44 (UK)</option>
+                    <option value="+91">+91 (IN)</option>
+                    <option value="+61">+61 (AU)</option>
+                    <option value="+49">+49 (DE)</option>
+                    <option value="+33">+33 (FR)</option>
+                    <option value="+86">+86 (CN)</option>
+                    <option value="+81">+81 (JP)</option>
+                    <option value="+55">+55 (BR)</option>
+                    <option value="+52">+52 (MX)</option>
+                    <option value="+39">+39 (IT)</option>
+                    <option value="+34">+34 (ES)</option>
+                    <option value="+7">+7 (RU)</option>
+                    <option value="+65">+65 (SG)</option>
+                    <option value="+971">+971 (AE)</option>
+                    <option value="+27">+27 (ZA)</option>
+                    <option value="+82">+82 (KR)</option>
+                    <option value="+31">+31 (NL)</option>
+                    <option value="+46">+46 (SE)</option>
+                    <option value="+41">+41 (CH)</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
                 <input
                   type="tel"
-                  placeholder="+1 (555) 123-4567"
-                  className="w-full text-gray-900 text-base leading-relaxed focus:outline-none bg-white border-2 border-gray-200 rounded-xl p-4 placeholder:text-gray-400 group-hover:border-green-300 focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all duration-300 shadow-sm"
+                  placeholder="(555) 123-4567"
+                  pattern="[0-9\-\(\)\s]*"
+                  className="flex-1 text-gray-900 text-base leading-relaxed focus:outline-none bg-white border-2 border-gray-200 rounded-xl p-4 placeholder:text-gray-400 hover:border-green-300 focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all duration-300 shadow-sm"
                   value={contactPhone}
-                  onChange={(e) => onContactPhoneChange(e.target.value)}
+                  onChange={(e) => {
+                    // Only allow digits, dashes, parentheses, and spaces
+                    const cleaned = e.target.value.replace(/[^0-9\-\(\)\s]/g, '');
+                    onContactPhoneChange(cleaned);
+                  }}
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
-                  📞
-                </div>
               </div>
               <p className="text-sm text-gray-500 font-medium">
                 Optional - For attendee inquiries

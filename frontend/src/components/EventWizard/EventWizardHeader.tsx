@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Save, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -9,12 +9,9 @@ export interface EventWizardHeaderProps {
   progress: number;
   onPreviousStep: () => void;
   onNextStep: () => void;
-  onSaveDraft: () => void;
   onPublishEvent: () => void;
   isPublishing: boolean;
-  canSave: boolean;
   canPublish: boolean;
-  onTogglePreview: (show: boolean) => void;
 }
 
 export const EventWizardHeader = ({
@@ -23,12 +20,9 @@ export const EventWizardHeader = ({
   progress,
   onPreviousStep,
   onNextStep,
-  onSaveDraft,
   onPublishEvent,
   isPublishing,
-  canSave,
   canPublish,
-  onTogglePreview
 }: EventWizardHeaderProps) => {
   return (
     <div className="bg-white border-b border-gray-200 rounded-lg p-6">
@@ -55,30 +49,12 @@ export const EventWizardHeader = ({
           
           <div className="flex items-center space-x-2">
             <Button
-              variant={canSave ? "default" : "outline"}
-              onClick={onSaveDraft}
-              disabled={!canSave || isPublishing}
-            >
-              <Save className="w-4 h-4" />
-              Save Draft
-            </Button>
-            
-            <Button
               variant={canPublish ? "default" : "outline"}
               onClick={onPublishEvent}
               disabled={!canPublish || isPublishing}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               {isPublishing ? 'Publishing...' : 'Publish Event'}
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onTogglePreview(true)}
-            >
-              <Eye className="w-4 h-4" />
-              Preview
             </Button>
           </div>
         </div>

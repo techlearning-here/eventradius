@@ -1,17 +1,28 @@
 import { useState } from 'react';
 import { EventLanguage } from './EventLanguage';
 
+const EVENT_CATEGORIES = [
+  { id: 'kids_family', label: 'Kids & Family', icon: '👨‍👩‍👧‍👦', color: 'from-orange-400 to-amber-500' },
+  { id: 'arts_culture', label: 'Arts & Culture', icon: '🎨', color: 'from-pink-400 to-rose-500' },
+  { id: 'sports', label: 'Sports', icon: '⚽', color: 'from-blue-400 to-cyan-500' },
+  { id: 'social', label: 'Social', icon: '🎉', color: 'from-purple-400 to-violet-500' },
+  { id: 'classes', label: 'Classes', icon: '📚', color: 'from-green-400 to-emerald-500' },
+  { id: 'community', label: 'Community', icon: '🤝', color: 'from-teal-400 to-cyan-500' },
+];
+
 interface BasicInfoProps {
   eventName: string;
   description: string;
   isPaidEvent: boolean;
   ticketingUrl?: string;
   language?: string;
+  category?: string;
   onEventNameChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onIsPaidEventChange: (value: boolean) => void;
   onTicketingUrlChange: (value: string) => void;
   onLanguageChange: (value: string) => void;
+  onCategoryChange: (value: string) => void;
 }
 
 export const BasicInfo = ({ 
@@ -20,13 +31,28 @@ export const BasicInfo = ({
   isPaidEvent,
   ticketingUrl = '',
   language = '',
+  category = '',
   onEventNameChange, 
   onDescriptionChange,
   onIsPaidEventChange,
   onTicketingUrlChange,
-  onLanguageChange
+  onLanguageChange,
+  onCategoryChange
 }: BasicInfoProps) => {
   const MAX_DESCRIPTION_LENGTH = 2000; // Reasonable limit for event descriptions
+  
+  // URL validation helper
+  const isValidUrl = (url: string): boolean => {
+    if (!url.trim()) return true; // Empty is valid (optional field)
+    try {
+      const urlObj = new URL(url);
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+  
+  const isTicketingUrlValid = isValidUrl(ticketingUrl);
   
   return (
     <div>
@@ -55,11 +81,48 @@ export const BasicInfo = ({
           </div>
         </div>
 
-        {/* Step 2: Event Cost (Free or Paid) */}
+        {/* Step 2: Event Category */}
         <div className="space-y-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-200">
               2
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">Event Category <span className="text-red-500">*</span></h3>
+          </div>
+          <p className="text-gray-600 mb-6 font-medium">Select a category that best describes your event. This helps event discoverers find your event.</p>
+          
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+            {EVENT_CATEGORIES.map((cat) => (
+              <div
+                key={cat.id}
+                onClick={() => onCategoryChange(cat.id)}
+                className={`p-2 border-2 rounded-xl cursor-pointer transition-all duration-300 ${
+                  category === cat.id
+                    ? `bg-gradient-to-br ${cat.color} border-white shadow-md scale-[1.02]`
+                    : 'border-gray-200 hover:border-blue-300 hover:shadow-sm bg-white'
+                }`}
+              >
+                <div className="flex flex-col items-center text-center gap-1">
+                  <span className="text-2xl">{cat.icon}</span>
+                  <span className={`font-semibold text-xs ${category === cat.id ? 'text-white' : 'text-gray-700'}`}>
+                    {cat.label}
+                  </span>
+                </div>
+                {category === cat.id && (
+                  <div className="mt-1 flex justify-center">
+                    <span className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-xs font-bold text-gray-800">✓</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Step 3: Event Cost (Free or Paid) */}
+        <div className="space-y-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-200">
+              3
             </div>
             <h3 className="text-xl font-bold text-gray-900">Event Cost</h3>
           </div>
@@ -131,7 +194,7 @@ export const BasicInfo = ({
           <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 text-white rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-200">
-                2a
+                3a
               </div>
               <h3 className="text-xl font-bold text-gray-900">External Ticketing System</h3>
             </div>
@@ -144,14 +207,30 @@ export const BasicInfo = ({
                 <input
                   type="url"
                   placeholder="https://your-ticketing-system.com/event-tickets"
-                  className="w-full text-gray-900 text-base leading-relaxed focus:outline-none bg-white border-2 border-gray-200 rounded-xl p-4 placeholder:text-gray-400 group-hover:border-blue-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300 shadow-sm"
+                  className={`w-full text-gray-900 text-base leading-relaxed focus:outline-none bg-white border-2 rounded-xl p-4 placeholder:text-gray-400 transition-all duration-300 shadow-sm ${
+                    !isTicketingUrlValid 
+                      ? 'border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-100' 
+                      : 'border-gray-200 group-hover:border-blue-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100'
+                  }`}
                   value={ticketingUrl}
                   onChange={(e) => onTicketingUrlChange(e.target.value)}
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
-                  🔗
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  {!isTicketingUrlValid ? (
+                    <span className="text-red-500">⚠️</span>
+                  ) : ticketingUrl ? (
+                    <span className="text-green-500">✓</span>
+                  ) : (
+                    <span className="text-gray-400">🔗</span>
+                  )}
                 </div>
               </div>
+              {!isTicketingUrlValid && (
+                <p className="text-sm text-red-600 font-medium flex items-center gap-2">
+                  <span>⚠️</span>
+                  Please enter a valid URL starting with http:// or https://
+                </p>
+              )}
               <p className="text-sm text-gray-500 leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">
                 If you're using an external ticketing platform like Eventbrite, Ticketmaster, or custom solution, provide the link here. Attendees will be redirected to this URL to purchase tickets.
               </p>
@@ -159,11 +238,11 @@ export const BasicInfo = ({
           </div>
         )}
 
-        {/* Step 3: Event Description */}
+        {/* Step 4: Event Description */}
         <div className="space-y-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-200">
-              3
+              4
             </div>
             <h3 className="text-xl font-bold text-gray-900">Event Description <span className="text-red-500">*</span></h3>
           </div>
@@ -190,17 +269,17 @@ export const BasicInfo = ({
           </div>
         </div>
 
-        {/* Step 4: Event Language */}
+        {/* Step 5: Event Language */}
         <EventLanguage
           language={language || ''}
           onLanguageChange={onLanguageChange}
         />
 
-        {/* Step 5: Event Image */}
+        {/* Step 6: Event Image */}
         <div className="space-y-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-200">
-              5
+              6
             </div>
             <h3 className="text-xl font-bold text-gray-900">Event Image</h3>
           </div>
