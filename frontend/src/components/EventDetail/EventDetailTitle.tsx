@@ -14,7 +14,7 @@ export const EventDetailTitle: React.FC<EventDetailTitleProps> = ({
   const displayCreator = creator || organizer_email || 'Unknown Organizer';
   
   return (
-    <div className="bg-background border-b border-border">
+    <div className="bg-background border-b border-border sticky top-0 z-10">
       <div className="p-8">
         <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
           {title}

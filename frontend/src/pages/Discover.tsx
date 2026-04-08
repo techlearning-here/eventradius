@@ -155,149 +155,300 @@ const Discover = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background overflow-y-auto">
         <SEOHead title="Event Discoverer - Find Events" description="Explore events near you filtered by your interests and location." />
         <Navbar />
         {/* Show RoleSwitcher if user can switch between roles */}
         {user && canSwitchRole && <RoleSwitcher />}
 
-        <section className="pt-28 md:pt-36 pb-6 px-4 md:px-8">
-          <div className="max-w-6xl mx-auto">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Discover Events</h1>
+        {/* Small Hero Space */}
+        <section className="pt-24 pb-8 px-4 md:px-8">
+          <div className="max-w-6xl mx-auto text-center">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Discover Events</h1>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Find events that match your interests and connect with your community
+            </p>
+            
+            {/* Location indicator if user has preferences */}
             {prefs?.city && (
-              <p className="text-muted-foreground flex items-center gap-2 mb-6">
-                <MapPin className="w-4 h-4" /> Showing events near {prefs.city} (within {prefs.distance_range} miles)
-              </p>
-            )}
-          </div>
-        </section>
-
-        <section className="px-4 md:px-8 pb-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className={cn("h-9 px-3 text-xs font-medium uppercase tracking-wider border border-border flex items-center gap-2 hover:border-foreground transition-colors", date && "border-foreground bg-foreground text-background")}>
-                    <CalendarIcon className="w-3 h-3" />
-                    {date ? format(date, 'MMM d') : 'Date'}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={date} onSelect={setDate} className="pointer-events-auto" />
-                </PopoverContent>
-              </Popover>
-              {date && (
-                <button onClick={() => setDate(undefined)} className="h-9 px-3 text-xs font-medium uppercase border border-border hover:border-foreground transition-colors">
-                  Clear date
-                </button>
-              )}
-              {CATEGORIES.map(cat => (
-                <button key={cat.id} onClick={() => toggleCategory(cat.id)}
-                  className={`h-9 px-3 text-xs font-medium uppercase tracking-wider border transition-colors ${selectedCategories.includes(cat.id) ? 'border-foreground bg-foreground text-background' : 'border-border hover:border-foreground'}`}>
-                  {cat.emoji} {cat.label}
-                </button>
-              ))}
-              {selectedCategories.length > 0 && (
-                <button onClick={() => setSelectedCategories([])} className="h-9 px-3 text-xs font-medium uppercase border border-border hover:border-foreground transition-colors">
-                  Clear filters
-                </button>
-              )}
-            </div>
-
-            {/* Become an Organizer CTA - Show for users without organizer role */}
-            {user && !hasOrganizerRole && (
-              <div className="mt-6 p-4 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-primary/20 rounded-lg">
-                      <Building2 className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground">Are you an event organizer?</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Create and manage your own events. Get verified and start publishing events today.
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => navigate('/organizer-onboarding')}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors whitespace-nowrap"
-                  >
-                    Become an Organizer
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
+              <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-lg backdrop-blur-sm">
+                <MapPin className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">
+                  Events near <span className="text-primary font-semibold">{prefs.city}</span>
+                </span>
+                <span className="text-xs text-muted-foreground">(within {prefs.distance_range} miles)</span>
               </div>
             )}
           </div>
         </section>
 
-        <section className="px-4 md:px-8 pb-16">
+        <section className="px-4 md:px-8 pb-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="bg-background/60 backdrop-blur-sm border border-border rounded-2xl p-6 shadow-lg">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-1 h-4 bg-primary rounded-full" />
+                  <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Filter Events</h2>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-3">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className={cn(
+                        "inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border transition-all duration-200 hover:scale-105 active:scale-95",
+                        date 
+                          ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/25" 
+                          : "bg-background border-border hover:border-primary/50 hover:bg-primary/5"
+                      )}>
+                        <CalendarIcon className="w-4 h-4" />
+                        {date ? format(date, 'MMM d') : 'Any Date'}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={date} onSelect={setDate} className="pointer-events-auto" />
+                    </PopoverContent>
+                  </Popover>
+                  
+                  {date && (
+                    <button 
+                      onClick={() => setDate(undefined)} 
+                      className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 hover:scale-105 active:scale-95"
+                    >
+                      Clear Date
+                    </button>
+                  )}
+                  
+                  <div className="h-6 w-px bg-border" />
+                  
+                  {CATEGORIES.map(cat => (
+                    <button 
+                      key={cat.id} 
+                      onClick={() => toggleCategory(cat.id)}
+                      className={cn(
+                        "inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border transition-all duration-200 hover:scale-105 active:scale-95",
+                        selectedCategories.includes(cat.id)
+                          ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/25" 
+                          : "bg-background border-border hover:border-primary/50 hover:bg-primary/5"
+                      )}
+                    >
+                      <span className="text-base">{cat.emoji}</span>
+                      <span>{cat.label}</span>
+                    </button>
+                  ))}
+                  
+                  {selectedCategories.length > 0 && (
+                    <button 
+                      onClick={() => setSelectedCategories([])} 
+                      className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground border border-secondary/50 hover:bg-secondary/80 transition-all duration-200 hover:scale-105 active:scale-95"
+                    >
+                      Clear All
+                    </button>
+                  )}
+                </div>
+                
+                {selectedCategories.length > 0 && (
+                  <div className="flex items-center gap-2 pt-2">
+                    <span className="text-xs text-muted-foreground">Active filters:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedCategories.map(catId => {
+                        const cat = CATEGORIES.find(c => c.id === catId);
+                        return cat ? (
+                          <span key={catId} className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 text-primary rounded-md">
+                            {cat.emoji} {cat.label}
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Become an Organizer CTA - Show for users without organizer role */}
+        {user && !hasOrganizerRole && (
+          <section className="px-4 md:px-8 pb-8">
+            <div className="max-w-6xl mx-auto">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20 shadow-lg backdrop-blur-sm">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+                <div className="relative p-8">
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 bg-primary/20 rounded-xl shadow-lg shadow-primary/10">
+                        <Building2 className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-foreground mb-2">Ready to Create Events?</h3>
+                        <p className="text-muted-foreground leading-relaxed">
+                          Join our community of event organizers and start creating amazing experiences for others.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => navigate('/organizer-onboarding')}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-primary/25"
+                    >
+                      Become an Organizer
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        <section className="px-4 md:px-8 pb-20">
           <div className="max-w-6xl mx-auto">
             {/* Demo Event Cards - Only in development */}
             {import.meta.env.DEV && (
-              <div className="mb-8 space-y-6 bg-muted/30 rounded-lg p-6 border border-border">
-                <div className="text-center mb-6">
-                  <h3 className="text-2xl font-bold text-foreground mb-2">Family Event Demos (Full Features)</h3>
-                  <p className="text-muted-foreground">Click any event to see full details and participation features</p>
-                </div>
-                
-                {/* Demo Events Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-1">
-                  {Object.values(dummyEvents).map((event, i) => (
-                    <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${i * 0.1}s`, animationFillMode: 'both' }}>
-                      <EventCard event={event} />
+              <div className="mb-12">
+                <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-8 backdrop-blur-sm shadow-lg">
+                  <div className="text-center mb-8">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/20 border border-primary/30 rounded-full mb-4">
+                      <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                      <span className="text-sm font-semibold text-primary">Development Demo</span>
                     </div>
-                  ))}
+                    <h3 className="text-3xl font-bold text-foreground mb-3">Family Event Demos</h3>
+                    <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                      Explore our full-featured event cards with participation tracking, RSVP management, and interactive elements
+                    </p>
+                  </div>
+                  
+                  {/* Demo Events Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {Object.values(dummyEvents).map((event, i) => (
+                      <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${i * 0.1}s`, animationFillMode: 'both' }}>
+                        <EventCard event={event} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
 
             {loading ? (
-              <div className="text-center py-16 text-muted-foreground">Loading events...</div>
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="relative mb-8">
+                  <div className="w-16 h-16 border-4 border-primary/20 rounded-full animate-pulse" />
+                  <div className="absolute inset-0 w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">Discovering Amazing Events</h3>
+                <p className="text-muted-foreground text-center max-w-md">
+                  We're finding the best events for you based on your interests and location...
+                </p>
+                <div className="mt-6 flex gap-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />
+                  ))}
+                </div>
+              </div>
             ) : error ? (
-              <div className="text-center py-16">
-                <p className="text-red-500 mb-2">Error loading events</p>
-                <p className="text-sm text-muted-foreground">{error}</p>
-                <button onClick={refetch} className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">
-                  Try Again
-                </button>
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6">
+                  <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xl font-bold">!</span>
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mb-2">Oops! Something went wrong</h3>
+                <p className="text-muted-foreground text-center max-w-md mb-8">
+                  We couldn't load the events right now. Please check your connection and try again.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button 
+                    onClick={refetch} 
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all duration-200 hover:scale-105 active:scale-95"
+                  >
+                    Try Again
+                  </button>
+                  <button 
+                    onClick={() => window.location.reload()} 
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-secondary text-secondary-foreground font-medium rounded-lg hover:bg-secondary/90 transition-all duration-200 hover:scale-105 active:scale-95"
+                  >
+                    Refresh Page
+                  </button>
+                </div>
               </div>
             ) : filteredEvents.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="mb-4">
-                  <div className="text-6xl text-muted-foreground mb-2">&#x1F4C5;</div>
-                  <h3 className="text-2xl font-medium text-foreground mb-2">No Events Found</h3>
-                  <p className="text-muted-foreground mb-4">
-                    {events.length === 0 ? (
-                      <>
-                        There are no events available at the moment. 
-                        Please check back later or try adjusting your filters.
-                      </>
-                    ) : (
-                      <>
-                        No events match your current filters. 
-                        Try adjusting your criteria or clear all filters.
-                      </>
-                    )}
-                  </p>
-                  <div className="flex flex-col gap-3 justify-center">
-                    <button onClick={refetch} className="px-6 py-3 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors">
-                      Refresh Events
-                    </button>
-                    <button onClick={() => navigate('/settings')} className="px-6 py-3 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90 transition-colors">
-                      Update Preferences
-                    </button>
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="relative mb-8">
+                  <div className="w-32 h-32 bg-gradient-to-br from-primary/20 to-primary/40 rounded-full flex items-center justify-center">
+                    <CalendarIcon className="w-16 h-16 text-primary/60" />
                   </div>
+                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center animate-pulse">
+                    <span className="text-white text-sm">?</span>
+                  </div>
+                </div>
+                <h3 className="text-3xl font-bold text-foreground mb-4">No Events Found</h3>
+                <p className="text-muted-foreground text-center max-w-lg mb-8 text-lg leading-relaxed">
+                  {events.length === 0 ? (
+                    <>
+                      There are no events available at the moment. 
+                      Check back later or try adjusting your preferences to discover more events.
+                    </>
+                  ) : (
+                    <>
+                      No events match your current filters. 
+                      Try adjusting your criteria or explore different categories.
+                    </>
+                  )}
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button 
+                    onClick={refetch} 
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-primary/25"
+                  >
+                    Refresh Events
+                  </button>
+                  {selectedCategories.length > 0 && (
+                    <button 
+                      onClick={() => setSelectedCategories([])} 
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-secondary text-secondary-foreground font-medium rounded-lg hover:bg-secondary/90 transition-all duration-200 hover:scale-105 active:scale-95"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => navigate('/settings')} 
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-background border border-border text-foreground font-medium rounded-lg hover:bg-accent transition-all duration-200 hover:scale-105 active:scale-95"
+                  >
+                    Update Preferences
+                  </button>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredEvents.map((event, i) => (
-                  <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${i * 0.05}s`, animationFillMode: 'both' }}>
-                    <EventCard event={event} />
+              <div className="space-y-8">
+                {/* Results Header */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-border">
+                  <div>
+                    <h2 className="text-2xl font-bold text-foreground mb-1">
+                      {filteredEvents.length} {filteredEvents.length === 1 ? 'Event' : 'Events'} Found
+                    </h2>
+                    <p className="text-muted-foreground">
+                      {selectedCategories.length > 0 && date
+                        ? `Filtered by ${selectedCategories.length} categories and date`
+                        : selectedCategories.length > 0
+                        ? `Filtered by ${selectedCategories.length} categories`
+                        : date
+                        ? 'Filtered by date'
+                        : 'Showing all available events'}
+                    </p>
                   </div>
-                ))}
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    <span className="text-sm text-muted-foreground">Live updates</span>
+                  </div>
+                </div>
+                
+                {/* Events Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {filteredEvents.map((event, i) => (
+                    <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${i * 0.05}s`, animationFillMode: 'both' }}>
+                      <EventCard event={event} />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

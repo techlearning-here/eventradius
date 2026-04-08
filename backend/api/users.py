@@ -393,13 +393,24 @@ async def get_user_roles(user: dict = Depends(get_current_user)):
         )
 
         roles = [r["role"] for r in response.data] if response.data else []
+        
+        # Ensure user always has at least 'user' role
+        if not roles:
+            # Assign default role if none exists
+            from config.database import insert_record
+            try:
+                insert_record("user_roles", {"user_id": user["id"], "role": "user"})
+                roles = ["user"]
+            except Exception as assign_error:
+                logger.warning(f"Could not assign default role: {assign_error}")
+                # Still return empty roles rather than failing
+                roles = []
+        
         return {"roles": roles}
     except Exception as e:
         logger.error(f"Error fetching user roles: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch user roles",
-        )
+        # Return default role instead of failing
+        return {"roles": ["user"]}
 
 
 @router.post("/me/roles")

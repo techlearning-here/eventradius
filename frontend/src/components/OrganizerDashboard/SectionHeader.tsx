@@ -45,6 +45,11 @@ const sectionInfo = {
     title: 'Help & Support',
     description: 'Get help and support',
     showCreateButton: false
+  },
+  'recycle-bin': {
+    title: 'Recycle Bin',
+    description: 'Restore deleted events within 30 days',
+    showCreateButton: false
   }
 };
 

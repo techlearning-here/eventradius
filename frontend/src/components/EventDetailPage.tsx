@@ -103,26 +103,15 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId,
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[5000] flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
+      className="fixed inset-0 z-[999999999] bg-black/50 backdrop-blur-sm"
+      style={{ zIndex: '999999999 !important' }}
       onClick={onClose}
     >
       <div 
-        className="bg-gradient-to-br from-background to-card border border-border/50 rounded-3xl shadow-2xl w-full max-w-8xl max-h-[98vh] overflow-y-auto relative"
+        className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90vw] h-[95vh] md:w-[80vw] md:h-[90vh] lg:w-[70vw] lg:h-[85vh] xl:w-[60vw] xl:h-[80vh] bg-background rounded-2xl shadow-2xl relative flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <EventDetailCloseButton onClose={onClose} />
-
-        <EventDetailHeader 
-          category={event?.category} 
-          onClose={onClose} 
-        />
-
-        <EventDetailHero 
-          background_image_url={event?.background_image_url}
-          event_type={event?.event_type}
-          is_public={event?.is_public}
-          loading={loading}
-        />
 
         {loading ? (
           <EventDetailLoading />
@@ -130,16 +119,30 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId,
           <EventDetailError error={error} onClose={onClose} />
         ) : event ? (
           <>
-            <EventDetailTitle 
-              title={event.title}
-              creator={event.creator}
-              organizer_email={event.organizer_email}
-            />
+            <div className="flex-shrink-0">
+              <EventDetailTitle 
+                title={event.title}
+                creator={event.creator}
+                organizer_email={event.organizer_email}
+              />
+            </div>
 
-            <div className="p-8">
-              <EventQuickInfo event={event} />
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+              <div className="h-full">
+                <EventDetailHeader 
+                  category={event?.category} 
+                  onClose={onClose} 
+                />
+                <EventDetailHero 
+                  background_image_url={event?.background_image_url}
+                  event_type={event?.event_type}
+                  is_public={event?.is_public}
+                  loading={loading}
+                />
+                  <div className="px-2 py-4 sm:px-4 sm:py-6 md:px-6 md:py-8 lg:px-8 lg:py-10 xl:px-12 xl:py-12 w-full max-w-7xl">
+                    <EventQuickInfo event={event} />
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-8 lg:gap-10 xl:gap-12 w-full">
                 <div className="lg:col-span-2 space-y-8">
                   <EventDetailAbout description={event.description} />
                   <EventDetailLocation 
@@ -178,7 +181,9 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId,
                     />
                   </div>
                 </div>
+                </div>
               </div>
+            </div>
             </div>
           </>
         ) : null}

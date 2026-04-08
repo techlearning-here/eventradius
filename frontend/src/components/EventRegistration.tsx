@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
+import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
+import { apiClient } from '@/integrations/backend/api';
 import { useToast } from '@/hooks/use-toast';
 import { getErrorMessage } from '@/lib/utils';
 
@@ -21,38 +21,28 @@ export const EventRegistration: React.FC<EventRegistrationProps> = ({
   onAuthRequired,
   targetDate
 }) => {
-  const [user, setUser] = useState<User | null>(null);
   const [isRegistered, setIsRegistered] = useState(initialIsRegistered);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuthWithBackend();
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        checkRegistration(session.user.id);
-      }
-    });
+    if (user) {
+      checkRegistration();
+    }
+  }, [user, eventId]);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        checkRegistration(session.user.id);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [eventId]);
-
-  const checkRegistration = async (userId: string) => {
-    const { data } = await supabase
-      .from('event_registrations')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('event_id', eventId)
-      .maybeSingle();
-
-    setIsRegistered(!!data);
+  const checkRegistration = async () => {
+    try {
+      // Check if user is participating in the event
+      const response = await apiClient.get(`/api/events/${eventId}/participants`);
+      const participants = response.data || [];
+      const isUserParticipating = participants.some((p: any) => p.user_id === user?.id);
+      setIsRegistered(isUserParticipating);
+    } catch (error) {
+      // If error, assume not registered
+      setIsRegistered(false);
+    }
   };
 
   const getEventStatus = () => {
@@ -97,36 +87,21 @@ export const EventRegistration: React.FC<EventRegistrationProps> = ({
 
     try {
       if (isRegistered) {
-        // Unregister
-        const { error } = await supabase
-          .from('event_registrations')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('event_id', eventId);
-
-        if (error) throw error;
-
+        // Leave event
+        await apiClient.post(`/api/events/${eventId}/leave`);
         setIsRegistered(false);
         toast({
-          title: 'Unregistered',
-          description: 'You have been unregistered from this event'
+          title: 'Left Event',
+          description: 'You have left this event'
         });
       } else {
-        // Register
-        const { error } = await supabase
-          .from('event_registrations')
-          .insert({
-            user_id: user.id,
-            event_id: eventId
-          });
-
-        if (error) throw error;
-
+        // Join event
+        await apiClient.post(`/api/events/${eventId}/join`);
         setIsRegistered(true);
         onRegister();
         toast({
-          title: 'Registered!',
-          description: 'You have successfully registered for this event'
+          title: 'Joined Event!',
+          description: 'You have successfully joined this event'
         });
       }
     } catch (error: unknown) {

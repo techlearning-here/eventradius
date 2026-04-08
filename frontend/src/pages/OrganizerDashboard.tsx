@@ -14,6 +14,7 @@ import { EventsList } from '@/components/OrganizerDashboard/EventsList';
 import { OrganizerEventsGrid } from '@/components/OrganizerDashboard/OrganizerEventsGrid';
 import { EventWizardOverlay } from '@/components/OrganizerDashboard/EventWizardOverlay';
 import { EventDetailOverlay } from '@/components/EventDetailPage';
+import { EventDetailInline } from '@/components/EventDetailInline';
 import { type Event } from '@/integrations/backend/api';
 import { Trash2 } from 'lucide-react';
 import {
@@ -52,6 +53,7 @@ const OrganizerDashboard = () => {
   const [loadingDeleted, setLoadingDeleted] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [eventToRestore, setEventToRestore] = useState<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Helper to calculate days remaining until permanent deletion
   const getDaysRemaining = (deletedAt: string | undefined): number => {
@@ -409,12 +411,12 @@ const OrganizerDashboard = () => {
         <Sidebar
           activeSection={activeSection}
           onSectionChange={setActiveSection}
-          sidebarIconized={sidebarIconized}
-          onToggleSidebar={() => setSidebarIconized(!sidebarIconized)}
+          shouldCollapse={showCreateWizard || !!previewEventId}
+          onCollapsedChange={setSidebarCollapsed}
         />
 
         {/* Main Content Area */}
-        <div className="flex-1 w-full">
+        <div className={`flex-1 w-full transition-all duration-300 relative ${(showCreateWizard || !!previewEventId || sidebarCollapsed) ? 'ml-20' : 'ml-60'}`}>
           <div className="w-full pt-28 pb-16 px-4 md:px-8">
             {/* Section Header */}
             <SectionHeader
@@ -602,7 +604,7 @@ const OrganizerDashboard = () => {
               </>
             )}
 
-            {/* Event Detail Preview Overlay */}
+            {/* Event Preview Overlay */}
             {previewEventId && (
               <EventDetailOverlay
                 eventId={previewEventId}

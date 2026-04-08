@@ -56,16 +56,15 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
     <div className={`relative ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative overflow-hidden bg-background text-foreground h-[34px] px-3 flex items-center text-[11px] font-medium uppercase border border-foreground leading-none group"
+        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white text-sm font-medium shadow-md hover:shadow-lg transition-all duration-200 group"
       >
-        <div className="w-5 h-5 rounded-full bg-[#ff6bff] flex items-center justify-center">
-          <User className="w-3 h-3 text-black" />
+        <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+          <User className="w-4 h-4 text-white" />
         </div>
-        <span className="relative z-10 text-[11px] font-medium uppercase hidden md:block">
+        <span className="hidden md:block max-w-[100px] truncate">
           {userProfile?.full_name || user.email?.split('@')[0] || 'User'}
         </span>
-        <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-        <span className="absolute inset-0 bg-[hsl(295,100%,73%)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
@@ -77,18 +76,18 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
           />
 
           {/* Dropdown */}
-          <div className="absolute top-full left-0 mt-1 w-64 bg-background border border-foreground rounded-lg shadow-lg z-[2001] overflow-hidden">
+          <div className="absolute top-full right-0 mt-2 w-72 bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl z-[2001] overflow-hidden">
             {/* User Info Header */}
-            <div className="p-4 border-b border-border">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#ff6bff] flex items-center justify-center">
-                  <User className="w-5 h-5 text-black" />
+            <div className="p-5 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 border-b border-border/50">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-md">
+                  <User className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
+                  <p className="text-base font-semibold text-foreground truncate">
                     {userProfile?.full_name || 'User'}
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="text-sm text-muted-foreground truncate">
                     {user.email}
                   </p>
                 </div>
@@ -96,22 +95,26 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
             </div>
 
             {/* Menu Items */}
-            <div className="py-2">
+            <div className="p-3 space-y-1">
               <button
                 onClick={handleSettings}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground rounded-xl hover:bg-muted/80 transition-all duration-200 group"
               >
-                <Settings className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center group-hover:bg-background transition-colors">
+                  <Settings className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
+                </div>
                 Settings
               </button>
 
-              <div className="border-t border-border my-2"></div>
+              <div className="h-px bg-border/50 my-2" />
 
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 group"
               >
-                <LogOut className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/30 flex items-center justify-center group-hover:bg-red-200 dark:group-hover:bg-red-900/40 transition-colors">
+                  <LogOut className="w-4 h-4 text-red-500" />
+                </div>
                 Sign Out
               </button>
             </div>

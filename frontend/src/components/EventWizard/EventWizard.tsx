@@ -581,7 +581,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="w-full px-4 py-8">
         <div className="grid xl:grid-cols-5 gap-8">
           {/* Main Content */}
           <div className="xl:col-span-4">
