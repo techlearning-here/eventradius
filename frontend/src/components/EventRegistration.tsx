@@ -37,7 +37,7 @@ export const EventRegistration: React.FC<EventRegistrationProps> = ({
       // Check if user is participating in the event
       const response = await apiClient.get(`/api/events/${eventId}/participants`);
       const participants = response.data || [];
-      const isUserParticipating = participants.some((p: any) => p.user_id === user?.id);
+      const isUserParticipating = participants.some((p: { user_id: string }) => p.user_id === user?.id);
       setIsRegistered(isUserParticipating);
     } catch (error) {
       // If error, assume not registered

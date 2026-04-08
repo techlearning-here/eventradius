@@ -115,7 +115,9 @@ async def get_event(event_id: str, user: Optional[dict] = Depends(optional_auth)
     """
     try:
         table = get_table("events")
-        response = table.select("*").eq("id", event_id).is_("deleted_at", "null").execute()
+        response = (
+            table.select("*").eq("id", event_id).is_("deleted_at", "null").execute()
+        )
 
         if not response.data or len(response.data) == 0:
             raise HTTPException(
@@ -273,6 +275,7 @@ async def delete_event(event_id: str, user: dict = Depends(get_current_user)):
 
         # Soft delete: set deleted_at timestamp
         from datetime import datetime
+
         update_record("events", event_id, {"deleted_at": datetime.now().isoformat()})
 
         return {"message": "Event moved to recycle bin"}
@@ -508,7 +511,9 @@ async def get_event_by_id(event_id: str):
     """
     try:
         table = get_table("events")
-        response = table.select("*").eq("id", event_id).is_("deleted_at", "null").execute()
+        response = (
+            table.select("*").eq("id", event_id).is_("deleted_at", "null").execute()
+        )
 
         if not response.data or len(response.data) == 0:
             raise HTTPException(
@@ -549,7 +554,13 @@ async def send_event_message(
     """
     try:
         # Verify user is participant or organizer (check event is not deleted)
-        event_response = get_table("events").select("*").eq("id", event_id).is_("deleted_at", "null").execute()
+        event_response = (
+            get_table("events")
+            .select("*")
+            .eq("id", event_id)
+            .is_("deleted_at", "null")
+            .execute()
+        )
         if not event_response.data or len(event_response.data) == 0:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"

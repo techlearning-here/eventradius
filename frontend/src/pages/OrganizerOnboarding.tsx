@@ -441,7 +441,7 @@ const OrganizerOnboarding = () => {
                     {formData.event_types.map(typeId => {
                       const category = CATEGORIES.find(c => c.id === typeId);
                       return category ? (
-                        <span key={typeId} className="px-3 py-2 bg-gradient-to-br from-cyan-500/20 to-cyan-500/10 border border-cyan-400/30 text-sm rounded-xl backdrop-blur-sm">
+                        <span key={typeId} className="px-3 py-2 bg-gradient-to-br from-cyan-500/20 to-cyan-500/10 border border-cyan-400/30 text-sm text-white rounded-xl backdrop-blur-sm">
                           {category.emoji} {category.label}
                         </span>
                       ) : null;

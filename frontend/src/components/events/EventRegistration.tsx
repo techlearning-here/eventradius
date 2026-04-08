@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
@@ -26,6 +26,17 @@ export const EventRegistration: React.FC<EventRegistrationProps> = ({
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  const checkRegistration = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from('event_registrations')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('event_id', eventId)
+      .maybeSingle();
+
+    setIsRegistered(!!data);
+  }, [eventId]);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -42,18 +53,7 @@ export const EventRegistration: React.FC<EventRegistrationProps> = ({
     });
 
     return () => subscription.unsubscribe();
-  }, [eventId]);
-
-  const checkRegistration = async (userId: string) => {
-    const { data } = await supabase
-      .from('event_registrations')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('event_id', eventId)
-      .maybeSingle();
-
-    setIsRegistered(!!data);
-  };
+  }, [eventId, checkRegistration]);
 
   const getEventStatus = () => {
     if (!targetDate) return 'upcoming';

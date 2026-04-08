@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { ThumbsUp, Check, X } from 'lucide-react';
@@ -21,6 +21,30 @@ export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
   // Check if this is a demo event
   const isDemoEvent = eventId && eventId.startsWith('demo-');
 
+  const fetchCounts = useCallback(async () => {
+    const { data } = await supabase
+      .from('event_participants')
+      .select('status')
+      .eq('event_id', eventId);
+    if (data) {
+      setCounts({
+        interested: data.filter(p => p.status === 'interested').length,
+        going: data.filter(p => p.status === 'going').length,
+      });
+    }
+  }, [eventId]);
+
+  const fetchMyStatus = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('event_participants')
+      .select('status')
+      .eq('event_id', eventId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    setCurrentStatus((data?.status as ParticipationStatus) || null);
+  }, [eventId, user]);
+
   useEffect(() => {
     if (isDemoEvent) {
       // Use mock data for demo events
@@ -33,31 +57,7 @@ export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
       fetchCounts();
       if (user) fetchMyStatus();
     }
-  }, [eventId, user, isDemoEvent]);
-
-  const fetchCounts = async () => {
-    const { data } = await supabase
-      .from('event_participants')
-      .select('status')
-      .eq('event_id', eventId);
-    if (data) {
-      setCounts({
-        interested: data.filter(p => p.status === 'interested').length,
-        going: data.filter(p => p.status === 'going').length,
-      });
-    }
-  };
-
-  const fetchMyStatus = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from('event_participants')
-      .select('status')
-      .eq('event_id', eventId)
-      .eq('user_id', user.id)
-      .maybeSingle();
-    setCurrentStatus((data?.status as ParticipationStatus) || null);
-  };
+  }, [eventId, user, isDemoEvent, fetchCounts, fetchMyStatus]);
 
   const handleClick = async (status: ParticipationStatus) => {
     if (isDemoEvent) {

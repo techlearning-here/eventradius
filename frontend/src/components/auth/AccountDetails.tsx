@@ -26,7 +26,7 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
     } else if (savedState === 'false' && isOpen) {
       setIsOpen(false);
     }
-  }, []);
+  }, [isOpen]);
 
   // Update localStorage when isOpen changes
   useEffect(() => {
