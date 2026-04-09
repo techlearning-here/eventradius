@@ -15,6 +15,7 @@ import {
   EventDetailLocation,
   EventDetailLoading,
   EventDetailError,
+  EventDetailAttributes,
   getDummyEvent,
   isDummyEvent,
   type Event 
@@ -136,6 +137,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId,
                 title={event.title}
                 creator={organizerProfile?.business_name || event.creator}
                 organizer_email={event.organizer_email}
+                is_paid_event={event.is_paid_event}
               />
             </div>
 
@@ -157,6 +159,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId,
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-8 lg:gap-10 xl:gap-12 w-full">
                 <div className="lg:col-span-2 space-y-8">
                   <EventDetailAbout description={event.description} />
+                  <EventDetailAttributes event={event} />
                   <EventDetailLocation 
                     location={event.location}
                     address={event.address}
@@ -244,6 +247,57 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId,
                         </a>
                       )}
                     </div>
+                    
+                    {/* Ticketing info for paid events */}
+                    {event.is_paid_event && (
+                      <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center shrink-0">
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-amber-700 text-sm">Tickets Not Sold Here</p>
+                            {event.ticketing_website ? (
+                              <div className="space-y-2">
+                                <p className="text-sm font-semibold text-amber-700">
+                                  🎟️ Get your tickets now - limited seats available!
+                                </p>
+                                <a 
+                                  href={event.ticketing_website}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 px-4 py-2 rounded-lg transition-colors"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                  </svg>
+                                  Buy Tickets at {new URL(event.ticketing_website).hostname.replace('www.', '')}
+                                </a>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <p className="text-sm font-semibold text-amber-700">
+                                  🎟️ Get your tickets now - limited seats available!
+                                </p>
+                                {event.organizer_email && (
+                                  <a 
+                                    href={`mailto:${event.organizer_email}?subject=Ticket Request: ${encodeURIComponent(event.title)}`}
+                                    className="inline-flex items-center gap-2 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 px-4 py-2 rounded-lg transition-colors"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                    Request Tickets
+                                  </a>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <EventParticipation 

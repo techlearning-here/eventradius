@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Info, Users, MessageSquare } from 'lucide-react';
+import { 
+  Calendar, MapPin, Info, Users, MessageSquare,
+  Accessibility, Globe, GraduationCap, AlertCircle, 
+  Utensils, Volume2, Wine, Cigarette, Dumbbell,
+  Briefcase, PartyPopper, Heart, Baby, Sparkles,
+  Languages, LayoutGrid, DollarSign, CheckCircle2,
+  Tag
+} from 'lucide-react';
 import { apiClient } from '@/integrations/backend/api';
 import { dummyEvents, isDummyEvent } from '@/components/EventDetail/data/dummyEvents';
 import { Navbar } from '../../layout/Navbar';
@@ -54,6 +61,55 @@ interface Event {
   event_type?: string;
   event_status?: string;
   created_by?: string;
+  // New Event Attributes - Audience & Demographics
+  age_categories?: string[];
+  gender_preference?: string;
+  family_friendly?: boolean;
+  senior_friendly?: boolean;
+  singles_friendly?: boolean;
+  couples_oriented?: boolean;
+  // New Event Attributes - Accessibility
+  wheelchair_accessible?: boolean;
+  mobility_friendly?: boolean;
+  hearing_accessible?: boolean;
+  vision_accessible?: boolean;
+  sensory_friendly?: boolean;
+  service_animals_allowed?: boolean;
+  accessibility_notes?: string;
+  // New Event Attributes - Cultural Context
+  religious_context?: string[];
+  dietary_context?: string[];
+  traditional_attire?: string;
+  // New Event Attributes - Prerequisites
+  skill_level?: string;
+  prior_experience?: string;
+  physical_fitness?: string;
+  equipment_required?: string[];
+  dress_code?: string;
+  prerequisites_notes?: string;
+  // New Event Attributes - Content & Intensity
+  content_rating?: string;
+  alcohol_served?: string;
+  smoking_policy?: string;
+  noise_level?: string;
+  physical_intensity?: string;
+  // New Event Attributes - Social Features
+  networking_focus?: boolean;
+  social_mixer?: boolean;
+  ice_breakers?: boolean;
+  group_activities?: boolean;
+  team_building?: boolean;
+  // New Event Attributes - Language
+  primary_language?: string;
+  secondary_languages?: string[];
+  interpretation_available?: boolean;
+  sign_language_interpreter?: boolean;
+  // New Event Attributes - Type & Format
+  format?: string;
+  sub_category?: string;
+  // New Event Attributes - Pricing
+  refund_policy?: string;
+  group_discounts?: boolean;
 }
 
 export const EventDetailOverlay: React.FC<{ eventId: string; isOpen: boolean; onClose: () => void }> = ({ eventId, isOpen, onClose }) => {
@@ -118,6 +174,40 @@ export const EventDetailOverlay: React.FC<{ eventId: string; isOpen: boolean; on
 
   // Show chat for events that have/had preview type or have messages
   const showChat = event && (event.event_type === 'preview' || event.event_status === 'collecting_interest');
+
+  // Helper function to format snake_case to readable text
+  const formatLabel = (text: string | null | undefined) => {
+    if (!text) return '';
+    return text.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Section component for consistent styling
+  const Section = ({ icon: Icon, title, children, color = "bg-primary" }: { 
+    icon: React.ElementType; 
+    title: string; 
+    children: React.ReactNode;
+    color?: string;
+  }) => (
+    <div className="bg-card rounded-xl p-5 border border-border/50 hover:border-border/80 transition-colors">
+      <div className="flex items-center gap-3 mb-4">
+        <div className={`${color} p-2.5 rounded-lg`}>
+          <Icon className="w-5 h-5 text-white" />
+        </div>
+        <h3 className="font-semibold text-lg">{title}</h3>
+      </div>
+      <div className="space-y-3">
+        {children}
+      </div>
+    </div>
+  );
+
+  // Info item component
+  const InfoItem = ({ label, value }: { label: string; value: React.ReactNode }) => (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+      <span className="text-sm text-muted-foreground sm:w-32 flex-shrink-0">{label}</span>
+      <span className="text-sm font-medium">{value}</span>
+    </div>
+  );
 
   if (!isOpen) return null;
 
@@ -428,6 +518,270 @@ export const EventDetailOverlay: React.FC<{ eventId: string; isOpen: boolean; on
                           </a>
                         )}
                       </div>
+                    </div>
+                  </section>
+
+                  {/* Event Attributes Grid */}
+                  <section>
+                    <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center gap-2">
+                      <div className="w-1 h-6 bg-primary rounded-full"></div>
+                      Event Details
+                    </h2>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {/* Audience & Demographics */}
+                      <Section icon={Users} title="Audience & Demographics" color="bg-blue-500">
+                        {event.age_categories && event.age_categories.length > 0 && (
+                          <div>
+                            <span className="text-sm text-muted-foreground block mb-2">Age Groups</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {event.age_categories.map((age, index) => (
+                                <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                                  {formatLabel(age)}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {event.gender_preference && event.gender_preference !== 'all' && (
+                          <InfoItem label="Gender" value={formatLabel(event.gender_preference)} />
+                        )}
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {event.family_friendly && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <Baby className="w-3 h-3" /> Family Friendly
+                            </span>
+                          )}
+                          {event.senior_friendly && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              <Heart className="w-3 h-3" /> Senior Friendly
+                            </span>
+                          )}
+                          {event.singles_friendly && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              <Users className="w-3 h-3" /> Singles Welcome
+                            </span>
+                          )}
+                          {event.couples_oriented && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
+                              <Heart className="w-3 h-3" /> Couples
+                            </span>
+                          )}
+                        </div>
+                      </Section>
+
+                      {/* Accessibility */}
+                      <Section icon={Accessibility} title="Accessibility" color="bg-teal-500">
+                        <div className="flex flex-wrap gap-2">
+                          {event.wheelchair_accessible && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <Accessibility className="w-3 h-3" /> Wheelchair
+                            </span>
+                          )}
+                          {event.mobility_friendly && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              <Accessibility className="w-3 h-3" /> Mobility
+                            </span>
+                          )}
+                          {event.hearing_accessible && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              <Volume2 className="w-3 h-3" /> Hearing
+                            </span>
+                          )}
+                          {event.vision_accessible && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              <CheckCircle2 className="w-3 h-3" /> Vision
+                            </span>
+                          )}
+                          {event.sensory_friendly && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                              <Sparkles className="w-3 h-3" /> Sensory
+                            </span>
+                          )}
+                          {event.service_animals_allowed && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                              <Heart className="w-3 h-3" /> Service Animals
+                            </span>
+                          )}
+                        </div>
+                        {event.accessibility_notes && (
+                          <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                            <span className="text-sm text-muted-foreground">Notes:</span>
+                            <p className="text-sm mt-1">{event.accessibility_notes}</p>
+                          </div>
+                        )}
+                      </Section>
+
+                      {/* Cultural Context */}
+                      <Section icon={Globe} title="Cultural Context" color="bg-indigo-500">
+                        {event.religious_context && event.religious_context.length > 0 && (
+                          <div>
+                            <span className="text-sm text-muted-foreground block mb-2">Religious Context</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {event.religious_context.map((religion, index) => (
+                                <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border border-border capitalize">
+                                  {religion}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {event.dietary_context && event.dietary_context.length > 0 && (
+                          <div>
+                            <span className="text-sm text-muted-foreground block mb-2">Dietary Options</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {event.dietary_context.map((diet, index) => (
+                                <span key={index} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                                  <Utensils className="w-3 h-3" />
+                                  {formatLabel(diet)}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {event.traditional_attire && event.traditional_attire !== 'not_applicable' && (
+                          <InfoItem label="Attire" value={formatLabel(event.traditional_attire)} />
+                        )}
+                      </Section>
+
+                      {/* Prerequisites */}
+                      <Section icon={GraduationCap} title="Prerequisites" color="bg-orange-500">
+                        {event.skill_level && (
+                          <InfoItem label="Skill Level" value={formatLabel(event.skill_level)} />
+                        )}
+                        {event.prior_experience && (
+                          <InfoItem label="Experience" value={formatLabel(event.prior_experience)} />
+                        )}
+                        {event.physical_fitness && (
+                          <InfoItem label="Fitness Level" value={formatLabel(event.physical_fitness)} />
+                        )}
+                        {event.dress_code && event.dress_code !== 'casual' && (
+                          <InfoItem label="Dress Code" value={formatLabel(event.dress_code)} />
+                        )}
+                        {event.equipment_required && event.equipment_required.length > 0 && (
+                          <div>
+                            <span className="text-sm text-muted-foreground block mb-2">Equipment Needed</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {event.equipment_required.map((eq, index) => (
+                                <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border border-border">
+                                  {formatLabel(eq)}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {event.prerequisites_notes && (
+                          <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                            <span className="text-sm text-muted-foreground">Notes:</span>
+                            <p className="text-sm mt-1">{event.prerequisites_notes}</p>
+                          </div>
+                        )}
+                      </Section>
+
+                      {/* Content & Intensity */}
+                      <Section icon={AlertCircle} title="Content & Intensity" color="bg-red-500">
+                        {event.content_rating && (
+                          <InfoItem label="Content Rating" value={formatLabel(event.content_rating)} />
+                        )}
+                        {event.alcohol_served && (
+                          <InfoItem label="Alcohol" value={formatLabel(event.alcohol_served)} />
+                        )}
+                        {event.smoking_policy && (
+                          <InfoItem label="Smoking" value={formatLabel(event.smoking_policy)} />
+                        )}
+                        {event.noise_level && (
+                          <InfoItem label="Noise Level" value={formatLabel(event.noise_level)} />
+                        )}
+                        {event.physical_intensity && (
+                          <InfoItem label="Intensity" value={formatLabel(event.physical_intensity)} />
+                        )}
+                      </Section>
+
+                      {/* Social Features */}
+                      <Section icon={PartyPopper} title="Social Features" color="bg-pink-500">
+                        <div className="flex flex-wrap gap-2">
+                          {event.networking_focus && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              <Briefcase className="w-3 h-3" /> Networking
+                            </span>
+                          )}
+                          {event.social_mixer && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <PartyPopper className="w-3 h-3" /> Social Mixer
+                            </span>
+                          )}
+                          {event.ice_breakers && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              <Sparkles className="w-3 h-3" /> Ice Breakers
+                            </span>
+                          )}
+                          {event.group_activities && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              <Users className="w-3 h-3" /> Group Activities
+                            </span>
+                          )}
+                          {event.team_building && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
+                              <Heart className="w-3 h-3" /> Team Building
+                            </span>
+                          )}
+                        </div>
+                      </Section>
+
+                      {/* Language */}
+                      <Section icon={Languages} title="Language" color="bg-cyan-500">
+                        {event.primary_language && (
+                          <InfoItem label="Primary" value={formatLabel(event.primary_language)} />
+                        )}
+                        {event.secondary_languages && event.secondary_languages.length > 0 && (
+                          <div>
+                            <span className="text-sm text-muted-foreground block mb-2">Also Available</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {event.secondary_languages.map((lang, index) => (
+                                <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                                  {formatLabel(lang)}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {event.interpretation_available && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <CheckCircle2 className="w-3 h-3" /> Interpretation Available
+                            </span>
+                          )}
+                          {event.sign_language_interpreter && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              <Accessibility className="w-3 h-3" /> Sign Language
+                            </span>
+                          )}
+                        </div>
+                      </Section>
+
+                      {/* Type & Format */}
+                      <Section icon={LayoutGrid} title="Type & Format" color="bg-violet-500">
+                        {event.event_type && (
+                          <InfoItem label="Event Type" value={formatLabel(event.event_type)} />
+                        )}
+                        {event.format && (
+                          <InfoItem label="Format" value={formatLabel(event.format)} />
+                        )}
+                        {event.sub_category && (
+                          <InfoItem label="Category" value={formatLabel(event.sub_category)} />
+                        )}
+                      </Section>
+
+                      {/* Pricing */}
+                      <Section icon={DollarSign} title="Pricing" color="bg-emerald-500">
+                        {event.refund_policy && (
+                          <InfoItem label="Refund Policy" value={formatLabel(event.refund_policy)} />
+                        )}
+                        {event.group_discounts && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <Users className="w-3 h-3" /> Group Discounts Available
+                          </span>
+                        )}
+                      </Section>
                     </div>
                   </section>
                 </div>

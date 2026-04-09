@@ -58,7 +58,19 @@ export const dummyEvents: Record<string, Event> = {
     social_mixer: false,
     ice_breakers: false,
     group_activities: true,
-    team_building: false
+    team_building: false,
+    // Language
+    primary_language: 'english',
+    secondary_languages: ['spanish'],
+    interpretation_available: true,
+    sign_language_interpreter: true,
+    // Type & Format
+    event_type: 'in_person',
+    format: 'interactive_workshop',
+    sub_category: 'arts_crafts',
+    // Pricing
+    refund_policy: 'full_refund_24h',
+    group_discounts: true
   },
 
   // Seniors Only: Quiet, Social, Low Mobility
@@ -78,10 +90,10 @@ export const dummyEvents: Record<string, Event> = {
     updated_at: '2026-04-07T08:00:00Z',
     current_participants: 42,
     is_paid_event: true,
-    ticket_pricing_description: '$15 per person includes tea and refreshments',
-    ticketing_website: 'https://seniorcenter.org/events',
-    creator: 'Senior Community Center',
-    status: 'published',
+    // ticket_pricing_description: '$15 per person includes tea and refreshments',
+    ticketing_website: 'https://www.eventbrite.com/senior-center-events',
+    // creator: 'Senior Community Center',
+    // status: 'published',
     // Audience - SENIORS ONLY
     age_categories: ['seniors', '60_plus'],
     gender_preference: 'all',
@@ -119,7 +131,19 @@ export const dummyEvents: Record<string, Event> = {
     social_mixer: true,
     ice_breakers: true,
     group_activities: true,
-    team_building: false
+    team_building: false,
+    // Language
+    primary_language: 'english',
+    secondary_languages: [],
+    interpretation_available: false,
+    sign_language_interpreter: false,
+    // Type & Format
+    event_type: 'in_person',
+    format: 'social_meetup',
+    sub_category: 'card_games',
+    // Pricing
+    refund_policy: 'no_refund',
+    group_discounts: false
   },
 
   // Kids Only: Sensory-Friendly, Educational
@@ -139,10 +163,10 @@ export const dummyEvents: Record<string, Event> = {
     updated_at: '2026-04-07T08:00:00Z',
     current_participants: 8,
     is_paid_event: false,
-    ticket_pricing_description: 'Free sensory-friendly story time',
-    ticketing_website: '',
-    creator: 'Public Library',
-    status: 'published',
+    // ticket_pricing_description: 'Free sensory-friendly story time',
+    // ticketing_website: '',
+    // creator: 'Public Library',
+    // status: 'published',
     // Audience - KIDS ONLY
     age_categories: ['kids'],
     gender_preference: 'all',
@@ -180,7 +204,19 @@ export const dummyEvents: Record<string, Event> = {
     social_mixer: false,
     ice_breakers: false,
     group_activities: false,
-    team_building: false
+    team_building: false,
+    // Language
+    primary_language: 'english',
+    secondary_languages: ['spanish'],
+    interpretation_available: true,
+    sign_language_interpreter: false,
+    // Type & Format
+    event_type: 'in_person',
+    format: 'performance_show',
+    sub_category: 'storytelling',
+    // Pricing
+    refund_policy: 'full_refund_24h',
+    group_discounts: true
   },
 
   // Adults Only: Networking, Professional, Alcohol Served
@@ -200,10 +236,10 @@ export const dummyEvents: Record<string, Event> = {
     updated_at: '2026-04-07T08:00:00Z',
     current_participants: 56,
     is_paid_event: true,
-    ticket_pricing_description: '$25 includes drinks and appetizers',
-    ticketing_website: 'https://technetworking.com/events',
-    creator: 'SF Tech Network',
-    status: 'published',
+    // ticket_pricing_description: '$25 includes drinks and appetizers',
+    ticketing_website: 'https://www.eventbrite.com/tech-networking',
+    // creator: 'SF Tech Network',
+    // status: 'published',
     // Audience - ADULTS ONLY
     age_categories: ['adults'],
     gender_preference: 'all',
@@ -241,7 +277,19 @@ export const dummyEvents: Record<string, Event> = {
     social_mixer: true,
     ice_breakers: true,
     group_activities: false,
-    team_building: false
+    team_building: false,
+    // Language
+    primary_language: 'english',
+    secondary_languages: ['spanish', 'chinese_mandarin'],
+    interpretation_available: true,
+    sign_language_interpreter: false,
+    // Type & Format
+    event_type: 'in_person',
+    format: 'networking_mixer',
+    sub_category: 'tech_professionals',
+    // Pricing
+    refund_policy: 'no_refund',
+    group_discounts: false
   },
 
   // Religious/Cultural: Hindu Festival with Traditional Attire
@@ -261,10 +309,10 @@ export const dummyEvents: Record<string, Event> = {
     updated_at: '2026-04-07T08:00:00Z',
     current_participants: 145,
     is_paid_event: false,
-    ticket_pricing_description: 'Free community festival!',
-    ticketing_website: '',
-    creator: 'Indian Cultural Association',
-    status: 'published',
+    // ticket_pricing_description: 'Free community festival!',
+    // ticketing_website: '',
+    // creator: 'Indian Cultural Association',
+    // status: 'published',
     // Audience - ALL WELCOME
     age_categories: ['kids', 'teens', 'adults', 'seniors'],
     gender_preference: 'all',
@@ -302,7 +350,19 @@ export const dummyEvents: Record<string, Event> = {
     social_mixer: true,
     ice_breakers: false,
     group_activities: true,
-    team_building: false
+    team_building: false,
+    // Language
+    primary_language: 'hindi',
+    secondary_languages: ['english', 'tamil', 'telugu'],
+    interpretation_available: true,
+    sign_language_interpreter: false,
+    // Type & Format
+    event_type: 'in_person',
+    format: 'cultural_festival',
+    sub_category: 'religious_celebration',
+    // Pricing
+    refund_policy: 'full_refund_24h',
+    group_discounts: true
   },
 
   // High Intensity: Sports/Fitness Event
@@ -322,10 +382,10 @@ export const dummyEvents: Record<string, Event> = {
     updated_at: '2026-04-07T08:00:00Z',
     current_participants: 32,
     is_paid_event: true,
-    ticket_pricing_description: '$40 per team (4 players)',
-    ticketing_website: 'https://sfvolleyball.com/tournaments',
-    creator: 'SF Beach Volleyball League',
-    status: 'published',
+    // ticket_pricing_description: '$40 per team (4 players)',
+    ticketing_website: 'https://www.eventbrite.com/sf-volleyball-tournament',
+    // creator: 'SF Beach Volleyball League',
+    // status: 'published',
     // Audience - TEENS AND ADULTS, FIT
     age_categories: ['teens', 'adults'],
     gender_preference: 'all',
@@ -363,7 +423,19 @@ export const dummyEvents: Record<string, Event> = {
     social_mixer: false,
     ice_breakers: false,
     group_activities: true,
-    team_building: true
+    team_building: true,
+    // Language
+    primary_language: 'english',
+    secondary_languages: ['spanish'],
+    interpretation_available: false,
+    sign_language_interpreter: false,
+    // Type & Format
+    event_type: 'in_person',
+    format: 'tournament_competition',
+    sub_category: 'beach_sports',
+    // Pricing
+    refund_policy: 'no_refund',
+    group_discounts: true
   },
 
   // Virtual Event: Online Class with Equipment Requirements
@@ -383,10 +455,10 @@ export const dummyEvents: Record<string, Event> = {
     updated_at: '2026-04-07T08:00:00Z',
     current_participants: 16,
     is_paid_event: true,
-    ticket_pricing_description: '$35 per household',
-    ticketing_website: 'https://cookingmasterclass.com',
-    creator: 'Italian Cooking Academy',
-    status: 'published',
+    // ticket_pricing_description: '$35 per household',
+    ticketing_website: 'https://www.eventbrite.com/italian-cooking-class',
+    // creator: 'Italian Cooking Academy',
+    // status: 'published',
     // Audience - FAMILY FRIENDLY
     age_categories: ['kids', 'teens', 'adults'],
     gender_preference: 'all',
@@ -424,7 +496,19 @@ export const dummyEvents: Record<string, Event> = {
     social_mixer: false,
     ice_breakers: true,
     group_activities: true,
-    team_building: false
+    team_building: false,
+    // Language
+    primary_language: 'english',
+    secondary_languages: ['italian'],
+    interpretation_available: false,
+    sign_language_interpreter: false,
+    // Type & Format
+    event_type: 'online',
+    format: 'interactive_class',
+    sub_category: 'cooking_culinary',
+    // Pricing
+    refund_policy: 'full_refund_24h',
+    group_discounts: true
   }
 };
 

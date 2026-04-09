@@ -6,7 +6,8 @@ import {
   Users, Accessibility, Globe, GraduationCap, AlertCircle, 
   Calendar, MapPin, Users2, Clock, Tag, CheckCircle2,
   Utensils, BookOpen, Volume2, Wine, Cigarette, Dumbbell,
-  Briefcase, PartyPopper, Heart, Baby, Sparkles, X
+  Briefcase, PartyPopper, Heart, Baby, Sparkles, X,
+  Languages, LayoutGrid, DollarSign
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -389,6 +390,62 @@ export const EventDetailInline: React.FC<EventDetailInlineProps> = ({ eventId, i
                 </Badge>
               )}
             </div>
+          </Section>
+
+          {/* Language */}
+          <Section icon={Languages} title="Language" color="bg-cyan-500">
+            {event.primary_language && (
+              <InfoItem label="Primary" value={formatLabel(event.primary_language)} />
+            )}
+            {event.secondary_languages && event.secondary_languages.length > 0 && (
+              <div>
+                <span className="text-sm text-muted-foreground block mb-2">Also Available</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {event.secondary_languages.map((lang, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      {formatLabel(lang)}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {event.interpretation_available && (
+                <Badge className="bg-green-100 text-green-800">
+                  <CheckCircle2 className="w-3 h-3 mr-1" /> Interpretation Available
+                </Badge>
+              )}
+              {event.sign_language_interpreter && (
+                <Badge className="bg-blue-100 text-blue-800">
+                  <Accessibility className="w-3 h-3 mr-1" /> Sign Language
+                </Badge>
+              )}
+            </div>
+          </Section>
+
+          {/* Type & Format */}
+          <Section icon={LayoutGrid} title="Type & Format" color="bg-violet-500">
+            {event.event_type && (
+              <InfoItem label="Event Type" value={formatLabel(event.event_type)} />
+            )}
+            {event.format && (
+              <InfoItem label="Format" value={formatLabel(event.format)} />
+            )}
+            {event.sub_category && (
+              <InfoItem label="Category" value={formatLabel(event.sub_category)} />
+            )}
+          </Section>
+
+          {/* Pricing */}
+          <Section icon={DollarSign} title="Pricing" color="bg-emerald-500">
+            {event.refund_policy && (
+              <InfoItem label="Refund Policy" value={formatLabel(event.refund_policy)} />
+            )}
+            {event.group_discounts && (
+              <Badge className="bg-green-100 text-green-800">
+                <Users className="w-3 h-3 mr-1" /> Group Discounts Available
+              </Badge>
+            )}
           </Section>
         </div>
       </div>

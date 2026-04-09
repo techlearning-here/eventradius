@@ -59,6 +59,18 @@ export interface Event {
   ice_breakers?: boolean;
   group_activities?: boolean;
   team_building?: boolean;
+  // New Event Attributes - Language
+  primary_language?: string;
+  secondary_languages?: string[];
+  interpretation_available?: boolean;
+  sign_language_interpreter?: boolean;
+  // New Event Attributes - Type & Format
+  event_type?: string;
+  format?: string;
+  sub_category?: string;
+  // New Event Attributes - Pricing
+  refund_policy?: string;
+  group_discounts?: boolean;
 }
 
 export interface EventCreate {
@@ -104,6 +116,15 @@ export interface EventCreate {
   ice_breakers?: boolean;
   group_activities?: boolean;
   team_building?: boolean;
+  primary_language?: string;
+  secondary_languages?: string[];
+  interpretation_available?: boolean;
+  sign_language_interpreter?: boolean;
+  event_type?: string;
+  format?: string;
+  sub_category?: string;
+  refund_policy?: string;
+  group_discounts?: boolean;
 }
 
 export interface EventUpdate {
@@ -149,6 +170,15 @@ export interface EventUpdate {
   ice_breakers?: boolean;
   group_activities?: boolean;
   team_building?: boolean;
+  primary_language?: string;
+  secondary_languages?: string[];
+  interpretation_available?: boolean;
+  sign_language_interpreter?: boolean;
+  event_type?: string;
+  format?: string;
+  sub_category?: string;
+  refund_policy?: string;
+  group_discounts?: boolean;
 }
 
 export interface UserProfile {

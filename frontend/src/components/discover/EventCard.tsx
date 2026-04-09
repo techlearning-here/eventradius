@@ -62,8 +62,8 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
           {/* Free Badge */}
           {!event.is_paid_event && (
             <div className="absolute top-4 right-4">
-              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-green-500/20 to-green-400/20 backdrop-blur-md border border-green-400/50 rounded-full text-xs font-semibold text-green-400 shadow-lg">
-                <div className="w-1.5 h-1.5 bg-green-400 rounded-full" />
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-emerald-700 to-emerald-600 border border-emerald-500 rounded-full text-xs font-semibold text-white shadow-lg">
+                <div className="w-1.5 h-1.5 bg-white rounded-full" />
                 FREE
               </span>
             </div>

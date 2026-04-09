@@ -8,6 +8,7 @@ export { EventDetailAbout } from './EventDetailAbout';
 export { EventDetailLocation } from './EventDetailLocation';
 export { EventDetailLoading } from './EventDetailLoading';
 export { EventDetailError } from './EventDetailError';
+export { EventDetailAttributes } from './EventDetailAttributes';
 
 // Types
 export type { Event } from './types';
