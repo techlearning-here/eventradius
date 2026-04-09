@@ -1,5 +1,6 @@
 Conceptual overview (roles, Standard vs Preview, event space, admin model): **`docs/features-learning-guide.md`**.
 Full original spec: `docs/Website_Prompt.md`. Category / vertical roadmap: `docs/Feature_plan.md`.
+**Pricing & Tier Features:** `docs/Pricing_Features.md` — complete breakdown of free discoverer features and organizer pricing tiers.
 
 ---
 

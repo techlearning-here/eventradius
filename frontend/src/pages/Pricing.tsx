@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { SEOHead } from '@/components/SEOHead';
-import { Zap, Check, ArrowLeft, Sparkles, Building2, Users } from 'lucide-react';
+import { Zap, Check, ArrowLeft, Sparkles, Building2, Users, Search, MapPin, Calendar, Heart, Bell, MessageCircle, CheckCircle } from 'lucide-react';
 
 const Pricing = () => {
   const navigate = useNavigate();
@@ -23,7 +23,7 @@ const Pricing = () => {
         '1 Trial Preview Event (test before upgrading)',
         '1 Trial AI Dynamic Pricing event (experience Pro feature)',
         'Basic event creation',
-        'Email contact only',
+        'Email contact only (no direct chat)',
         'Standard support',
         'No AI commission (upgrade to use AI features)',
       ],
@@ -43,6 +43,7 @@ const Pricing = () => {
         '10 active events',
         '3 Preview Events (test demand before scheduling)',
         '3 Trial AI Dynamic Pricing events (experience Pro feature)',
+        'Direct chat with interested users',
         'Phone + email contact',
         'CSV export',
         'Priority email support',
@@ -67,6 +68,8 @@ const Pricing = () => {
         'Real-time notifications',
         'Broadcast messaging',
         'Priority chat support',
+        'Analytics on past events from other organizers',
+        'Priority listing in search results',
         'Trial API access (10 calls, experience Enterprise)',
         '1% AI commission on sales',
       ],
@@ -130,16 +133,122 @@ const Pricing = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-16 px-4 md:px-8">
+      {/* Event Discoverer Section */}
+      <section className="pt-32 pb-16 px-4 md:px-8 bg-green-500/5">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full mb-6">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-sm font-semibold text-green-700 dark:text-green-400">100% Free Forever</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
+              Event Discoverer
+            </h1>
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+              Browse, discover, and attend events. All features are completely free for event seekers.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Free Feature 1 */}
+            <div className="p-6 bg-background border border-green-500/20 rounded-xl">
+              <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center mb-4">
+                <Search className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">Discover Events</h3>
+              <p className="text-sm text-muted-foreground">
+                Browse unlimited events by location, category, date, and interests. Find exactly what you're looking for.
+              </p>
+            </div>
+
+            {/* Free Feature 2 */}
+            <div className="p-6 bg-background border border-green-500/20 rounded-xl">
+              <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center mb-4">
+                <MapPin className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">Hyper-Local Search</h3>
+              <p className="text-sm text-muted-foreground">
+                Find events near you with precise location filtering. Set your preferred radius and never miss local happenings.
+              </p>
+            </div>
+
+            {/* Free Feature 3 */}
+            <div className="p-6 bg-background border border-green-500/20 rounded-xl">
+              <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center mb-4">
+                <Calendar className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">Event Registration</h3>
+              <p className="text-sm text-muted-foreground">
+                Register for any event instantly. Free entry, paid events, or RSVP — all with zero platform fees. We don't sell tickets, we connect you to events.
+              </p>
+            </div>
+
+            {/* Free Feature 4 */}
+            <div className="p-6 bg-background border border-green-500/20 rounded-xl">
+              <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center mb-4">
+                <Heart className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">Save Favorites</h3>
+              <p className="text-sm text-muted-foreground">
+                Bookmark events you're interested in. Get reminders before they start and never miss out.
+              </p>
+            </div>
+
+            {/* Free Feature 5 */}
+            <div className="p-6 bg-background border border-green-500/20 rounded-xl">
+              <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center mb-4">
+                <Bell className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">Smart Notifications</h3>
+              <p className="text-sm text-muted-foreground">
+                Get notified about new events matching your interests. Personalized recommendations delivered to you.
+              </p>
+            </div>
+
+            {/* Free Feature 6 */}
+            <div className="p-6 bg-background border border-green-500/20 rounded-xl">
+              <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center mb-4">
+                <MessageCircle className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">Event Chat</h3>
+              <p className="text-sm text-muted-foreground">
+                Connect with other attendees before, during, and after events. Build your community.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 p-6 bg-green-500/10 border border-green-500/20 rounded-xl">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Completely Free for Discoverers</h3>
+                  <p className="text-sm text-muted-foreground">No hidden fees. No credit card required. Ever.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/discover')}
+                className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Start Discovering
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Organizer Pricing Section */}
+      <section className="py-16 px-4 md:px-8 border-t border-border">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full mb-6">
             <Zap className="w-4 h-4 text-primary" />
             <span className="text-sm font-semibold text-primary">For Event Organizers</span>
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
-            Simple, Transparent Pricing
-          </h1>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
+            Organizer Pricing
+          </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-6">
             AI-powered dynamic pricing helps you fill empty seats. Commission charged only on dynamic priced events — regular price events have zero commission.
           </p>
@@ -148,17 +257,8 @@ const Pricing = () => {
           <div className="inline-flex items-center gap-3 px-6 py-3 bg-purple-500/10 border border-purple-500/20 rounded-full mb-4">
             <Sparkles className="w-4 h-4 text-purple-600" />
             <span className="text-sm font-medium text-purple-700 dark:text-purple-400">
-              AI Dynamic Pricing: Auto-optimize prices to maximize revenue
+              AI Dynamic Pricing + Real-Time Notifications = Filled Seats
             </span>
-          </div>
-
-          {/* Free for Discoverers Banner */}
-          <div className="inline-flex items-center gap-3 px-6 py-3 bg-green-500/10 border border-green-500/20 rounded-full">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-sm font-medium text-green-700 dark:text-green-400">
-              100% Free for Event Discoverers
-            </span>
-            <span className="text-xs text-muted-foreground">• Browse, Register, Attend — No Cost</span>
           </div>
         </div>
       </section>
@@ -253,7 +353,7 @@ const Pricing = () => {
                 </li>
               </ul>
               <p className="mt-4 text-xs text-muted-foreground">
-                Try premium features, then upgrade for unlimited access.
+                Email contact only. Upgrade to Starter for direct chat with interested users.
               </p>
             </div>
 
@@ -261,7 +361,7 @@ const Pricing = () => {
               <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center mb-4">
                 <span className="text-lg font-bold text-blue-600">Starter</span>
               </div>
-              <h3 className="font-semibold text-foreground mb-2">Starter Tier Trials</h3>
+              <h3 className="font-semibold text-foreground mb-2">Starter Tier Includes</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
@@ -269,11 +369,23 @@ const Pricing = () => {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>3 AI Dynamic Pricing events (Pro feature)</span>
+                  <span>Direct chat with interested users</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary">•</span>
+                  <span>3 AI Dynamic Pricing events (Pro trial)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary">•</span>
+                  <span>Basic analytics (Pro trial)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary">•</span>
+                  <span>Priority listing trial (Pro feature)</span>
                 </li>
               </ul>
               <p className="mt-4 text-xs text-muted-foreground">
-                More trials to experience AI-powered revenue optimization.
+                Chat directly with interested users + AI-powered revenue optimization.
               </p>
             </div>
 
@@ -281,7 +393,7 @@ const Pricing = () => {
               <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center mb-4">
                 <span className="text-lg font-bold text-purple-600">Pro</span>
               </div>
-              <h3 className="font-semibold text-foreground mb-2">Pro Tier Trials</h3>
+              <h3 className="font-semibold text-foreground mb-2">Pro Tier Includes</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
@@ -289,11 +401,19 @@ const Pricing = () => {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>10 API calls (Enterprise feature)</span>
+                  <span>Analytics on past events from other organizers</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary">•</span>
+                  <span>Priority listing in search results</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary">•</span>
+                  <span>10 API calls (Enterprise trial)</span>
                 </li>
               </ul>
               <p className="mt-4 text-xs text-muted-foreground">
-                Experience enterprise integrations before upgrading.
+                Stand out in search + benchmark against industry data + AI optimization.
               </p>
             </div>
           </div>
@@ -389,10 +509,10 @@ const Pricing = () => {
               <span className="text-sm font-semibold text-purple-700 dark:text-purple-400">AI-Powered</span>
             </div>
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-              How AI Dynamic Pricing Works
+              AI Dynamic Pricing + Real-Time Notifications
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Our AI analyzes real-time data to recommend optimal prices that fill your empty seats and maximize revenue.
+              The magic happens when AI lowers prices and instantly notifies interested subscribers. Real-time alerts are the key to filling empty seats.
             </p>
           </div>
 
@@ -402,9 +522,9 @@ const Pricing = () => {
               <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center mb-4">
                 <Zap className="w-6 h-6 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-foreground mb-2">Smart Price Optimization</h3>
+              <h3 className="font-semibold text-foreground mb-2">Smart Price + Instant Alerts</h3>
               <p className="text-sm text-muted-foreground">
-                AI analyzes occupancy, time remaining, and demand to recommend the perfect discount level for maximum revenue.
+                AI calculates optimal discounts AND instantly pushes notifications to interested subscribers. Price drops are worthless without real-time alerts.
               </p>
             </div>
 
@@ -413,9 +533,9 @@ const Pricing = () => {
               <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center mb-4">
                 <Users className="w-6 h-6 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-foreground mb-2">Intelligent Targeting</h3>
+              <h3 className="font-semibold text-foreground mb-2">Real-Time Subscriber Alerts</h3>
               <p className="text-sm text-muted-foreground">
-                AI matches your events to the most likely customers based on interests, location, past behavior, and price sensitivity.
+                AI identifies interested subscribers and pushes instant notifications when prices drop. Speed is everything — alerts reach users in seconds, not hours.
               </p>
             </div>
 
@@ -440,7 +560,7 @@ const Pricing = () => {
             <div className="grid md:grid-cols-2 gap-6 text-sm">
               <div>
                 <p className="text-muted-foreground mb-2"><strong className="text-foreground">Scenario:</strong> 100-seat theater, 2 hours before showtime, only 30 seats sold.</p>
-                <p className="text-muted-foreground"><strong className="text-foreground">AI Action:</strong> Recommends 40% discount ($12 → $7.20) and pushes to nearby movie fans.</p>
+                <p className="text-muted-foreground"><strong className="text-foreground">AI Action:</strong> Drops price 40% ($12 → $7.20) and instantly notifies 200 nearby movie fans via push notification.</p>
               </div>
               <div>
                 <p className="text-muted-foreground mb-2"><strong className="text-foreground">Result:</strong> 40 additional seats filled.</p>

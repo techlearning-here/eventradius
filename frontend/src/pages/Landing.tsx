@@ -160,11 +160,19 @@ const Landing = () => {
           </h1>
 
           {/* Enhanced description */}
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8 leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
             Discover amazing local events tailored to your interests, location, and lifestyle.
             <br className="hidden sm:block" />
             <span className="text-foreground font-medium">Never miss what matters to you.</span>
           </p>
+
+          {/* No ticket sales badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full mb-10 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+            <div className="w-2 h-2 bg-green-500 rounded-full" />
+            <span className="text-sm font-medium text-green-700 dark:text-green-400">
+              Free to use — we don't sell tickets, we connect you to events
+            </span>
+          </div>
 
           {/* Enhanced CTA buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in" style={{ animationDelay: '0.4s' }}>

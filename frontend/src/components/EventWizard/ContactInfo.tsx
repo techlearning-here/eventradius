@@ -97,12 +97,12 @@ export const ContactInfo = ({
                 <input
                   type="tel"
                   placeholder="(555) 123-4567"
-                  pattern="[0-9\-\(\)\s]*"
+                  pattern="[0-9\-()\s]*"
                   className="flex-1 text-gray-900 text-base leading-relaxed focus:outline-none bg-white border-2 border-gray-200 rounded-xl p-4 placeholder:text-gray-400 hover:border-green-300 focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all duration-300 shadow-sm"
                   value={contactPhone}
                   onChange={(e) => {
                     // Only allow digits, dashes, parentheses, and spaces
-                    const cleaned = e.target.value.replace(/[^0-9\-\(\)\s]/g, '');
+                    const cleaned = e.target.value.replace(/[^0-9\-()\s]/g, '');
                     onContactPhoneChange(cleaned);
                   }}
                 />
