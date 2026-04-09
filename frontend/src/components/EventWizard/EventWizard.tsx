@@ -12,6 +12,13 @@ import { ImageUpload } from './ImageUpload';
 import { ReviewSection } from './ReviewSection';
 import { ContactInfo } from './ContactInfo';
 
+// Import new attribute collection components
+import { AudienceSection } from './AudienceSection';
+import { AccessibilitySection } from './AccessibilitySection';
+import { CulturalContextSection } from './CulturalContextSection';
+import { PrerequisitesSection } from './PrerequisitesSection';
+import { ContentRatingSection } from './ContentRatingSection';
+
 // Types for enhanced event data - aligned with database schema
 export interface EventFormData {
   // Priority 1: Essential Fields
@@ -115,6 +122,50 @@ export interface EventFormData {
   // Status
   is_public?: boolean;
   status: 'draft' | 'published';
+
+  // Audience & Demographics
+  age_categories?: string[];
+  gender_preference?: 'all' | 'women_only' | 'men_only' | 'lgbtq_friendly' | 'gender_neutral';
+  family_friendly?: boolean;
+  senior_friendly?: boolean;
+  singles_friendly?: boolean;
+  couples_oriented?: boolean;
+
+  // Accessibility
+  wheelchair_accessible?: boolean;
+  mobility_friendly?: boolean;
+  hearing_accessible?: boolean;
+  vision_accessible?: boolean;
+  sensory_friendly?: boolean;
+  service_animals_allowed?: boolean;
+  accessibility_notes?: string;
+
+  // Cultural Context
+  religious_context?: string[];
+  dietary_context?: string[];
+  traditional_attire?: 'encouraged' | 'required' | 'optional' | 'not_applicable';
+
+  // Prerequisites & Requirements
+  skill_level?: 'beginner' | 'intermediate' | 'advanced' | 'all_levels';
+  prior_experience?: 'none_required' | 'some_experience' | 'expert_level';
+  physical_fitness?: 'sedentary' | 'light_activity' | 'moderate_activity' | 'high_intensity' | 'athletic';
+  equipment_required?: string[];
+  dress_code?: 'casual' | 'business_casual' | 'formal' | 'sportswear' | 'traditional';
+  prerequisites_notes?: string;
+
+  // Content & Intensity
+  content_rating?: 'all_ages' | 'pg' | 'pg_13' | 'mature_18' | 'explicit';
+  alcohol_served?: 'no_alcohol' | 'byob' | 'bar_available' | 'complimentary';
+  smoking_policy?: 'non_smoking' | 'smoking_area' | 'vape_friendly';
+  noise_level?: 'quiet' | 'moderate' | 'loud' | 'very_loud';
+  physical_intensity?: 'none' | 'low' | 'medium' | 'high' | 'extreme';
+
+  // Social & Networking
+  networking_focus?: boolean;
+  social_mixer?: boolean;
+  ice_breakers?: boolean;
+  group_activities?: boolean;
+  team_building?: boolean;
 }
 
 interface EventWizardProps {
@@ -213,6 +264,51 @@ export const EventWizard = ({ initialData, onPublish }: EventWizardProps) => {
     // Status
     is_public: true,
     status: 'draft',
+
+    // Audience & Demographics - defaults
+    age_categories: [],
+    gender_preference: 'all',
+    family_friendly: false,
+    senior_friendly: false,
+    singles_friendly: false,
+    couples_oriented: false,
+
+    // Accessibility - defaults
+    wheelchair_accessible: false,
+    mobility_friendly: false,
+    hearing_accessible: false,
+    vision_accessible: false,
+    sensory_friendly: false,
+    service_animals_allowed: false,
+    accessibility_notes: '',
+
+    // Cultural Context - defaults
+    religious_context: [],
+    dietary_context: [],
+    traditional_attire: 'not_applicable',
+
+    // Prerequisites - defaults
+    skill_level: 'all_levels',
+    prior_experience: 'none_required',
+    physical_fitness: 'sedentary',
+    equipment_required: [],
+    dress_code: 'casual',
+    prerequisites_notes: '',
+
+    // Content & Intensity - defaults
+    content_rating: 'all_ages',
+    alcohol_served: 'no_alcohol',
+    smoking_policy: 'non_smoking',
+    noise_level: 'moderate',
+    physical_intensity: 'none',
+
+    // Social & Networking - defaults
+    networking_focus: false,
+    social_mixer: false,
+    ice_breakers: false,
+    group_activities: false,
+    team_building: false,
+
     ...initialData,
   });
 
@@ -372,6 +468,16 @@ export const EventWizard = ({ initialData, onPublish }: EventWizardProps) => {
                (formData.event_type === 'online' ? !!formData.virtual_event_url?.trim() : !!formData.location?.trim());
       case 'contact':
         return true; // Contact info is optional
+      case 'demographics':
+        return true; // Demographics are optional
+      case 'accessibility':
+        return true; // Accessibility options are optional
+      case 'cultural':
+        return true; // Cultural context is optional
+      case 'prerequisites':
+        return true; // Prerequisites are optional
+      case 'content':
+        return true; // Content rating is optional
       case 'review':
         return true; // Review is always complete
       default:
@@ -478,6 +584,100 @@ export const EventWizard = ({ initialData, onPublish }: EventWizardProps) => {
           />
         );
 
+      case 'demographics':
+        return (
+          <AudienceSection
+            ageCategories={formData.age_categories || []}
+            genderPreference={formData.gender_preference || 'all'}
+            familyFriendly={formData.family_friendly || false}
+            seniorFriendly={formData.senior_friendly || false}
+            singlesFriendly={formData.singles_friendly || false}
+            couplesOriented={formData.couples_oriented || false}
+            onAgeCategoriesChange={(age_categories) => updateFormData({ age_categories })}
+            onGenderPreferenceChange={(gender_preference) => updateFormData({ gender_preference })}
+            onFamilyFriendlyChange={(family_friendly) => updateFormData({ family_friendly })}
+            onSeniorFriendlyChange={(senior_friendly) => updateFormData({ senior_friendly })}
+            onSinglesFriendlyChange={(singles_friendly) => updateFormData({ singles_friendly })}
+            onCouplesOrientedChange={(couples_oriented) => updateFormData({ couples_oriented })}
+          />
+        );
+
+      case 'accessibility':
+        return (
+          <AccessibilitySection
+            wheelchairAccessible={formData.wheelchair_accessible || false}
+            mobilityFriendly={formData.mobility_friendly || false}
+            hearingAccessible={formData.hearing_accessible || false}
+            visionAccessible={formData.vision_accessible || false}
+            sensoryFriendly={formData.sensory_friendly || false}
+            serviceAnimalsAllowed={formData.service_animals_allowed || false}
+            accessibilityNotes={formData.accessibility_notes || ''}
+            onWheelchairAccessibleChange={(wheelchair_accessible) => updateFormData({ wheelchair_accessible })}
+            onMobilityFriendlyChange={(mobility_friendly) => updateFormData({ mobility_friendly })}
+            onHearingAccessibleChange={(hearing_accessible) => updateFormData({ hearing_accessible })}
+            onVisionAccessibleChange={(vision_accessible) => updateFormData({ vision_accessible })}
+            onSensoryFriendlyChange={(sensory_friendly) => updateFormData({ sensory_friendly })}
+            onServiceAnimalsAllowedChange={(service_animals_allowed) => updateFormData({ service_animals_allowed })}
+            onAccessibilityNotesChange={(accessibility_notes) => updateFormData({ accessibility_notes })}
+          />
+        );
+
+      case 'cultural':
+        return (
+          <CulturalContextSection
+            religiousContext={formData.religious_context || []}
+            dietaryContext={formData.dietary_context || []}
+            traditionalAttire={formData.traditional_attire || 'not_applicable'}
+            onReligiousContextChange={(religious_context) => updateFormData({ religious_context })}
+            onDietaryContextChange={(dietary_context) => updateFormData({ dietary_context })}
+            onTraditionalAttireChange={(traditional_attire) => updateFormData({ traditional_attire })}
+          />
+        );
+
+      case 'prerequisites':
+        return (
+          <PrerequisitesSection
+            skillLevel={formData.skill_level || 'all_levels'}
+            priorExperience={formData.prior_experience || 'none_required'}
+            physicalFitness={formData.physical_fitness || 'sedentary'}
+            equipmentRequired={formData.equipment_required || []}
+            dressCode={formData.dress_code || 'casual'}
+            prerequisitesNotes={formData.prerequisites_notes || ''}
+            onSkillLevelChange={(skill_level) => updateFormData({ skill_level })}
+            onPriorExperienceChange={(prior_experience) => updateFormData({ prior_experience })}
+            onPhysicalFitnessChange={(physical_fitness) => updateFormData({ physical_fitness })}
+            onEquipmentRequiredChange={(equipment_required) => updateFormData({ equipment_required })}
+            onDressCodeChange={(dress_code) => updateFormData({ dress_code })}
+            onPrerequisitesNotesChange={(prerequisites_notes) => updateFormData({ prerequisites_notes })}
+          />
+        );
+
+      case 'content':
+        return (
+          <ContentRatingSection
+            contentRating={formData.content_rating || 'all_ages'}
+            alcoholServed={formData.alcohol_served || 'no_alcohol'}
+            smokingPolicy={formData.smoking_policy || 'non_smoking'}
+            noiseLevel={formData.noise_level || 'moderate'}
+            physicalIntensity={formData.physical_intensity || 'none'}
+            networkingFocus={formData.networking_focus || false}
+            socialMixer={formData.social_mixer || false}
+            iceBreakers={formData.ice_breakers || false}
+            groupActivities={formData.group_activities || false}
+            teamBuilding={formData.team_building || false}
+            onContentRatingChange={(content_rating) => updateFormData({ content_rating })}
+            onAlcoholServedChange={(alcohol_served) => updateFormData({ alcohol_served })}
+            onSmokingPolicyChange={(smoking_policy) => updateFormData({ smoking_policy })}
+            onNoiseLevelChange={(noise_level) => updateFormData({ noise_level })}
+            onPhysicalIntensityChange={(physical_intensity) => updateFormData({ physical_intensity })}
+            onNetworkingFocusChange={(networking_focus) => updateFormData({ networking_focus })}
+            onSocialMixerChange={(social_mixer) => updateFormData({ social_mixer })}
+            onIceBreakersChange={(ice_breakers) => updateFormData({ ice_breakers })}
+            onGroupActivitiesChange={(group_activities) => updateFormData({ group_activities })}
+            onTeamBuildingChange={(team_building) => updateFormData({ team_building })}
+          />
+        );
+
       case 'review':
         return (
           <ReviewSection
@@ -527,12 +727,12 @@ export const EventWizard = ({ initialData, onPublish }: EventWizardProps) => {
         </div>
       </div>
 
-      <div className="w-full px-4 py-8">
-        <div className="grid xl:grid-cols-5 gap-8">
+      <div className="w-full px-3 sm:px-4 py-4 sm:py-8">
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 sm:gap-8">
           {/* Main Content */}
-          <div className="xl:col-span-4">
+          <div className="xl:col-span-4 order-2 xl:order-1">
             <Card>
-              <CardContent className="p-10">
+              <CardContent className="p-4 sm:p-6 lg:p-10">
                 {/* Step Header */}
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold mb-2 text-gray-900">
@@ -547,22 +747,23 @@ export const EventWizard = ({ initialData, onPublish }: EventWizardProps) => {
                 {renderSubStepContent()}
 
                 {/* Navigation */}
-                <div className="flex items-center justify-between mt-8 pt-8 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-gray-200 gap-4">
                   <Button
                     variant="outline"
                     onClick={goToPreviousSubStep}
                     disabled={currentSectionIndex === 0 && currentSubStepIndex === 0}
+                    className="w-full sm:w-auto order-2 sm:order-1"
                   >
                     <ChevronLeft className="w-4 h-4 mr-2" />
                     Previous
                   </Button>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-full sm:w-auto order-1 sm:order-2">
                     {currentSectionIndex === WIZARD_SECTIONS.length - 1 && currentSubStepIndex === getCurrentSection().subSteps.length - 1 ? (
                       <Button
                         onClick={handlePublish}
                         disabled={isPublishing || !canProceedToNext() || !agreedToTerms}
-                        className="bg-green-600 hover:bg-green-700"
+                        className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
                       >
                         <Sparkles className="w-4 h-4 mr-2" />
                         {isPublishing ? 'Publishing...' : 'Publish Event'}
@@ -571,6 +772,7 @@ export const EventWizard = ({ initialData, onPublish }: EventWizardProps) => {
                       <Button
                         onClick={goToNextSubStep}
                         disabled={!canProceedToNext()}
+                        className="w-full sm:w-auto"
                       >
                         Next
                         <ChevronRight className="w-4 h-4 ml-2" />
@@ -583,9 +785,9 @@ export const EventWizard = ({ initialData, onPublish }: EventWizardProps) => {
           </div>
 
           {/* Sidebar */}
-          <div className="xl:col-span-1 max-w-xs">
-            <Card className="top-24">
-              <CardContent className="p-6">
+          <div className="xl:col-span-1 order-1 xl:order-2">
+            <Card className="xl:sticky xl:top-24">
+              <CardContent className="p-4 sm:p-6">
                 <h3 className="font-semibold mb-4 text-black">Event Progress</h3>
                 
                 {/* Current Step Info */}

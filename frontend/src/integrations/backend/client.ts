@@ -3,6 +3,7 @@
  * This client replaces direct Supabase calls with backend API calls.
  */
 import { supabase } from '@/integrations/supabase/client';
+import { dummyEvents, isDummyEvent } from '@/components/EventDetail/data/dummyEvents';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://eventradius-api.onrender.com';
 
@@ -119,6 +120,13 @@ class BackendClient {
   }
 
   async getEvent(id: string): Promise<ApiResponse<Event>> {
+    // Check if it's a dummy event first
+    if (isDummyEvent(id)) {
+      const dummyEvent = dummyEvents[id];
+      if (dummyEvent) {
+        return { data: dummyEvent as Event };
+      }
+    }
     return this.request<Event>(`/api/events/${id}`);
   }
 

@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { useEvents } from '@/hooks/useEvents';
 import { CalendarIcon, MapPin, Plus, ArrowRight, Building2 } from 'lucide-react';
-import { dummyEvents } from '@/data/demoEvents';
+import { dummyEvents } from '@/components/EventDetail/data/dummyEvents';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CATEGORIES } from '@/data/cities';
@@ -457,48 +457,38 @@ const Discover = () => {
 
       {/* Demo Event Overlays */}
       <EventDetailOverlay 
-        eventId="demo-single-free" 
-        isOpen={showDemoEvent === 'demo-single-free'} 
+        eventId="demo-family-all-ages" 
+        isOpen={showDemoEvent === 'demo-family-all-ages'} 
         onClose={() => setShowDemoEvent(null)} 
       />
       <EventDetailOverlay 
-        eventId="demo-single-paid" 
-        isOpen={showDemoEvent === 'demo-single-paid'} 
+        eventId="demo-seniors-social" 
+        isOpen={showDemoEvent === 'demo-seniors-social'} 
         onClose={() => setShowDemoEvent(null)} 
       />
       <EventDetailOverlay 
-        eventId="demo-online-free" 
-        isOpen={showDemoEvent === 'demo-online-free'} 
+        eventId="demo-kids-sensory" 
+        isOpen={showDemoEvent === 'demo-kids-sensory'} 
         onClose={() => setShowDemoEvent(null)} 
       />
       <EventDetailOverlay 
-        eventId="demo-online-paid" 
-        isOpen={showDemoEvent === 'demo-online-paid'} 
+        eventId="demo-adults-networking" 
+        isOpen={showDemoEvent === 'demo-adults-networking'} 
         onClose={() => setShowDemoEvent(null)} 
       />
       <EventDetailOverlay 
-        eventId="demo-hybrid-free" 
-        isOpen={showDemoEvent === 'demo-hybrid-free'} 
+        eventId="demo-cultural-festival" 
+        isOpen={showDemoEvent === 'demo-cultural-festival'} 
         onClose={() => setShowDemoEvent(null)} 
       />
       <EventDetailOverlay 
-        eventId="demo-recurring-free" 
-        isOpen={showDemoEvent === 'demo-recurring-free'} 
+        eventId="demo-sports-intensive" 
+        isOpen={showDemoEvent === 'demo-sports-intensive'} 
         onClose={() => setShowDemoEvent(null)} 
       />
       <EventDetailOverlay 
-        eventId="demo-recurring-paid" 
-        isOpen={showDemoEvent === 'demo-recurring-paid'} 
-        onClose={() => setShowDemoEvent(null)} 
-      />
-      <EventDetailOverlay 
-        eventId="demo-multi-date-free" 
-        isOpen={showDemoEvent === 'demo-multi-date-free'} 
-        onClose={() => setShowDemoEvent(null)} 
-      />
-      <EventDetailOverlay 
-        eventId="demo-multi-date-paid" 
-        isOpen={showDemoEvent === 'demo-multi-date-paid'} 
+        eventId="demo-virtual-class" 
+        isOpen={showDemoEvent === 'demo-virtual-class'} 
         onClose={() => setShowDemoEvent(null)} 
       />
     </>

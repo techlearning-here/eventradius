@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { dummyEvents, isDummyEvent } from '@/components/EventDetail/data/dummyEvents';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://eventradius-api.onrender.com';
 
@@ -20,6 +21,44 @@ export interface Event {
   current_participants?: number;
   is_paid_event?: boolean;
   deleted_at?: string;
+  // New Event Attributes - Audience & Demographics
+  age_categories?: string[];
+  gender_preference?: string;
+  family_friendly?: boolean;
+  senior_friendly?: boolean;
+  singles_friendly?: boolean;
+  couples_oriented?: boolean;
+  // New Event Attributes - Accessibility
+  wheelchair_accessible?: boolean;
+  mobility_friendly?: boolean;
+  hearing_accessible?: boolean;
+  vision_accessible?: boolean;
+  sensory_friendly?: boolean;
+  service_animals_allowed?: boolean;
+  accessibility_notes?: string;
+  // New Event Attributes - Cultural Context
+  religious_context?: string[];
+  dietary_context?: string[];
+  traditional_attire?: string;
+  // New Event Attributes - Prerequisites
+  skill_level?: string;
+  prior_experience?: string;
+  physical_fitness?: string;
+  equipment_required?: string[];
+  dress_code?: string;
+  prerequisites_notes?: string;
+  // New Event Attributes - Content & Intensity
+  content_rating?: string;
+  alcohol_served?: string;
+  smoking_policy?: string;
+  noise_level?: string;
+  physical_intensity?: string;
+  // New Event Attributes - Social Features
+  networking_focus?: boolean;
+  social_mixer?: boolean;
+  ice_breakers?: boolean;
+  group_activities?: boolean;
+  team_building?: boolean;
 }
 
 export interface EventCreate {
@@ -32,6 +71,39 @@ export interface EventCreate {
   category?: string;
   max_participants?: number;
   is_public?: boolean;
+  // New Event Attributes
+  age_categories?: string[];
+  gender_preference?: string;
+  family_friendly?: boolean;
+  senior_friendly?: boolean;
+  singles_friendly?: boolean;
+  couples_oriented?: boolean;
+  wheelchair_accessible?: boolean;
+  mobility_friendly?: boolean;
+  hearing_accessible?: boolean;
+  vision_accessible?: boolean;
+  sensory_friendly?: boolean;
+  service_animals_allowed?: boolean;
+  accessibility_notes?: string;
+  religious_context?: string[];
+  dietary_context?: string[];
+  traditional_attire?: string;
+  skill_level?: string;
+  prior_experience?: string;
+  physical_fitness?: string;
+  equipment_required?: string[];
+  dress_code?: string;
+  prerequisites_notes?: string;
+  content_rating?: string;
+  alcohol_served?: string;
+  smoking_policy?: string;
+  noise_level?: string;
+  physical_intensity?: string;
+  networking_focus?: boolean;
+  social_mixer?: boolean;
+  ice_breakers?: boolean;
+  group_activities?: boolean;
+  team_building?: boolean;
 }
 
 export interface EventUpdate {
@@ -44,6 +116,39 @@ export interface EventUpdate {
   category?: string;
   max_participants?: number;
   is_public?: boolean;
+  // New Event Attributes
+  age_categories?: string[];
+  gender_preference?: string;
+  family_friendly?: boolean;
+  senior_friendly?: boolean;
+  singles_friendly?: boolean;
+  couples_oriented?: boolean;
+  wheelchair_accessible?: boolean;
+  mobility_friendly?: boolean;
+  hearing_accessible?: boolean;
+  vision_accessible?: boolean;
+  sensory_friendly?: boolean;
+  service_animals_allowed?: boolean;
+  accessibility_notes?: string;
+  religious_context?: string[];
+  dietary_context?: string[];
+  traditional_attire?: string;
+  skill_level?: string;
+  prior_experience?: string;
+  physical_fitness?: string;
+  equipment_required?: string[];
+  dress_code?: string;
+  prerequisites_notes?: string;
+  content_rating?: string;
+  alcohol_served?: string;
+  smoking_policy?: string;
+  noise_level?: string;
+  physical_intensity?: string;
+  networking_focus?: boolean;
+  social_mixer?: boolean;
+  ice_breakers?: boolean;
+  group_activities?: boolean;
+  team_building?: boolean;
 }
 
 export interface UserProfile {
@@ -154,6 +259,13 @@ class ApiClient {
   }
 
   async getEvent(eventId: string): Promise<Event> {
+    // Check if it's a dummy event first
+    if (isDummyEvent(eventId)) {
+      const dummyEvent = dummyEvents[eventId];
+      if (dummyEvent) {
+        return dummyEvent as Event;
+      }
+    }
     return this.request<Event>(`/api/events/${eventId}`);
   }
 

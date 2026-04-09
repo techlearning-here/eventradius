@@ -36,26 +36,26 @@ export const SubStepNavigation = ({
   };
 
   return (
-    <div className="flex items-center justify-between mt-8 pt-8 border-t border-gray-200">
+    <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-gray-200 gap-4">
       <button
-        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto order-2 sm:order-1"
         onClick={onPrevious}
         disabled={currentSectionIndex === 0 && currentSubStepIndex === 0}
       >
         Previous
       </button>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 w-full sm:w-auto order-1 sm:order-2">
         {isLastStep ? (
           <button
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
             disabled={isPublishing || !canProceedToNext}
           >
             {isPublishing ? 'Publishing...' : 'Publish Event'}
           </button>
         ) : (
           <button
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
             disabled={!canProceedToNext}
             onClick={onNext}
           >

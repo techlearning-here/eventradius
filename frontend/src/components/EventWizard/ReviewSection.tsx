@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, Edit, CheckCircle, AlertCircle, Clock, MapPin, Users, Calendar, Globe, Mail, ExternalLink, Sparkles, RefreshCw } from 'lucide-react';
+import { Eye, Edit, CheckCircle, AlertCircle, Clock, MapPin, Users, Calendar, Globe, Mail, ExternalLink, Sparkles, RefreshCw, Accessibility, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -229,6 +229,209 @@ export const ReviewSection = ({ formData, onEdit, onPublish, isPublishing, onAgr
               </div>
             </div>
           )}
+        </div>
+      ),
+    },
+    {
+      id: 'audience',
+      targetStepId: 'demographics',
+      title: 'Audience & Demographics',
+      icon: Users,
+      content: (
+        <div className="space-y-3">
+          {formData.age_categories && formData.age_categories.length > 0 && (
+            <div>
+              <span className="text-sm font-medium text-gray-700">Age Categories:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {formData.age_categories.map((age, index) => (
+                  <Badge key={index} variant="outline" className="text-xs">
+                    {age.replace(/_/g, ' ')}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+          {formData.gender_preference && formData.gender_preference !== 'all' && (
+            <div>
+              <span className="text-sm font-medium text-gray-700">Gender Preference:</span>
+              <Badge variant="outline" className="ml-2">
+                {formData.gender_preference.replace(/_/g, ' ')}
+              </Badge>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {formData.family_friendly && <Badge className="bg-green-100 text-green-800">Family Friendly</Badge>}
+            {formData.senior_friendly && <Badge className="bg-blue-100 text-blue-800">Senior Friendly</Badge>}
+            {formData.singles_friendly && <Badge className="bg-purple-100 text-purple-800">Singles Welcome</Badge>}
+            {formData.couples_oriented && <Badge className="bg-pink-100 text-pink-800">Couples Oriented</Badge>}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'accessibility',
+      targetStepId: 'accessibility',
+      title: 'Accessibility',
+      icon: Accessibility,
+      content: (
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            {formData.wheelchair_accessible && <Badge className="bg-green-100 text-green-800">Wheelchair Accessible</Badge>}
+            {formData.mobility_friendly && <Badge className="bg-blue-100 text-blue-800">Mobility Friendly</Badge>}
+            {formData.hearing_accessible && <Badge className="bg-yellow-100 text-yellow-800">Hearing Accessible</Badge>}
+            {formData.vision_accessible && <Badge className="bg-purple-100 text-purple-800">Vision Accessible</Badge>}
+            {formData.sensory_friendly && <Badge className="bg-teal-100 text-teal-800">Sensory Friendly</Badge>}
+            {formData.service_animals_allowed && <Badge className="bg-orange-100 text-orange-800">Service Animals Welcome</Badge>}
+          </div>
+          {formData.accessibility_notes && (
+            <div>
+              <span className="text-sm font-medium text-gray-700">Notes:</span>
+              <p className="text-sm text-gray-600 mt-1">{formData.accessibility_notes}</p>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: 'cultural',
+      targetStepId: 'cultural',
+      title: 'Cultural Context',
+      icon: Globe,
+      content: (
+        <div className="space-y-3">
+          {formData.religious_context && formData.religious_context.length > 0 && (
+            <div>
+              <span className="text-sm font-medium text-gray-700">Religious Context:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {formData.religious_context.map((religion, index) => (
+                  <Badge key={index} variant="outline" className="text-xs capitalize">
+                    {religion}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+          {formData.dietary_context && formData.dietary_context.length > 0 && (
+            <div>
+              <span className="text-sm font-medium text-gray-700">Dietary Context:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {formData.dietary_context.map((diet, index) => (
+                  <Badge key={index} variant="outline" className="text-xs capitalize">
+                    {diet.replace(/_/g, ' ')}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+          {formData.traditional_attire && formData.traditional_attire !== 'not_applicable' && (
+            <div>
+              <span className="text-sm font-medium text-gray-700">Traditional Attire:</span>
+              <Badge variant="outline" className="ml-2 capitalize">
+                {formData.traditional_attire.replace(/_/g, ' ')}
+              </Badge>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: 'prerequisites',
+      targetStepId: 'prerequisites',
+      title: 'Prerequisites',
+      icon: GraduationCap,
+      content: (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Skill Level:</span>
+            <Badge variant="outline" className="capitalize">
+              {formData.skill_level?.replace(/_/g, ' ') || 'All Levels'}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Prior Experience:</span>
+            <Badge variant="outline" className="capitalize">
+              {formData.prior_experience?.replace(/_/g, ' ') || 'None Required'}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Physical Fitness:</span>
+            <Badge variant="outline" className="capitalize">
+              {formData.physical_fitness?.replace(/_/g, ' ') || 'Sedentary'}
+            </Badge>
+          </div>
+          {formData.dress_code && formData.dress_code !== 'casual' && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">Dress Code:</span>
+              <Badge variant="outline" className="capitalize">
+                {formData.dress_code.replace(/_/g, ' ')}
+              </Badge>
+            </div>
+          )}
+          {formData.equipment_required && formData.equipment_required.length > 0 && (
+            <div>
+              <span className="text-sm font-medium text-gray-700">Equipment Required:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {formData.equipment_required.map((eq, index) => (
+                  <Badge key={index} variant="secondary" className="text-xs">
+                    {eq.replace(/_/g, ' ')}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+          {formData.prerequisites_notes && (
+            <div>
+              <span className="text-sm font-medium text-gray-700">Notes:</span>
+              <p className="text-sm text-gray-600 mt-1">{formData.prerequisites_notes}</p>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: 'content-rating',
+      targetStepId: 'content',
+      title: 'Content & Intensity',
+      icon: AlertCircle,
+      content: (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Content Rating:</span>
+            <Badge className="capitalize">
+              {formData.content_rating?.replace(/_/g, ' ') || 'All Ages'}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Alcohol:</span>
+            <Badge variant="outline" className="capitalize">
+              {formData.alcohol_served?.replace(/_/g, ' ') || 'No Alcohol'}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Smoking:</span>
+            <Badge variant="outline" className="capitalize">
+              {formData.smoking_policy?.replace(/_/g, ' ') || 'Non Smoking'}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Noise Level:</span>
+            <Badge variant="outline" className="capitalize">
+              {formData.noise_level?.replace(/_/g, ' ') || 'Moderate'}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Physical Intensity:</span>
+            <Badge variant="outline" className="capitalize">
+              {formData.physical_intensity?.replace(/_/g, ' ') || 'None'}
+            </Badge>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {formData.networking_focus && <Badge className="bg-blue-100 text-blue-800">Networking Focus</Badge>}
+            {formData.social_mixer && <Badge className="bg-green-100 text-green-800">Social Mixer</Badge>}
+            {formData.ice_breakers && <Badge className="bg-yellow-100 text-yellow-800">Ice Breakers</Badge>}
+            {formData.group_activities && <Badge className="bg-purple-100 text-purple-800">Group Activities</Badge>}
+            {formData.team_building && <Badge className="bg-pink-100 text-pink-800">Team Building</Badge>}
+          </div>
         </div>
       ),
     },

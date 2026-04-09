@@ -32,12 +32,11 @@ const trialTiers: TrialTier[] = [
       '3 Preview Events (full feature)',
       'Direct chat with interested users',
       'Basic reports and analytics',
-      'Up to 3 event photos',
       '3 AI Dynamic Pricing events (Pro trial, no commission)',
       'Priority listing trial (Pro feature)',
       '1 team member (Pro trial)',
     ],
-    note: 'Basic analytics + chat + photos + AI trials (zero commission) for testing.',
+    note: 'Basic analytics + chat + AI trials (zero commission) for testing.',
     highlight: true,
   },
   {
@@ -50,10 +49,9 @@ const trialTiers: TrialTier[] = [
       'Advanced analytics (benchmark vs other organizers)',
       'Priority listing in search results',
       'Team members for event organization',
-      'Up to 7 event photos',
       '10 API calls (Enterprise trial)',
     ],
-    note: 'Build your team + rich photo galleries + stand out in search + benchmark data.',
+    note: 'Build your team + stand out in search + benchmark data.'
   },
 ];
 

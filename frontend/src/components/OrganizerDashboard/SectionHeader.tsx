@@ -66,12 +66,15 @@ export const SectionHeader = ({ activeSection, onCreateEvent }: SectionHeaderPro
         <div className="flex gap-3">
           <button
             onClick={onCreateEvent}
-            className="group relative flex items-center gap-2 px-6 py-3.5 bg-gradient-to-b from-emerald-500 to-emerald-700 text-white font-semibold text-sm rounded-xl shadow-[0_4px_0_0_#047857,0_8px_16px_rgba(4,120,87,0.4)] hover:shadow-[0_2px_0_0_#047857,0_4px_8px_rgba(4,120,87,0.4)] hover:translate-y-[2px] active:shadow-none active:translate-y-[4px] focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 transition-all duration-150"
+            className="group relative flex items-center gap-2.5 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold text-sm rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:from-emerald-400 hover:to-teal-500 active:scale-95 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all duration-200 overflow-hidden"
           >
-            <div className="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
-              <Plus className="w-4 h-4" />
+            <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+            <div className="relative flex items-center gap-2.5">
+              <div className="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+                <Plus className="w-4 h-4" />
+              </div>
+              <span>Create Event</span>
             </div>
-            <span>Create Event</span>
           </button>
         </div>
       )}

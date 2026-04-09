@@ -36,7 +36,55 @@ class EventBase(BaseModel):
     is_public: bool = True
 
 
-class EventCreate(EventBase):
+class EventAttributes(BaseModel):
+    """Extended event attributes for audience, accessibility, cultural, prerequisites, and content."""
+
+    # Audience & Demographics
+    age_categories: Optional[List[str]] = None
+    gender_preference: Optional[str] = None
+    family_friendly: Optional[bool] = None
+    senior_friendly: Optional[bool] = None
+    singles_friendly: Optional[bool] = None
+    couples_oriented: Optional[bool] = None
+
+    # Accessibility
+    wheelchair_accessible: Optional[bool] = None
+    mobility_friendly: Optional[bool] = None
+    hearing_accessible: Optional[bool] = None
+    vision_accessible: Optional[bool] = None
+    sensory_friendly: Optional[bool] = None
+    service_animals_allowed: Optional[bool] = None
+    accessibility_notes: Optional[str] = None
+
+    # Cultural Context
+    religious_context: Optional[List[str]] = None
+    dietary_context: Optional[List[str]] = None
+    traditional_attire: Optional[str] = None
+
+    # Prerequisites
+    skill_level: Optional[str] = None
+    prior_experience: Optional[str] = None
+    physical_fitness: Optional[str] = None
+    equipment_required: Optional[List[str]] = None
+    dress_code: Optional[str] = None
+    prerequisites_notes: Optional[str] = None
+
+    # Content & Intensity
+    content_rating: Optional[str] = None
+    alcohol_served: Optional[str] = None
+    smoking_policy: Optional[str] = None
+    noise_level: Optional[str] = None
+    physical_intensity: Optional[str] = None
+
+    # Social Features
+    networking_focus: Optional[bool] = None
+    social_mixer: Optional[bool] = None
+    ice_breakers: Optional[bool] = None
+    group_activities: Optional[bool] = None
+    team_building: Optional[bool] = None
+
+
+class EventCreate(EventBase, EventAttributes):
     pass
 
 
@@ -51,8 +99,42 @@ class EventUpdate(BaseModel):
     max_participants: Optional[int] = Field(None, ge=1)
     is_public: Optional[bool] = None
 
+    # New attributes
+    age_categories: Optional[List[str]] = None
+    gender_preference: Optional[str] = None
+    family_friendly: Optional[bool] = None
+    senior_friendly: Optional[bool] = None
+    singles_friendly: Optional[bool] = None
+    couples_oriented: Optional[bool] = None
+    wheelchair_accessible: Optional[bool] = None
+    mobility_friendly: Optional[bool] = None
+    hearing_accessible: Optional[bool] = None
+    vision_accessible: Optional[bool] = None
+    sensory_friendly: Optional[bool] = None
+    service_animals_allowed: Optional[bool] = None
+    accessibility_notes: Optional[str] = None
+    religious_context: Optional[List[str]] = None
+    dietary_context: Optional[List[str]] = None
+    traditional_attire: Optional[str] = None
+    skill_level: Optional[str] = None
+    prior_experience: Optional[str] = None
+    physical_fitness: Optional[str] = None
+    equipment_required: Optional[List[str]] = None
+    dress_code: Optional[str] = None
+    prerequisites_notes: Optional[str] = None
+    content_rating: Optional[str] = None
+    alcohol_served: Optional[str] = None
+    smoking_policy: Optional[str] = None
+    noise_level: Optional[str] = None
+    physical_intensity: Optional[str] = None
+    networking_focus: Optional[bool] = None
+    social_mixer: Optional[bool] = None
+    ice_breakers: Optional[bool] = None
+    group_activities: Optional[bool] = None
+    team_building: Optional[bool] = None
 
-class EventResponse(EventBase):
+
+class EventResponse(EventBase, EventAttributes):
     id: str
     organizer_id: str
     created_at: str

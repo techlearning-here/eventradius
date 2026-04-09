@@ -15,7 +15,6 @@ const features: ComparisonFeature[] = [
   { name: 'Real-time Notifications', free: false, starter: false, pro: true, enterprise: true },
   { name: 'Direct Chat with Users', free: false, starter: true, pro: true, enterprise: true },
   { name: 'Analytics', free: false, starter: 'Basic', pro: 'Advanced', enterprise: 'Advanced' },
-  { name: 'Event Photos', free: false, starter: 'Up to 3', pro: 'Up to 7', enterprise: 'Unlimited' },
   { name: 'Priority Listing', free: false, starter: 'Trial', pro: true, enterprise: true },
   { name: 'Team Members', free: false, starter: '1 Trial', pro: true, enterprise: true },
   { name: 'API Access', free: false, starter: false, pro: '10 Trial', enterprise: 'Full' },
