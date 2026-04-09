@@ -49,8 +49,8 @@ const LandingSimple = () => {
           </h1>
 
           <p className="text-base md:text-lg text-primary-foreground/60 max-w-2xl mx-auto mb-12">
-            Discover local events filtered by your interests, demographics, and distance.
-            See only what matters to you.
+            Discover local events intelligently and automatically. AI-powered recommendations
+            based on your interests, location, and preferences — see only what matters to you.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

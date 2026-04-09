@@ -69,7 +69,7 @@ const Landing = () => {
             </div>
             <div>
               <span className="text-xl font-bold tracking-tight text-foreground">Event Radius</span>
-              <div className="text-xs text-muted-foreground">Discover Local Events</div>
+              <div className="text-xs text-muted-foreground">Discover Events Intelligently</div>
             </div>
           </div>
           
@@ -562,7 +562,7 @@ const Landing = () => {
                 </div>
                 <div>
                   <div className="text-xl font-bold text-foreground">Event Radius</div>
-                  <div className="text-sm text-muted-foreground">Discover Local Events</div>
+                  <div className="text-sm text-muted-foreground">Discover Events Intelligently</div>
                 </div>
               </div>
               <p className="text-muted-foreground mb-6 max-w-md">

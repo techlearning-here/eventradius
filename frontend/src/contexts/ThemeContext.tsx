@@ -25,10 +25,10 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ 
   children, 
-  defaultTheme = 'system' 
+  defaultTheme = 'dark' 
 }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Check for saved theme preference or default to system
+    // Check for saved theme preference or default to dark
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('eventradius-theme');
       if (saved && (saved === 'light' || saved === 'dark' || saved === 'system')) {
@@ -66,14 +66,14 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   const toggleTheme = () => {
     setTheme(prevTheme => {
       switch (prevTheme) {
-        case 'light':
-          return 'dark';
         case 'dark':
+          return 'light';
+        case 'light':
           return 'system';
         case 'system':
-          return 'light';
+          return 'dark';
         default:
-          return 'light';
+          return 'dark';
       }
     });
   };
