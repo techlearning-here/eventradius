@@ -376,6 +376,20 @@ export const EventWizard = ({ initialData, onPublish }: EventWizardProps) => {
     setIsPublishing(true);
     try {
       const publishData = buildEventData('published');
+      console.log('=== EVENT WIZARD DEBUG ===');
+      console.log('Raw formData:', formData);
+      console.log('Built publishData:', publishData);
+      console.log('Attribute check:', JSON.stringify({
+        age_categories: publishData.age_categories,
+        gender_preference: publishData.gender_preference,
+        family_friendly: publishData.family_friendly,
+        wheelchair_accessible: publishData.wheelchair_accessible,
+        religious_context: publishData.religious_context,
+        skill_level: publishData.skill_level,
+        dietary_context: publishData.dietary_context,
+        networking_focus: publishData.networking_focus,
+      }, null, 2));
+      console.log('==========================');
       if (onPublish) {
         await onPublish(publishData);
       }

@@ -168,6 +168,55 @@ const OrganizerDashboard = () => {
         refund_policy: data.refund_policy,
         custom_refund_policy: data.custom_refund_policy,
         ticket_pricing_description: data.ticket_pricing_description,
+        // Audience & Demographics
+        age_categories: data.age_categories,
+        gender_preference: data.gender_preference,
+        family_friendly: data.family_friendly,
+        senior_friendly: data.senior_friendly,
+        singles_friendly: data.singles_friendly,
+        couples_oriented: data.couples_oriented,
+        // Accessibility
+        wheelchair_accessible: data.wheelchair_accessible,
+        mobility_friendly: data.mobility_friendly,
+        hearing_accessible: data.hearing_accessible,
+        vision_accessible: data.vision_accessible,
+        sensory_friendly: data.sensory_friendly,
+        service_animals_allowed: data.service_animals_allowed,
+        accessibility_notes: data.accessibility_notes,
+        // Cultural Context
+        religious_context: data.religious_context,
+        dietary_context: data.dietary_context,
+        traditional_attire: data.traditional_attire,
+        // Prerequisites
+        skill_level: data.skill_level,
+        prior_experience: data.prior_experience,
+        physical_fitness: data.physical_fitness,
+        equipment_required: data.equipment_required,
+        dress_code: data.dress_code,
+        prerequisites_notes: data.prerequisites_notes,
+        // Content & Intensity
+        content_rating: data.content_rating,
+        alcohol_served: data.alcohol_served,
+        smoking_policy: data.smoking_policy,
+        noise_level: data.noise_level,
+        physical_intensity: data.physical_intensity,
+        // Social Features
+        networking_focus: data.networking_focus,
+        social_mixer: data.social_mixer,
+        ice_breakers: data.ice_breakers,
+        group_activities: data.group_activities,
+        team_building: data.team_building,
+        // Language
+        primary_language: data.primary_language,
+        secondary_languages: data.secondary_languages,
+        interpretation_available: data.interpretation_available,
+        sign_language_interpreter: data.sign_language_interpreter,
+        // Pricing
+        group_discounts: data.group_discounts,
+        // Additional fields
+        is_paid_event: data.is_paid_event,
+        sub_category: data.sub_category,
+        format: data.format,
       };
 
       const result = await createEvent(eventData);
@@ -253,7 +302,70 @@ const OrganizerDashboard = () => {
         refund_policy: data.refund_policy,
         custom_refund_policy: data.custom_refund_policy,
         ticket_pricing_description: data.ticket_pricing_description,
+        // Audience & Demographics
+        age_categories: data.age_categories,
+        gender_preference: data.gender_preference,
+        family_friendly: data.family_friendly,
+        senior_friendly: data.senior_friendly,
+        singles_friendly: data.singles_friendly,
+        couples_oriented: data.couples_oriented,
+        // Accessibility
+        wheelchair_accessible: data.wheelchair_accessible,
+        mobility_friendly: data.mobility_friendly,
+        hearing_accessible: data.hearing_accessible,
+        vision_accessible: data.vision_accessible,
+        sensory_friendly: data.sensory_friendly,
+        service_animals_allowed: data.service_animals_allowed,
+        accessibility_notes: data.accessibility_notes,
+        // Cultural Context
+        religious_context: data.religious_context,
+        dietary_context: data.dietary_context,
+        traditional_attire: data.traditional_attire,
+        // Prerequisites
+        skill_level: data.skill_level,
+        prior_experience: data.prior_experience,
+        physical_fitness: data.physical_fitness,
+        equipment_required: data.equipment_required,
+        dress_code: data.dress_code,
+        prerequisites_notes: data.prerequisites_notes,
+        // Content & Intensity
+        content_rating: data.content_rating,
+        alcohol_served: data.alcohol_served,
+        smoking_policy: data.smoking_policy,
+        noise_level: data.noise_level,
+        physical_intensity: data.physical_intensity,
+        // Social Features
+        networking_focus: data.networking_focus,
+        social_mixer: data.social_mixer,
+        ice_breakers: data.ice_breakers,
+        group_activities: data.group_activities,
+        team_building: data.team_building,
+        // Language
+        primary_language: data.primary_language,
+        secondary_languages: data.secondary_languages,
+        interpretation_available: data.interpretation_available,
+        sign_language_interpreter: data.sign_language_interpreter,
+        // Pricing
+        group_discounts: data.group_discounts,
+        // Additional fields
+        is_paid_event: data.is_paid_event,
+        sub_category: data.sub_category,
+        format: data.format,
       };
+
+      console.log('=== ORGANIZER DASHBOARD DEBUG ===');
+      console.log('EventData to be sent to API:', eventData);
+      console.log('Key attributes:', JSON.stringify({
+        age_categories: eventData.age_categories,
+        gender_preference: eventData.gender_preference,
+        family_friendly: eventData.family_friendly,
+        wheelchair_accessible: eventData.wheelchair_accessible,
+        religious_context: eventData.religious_context,
+        skill_level: eventData.skill_level,
+        dietary_context: eventData.dietary_context,
+        networking_focus: eventData.networking_focus,
+      }, null, 2));
+      console.log('==================================');
 
       const result = await createEvent(eventData);
       if (!result) {
@@ -276,7 +388,6 @@ const OrganizerDashboard = () => {
     if (!editingEvent) return;
     
     try {
-      // Only use fields supported by EventUpdate interface
       const eventData = {
         title: data.title,
         description: data.description,
@@ -287,6 +398,58 @@ const OrganizerDashboard = () => {
         category: data.category,
         max_participants: data.max_participants,
         is_public: data.is_public,
+        // Audience & Demographics
+        age_categories: data.age_categories,
+        gender_preference: data.gender_preference,
+        family_friendly: data.family_friendly,
+        senior_friendly: data.senior_friendly,
+        singles_friendly: data.singles_friendly,
+        couples_oriented: data.couples_oriented,
+        // Accessibility
+        wheelchair_accessible: data.wheelchair_accessible,
+        mobility_friendly: data.mobility_friendly,
+        hearing_accessible: data.hearing_accessible,
+        vision_accessible: data.vision_accessible,
+        sensory_friendly: data.sensory_friendly,
+        service_animals_allowed: data.service_animals_allowed,
+        accessibility_notes: data.accessibility_notes,
+        // Cultural Context
+        religious_context: data.religious_context,
+        dietary_context: data.dietary_context,
+        traditional_attire: data.traditional_attire,
+        // Prerequisites
+        skill_level: data.skill_level,
+        prior_experience: data.prior_experience,
+        physical_fitness: data.physical_fitness,
+        equipment_required: data.equipment_required,
+        dress_code: data.dress_code,
+        prerequisites_notes: data.prerequisites_notes,
+        // Content & Intensity
+        content_rating: data.content_rating,
+        alcohol_served: data.alcohol_served,
+        smoking_policy: data.smoking_policy,
+        noise_level: data.noise_level,
+        physical_intensity: data.physical_intensity,
+        // Social Features
+        networking_focus: data.networking_focus,
+        social_mixer: data.social_mixer,
+        ice_breakers: data.ice_breakers,
+        group_activities: data.group_activities,
+        team_building: data.team_building,
+        // Language
+        primary_language: data.primary_language,
+        secondary_languages: data.secondary_languages,
+        interpretation_available: data.interpretation_available,
+        sign_language_interpreter: data.sign_language_interpreter,
+        // Pricing
+        refund_policy: data.refund_policy,
+        custom_refund_policy: data.custom_refund_policy,
+        ticket_pricing_description: data.ticket_pricing_description,
+        group_discounts: data.group_discounts,
+        // Additional fields
+        is_paid_event: data.is_paid_event,
+        sub_category: data.sub_category,
+        format: data.format,
       };
 
       const result = await updateEvent(editingEvent.id, eventData);

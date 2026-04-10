@@ -8,31 +8,31 @@
 -- =====================================================
 -- 1. TRUNCATE EVENT MANAGEMENT TABLES (no user dependencies)
 -- =====================================================
-TRUNCATE TABLE IF EXISTS public.event_schedule CASCADE;
-TRUNCATE TABLE IF EXISTS public.event_tags CASCADE;
-TRUNCATE TABLE IF EXISTS public.event_notifications CASCADE;
-TRUNCATE TABLE IF EXISTS public.event_media CASCADE;
-TRUNCATE TABLE IF EXISTS public.registration_fields CASCADE;
-TRUNCATE TABLE IF EXISTS public.ticket_types CASCADE;
-TRUNCATE TABLE IF EXISTS public.event_venues CASCADE;
-TRUNCATE TABLE IF EXISTS public.event_audit CASCADE;
+TRUNCATE TABLE public.event_schedule CASCADE;
+TRUNCATE TABLE public.event_tags CASCADE;
+TRUNCATE TABLE public.event_notifications CASCADE;
+TRUNCATE TABLE public.event_media CASCADE;
+TRUNCATE TABLE public.registration_fields CASCADE;
+TRUNCATE TABLE public.ticket_types CASCADE;
+TRUNCATE TABLE public.event_venues CASCADE;
+TRUNCATE TABLE public.event_audit CASCADE;
 
 -- =====================================================
 -- 2. TRUNCATE EVENT RELATIONSHIPS (depends on events)
 -- =====================================================
-TRUNCATE TABLE IF EXISTS public.event_registrations CASCADE;
-TRUNCATE TABLE IF EXISTS public.event_categories CASCADE;
-TRUNCATE TABLE IF EXISTS public.event_participants CASCADE;
+TRUNCATE TABLE public.event_registrations CASCADE;
+TRUNCATE TABLE public.event_categories CASCADE;
+TRUNCATE TABLE public.event_participants CASCADE;
 
 -- =====================================================
 -- 3. TRUNCATE VENUES (referenced by events)
 -- =====================================================
-TRUNCATE TABLE IF EXISTS public.venues CASCADE;
+TRUNCATE TABLE public.venues CASCADE;
 
 -- =====================================================
 -- 4. TRUNCATE MAIN EVENTS TABLE (parent table)
 -- =====================================================
-TRUNCATE TABLE IF EXISTS public.events CASCADE;
+TRUNCATE TABLE public.events CASCADE;
 
 -- =====================================================
 -- 5. RESET SEQUENCES (if any auto-increment IDs exist)

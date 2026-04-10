@@ -90,6 +90,8 @@ export const Navbar: React.FC = () => {
         {/* Desktop */}
         <div className="hidden md:flex items-center">
           {user && canSwitchRole && <RoleSwitcher />}
+          {/* Account Details - Show early in nav */}
+          {user && <AccountDetails />}
           <ThemeToggle />
           {links.map((link, i) => (
             link.to ? (
@@ -135,9 +137,6 @@ export const Navbar: React.FC = () => {
             </button>
           )}
         </div>
-
-        {/* Account Details - Always visible in nav */}
-        {user && <AccountDetails />}
 
         {/* Mobile Menu Button */}
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

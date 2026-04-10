@@ -261,6 +261,18 @@ async def get_event(event_id: str, user: Optional[dict] = Depends(optional_auth)
 
         event["current_participants"] = participants_response.count or 0
 
+        logger.info("=== GET EVENT DEBUG ===")
+        logger.info(f"Event ID: {event_id}")
+        logger.info(f"Event keys: {list(event.keys())}")
+        logger.info("Attribute fields in response:")
+        logger.info(f"  age_categories: {event.get('age_categories')}")
+        logger.info(f"  gender_preference: {event.get('gender_preference')}")
+        logger.info(f"  family_friendly: {event.get('family_friendly')}")
+        logger.info(f"  wheelchair_accessible: {event.get('wheelchair_accessible')}")
+        logger.info(f"  religious_context: {event.get('religious_context')}")
+        logger.info(f"  skill_level: {event.get('skill_level')}")
+        logger.info("=======================")
+
         return event
     except HTTPException:
         raise
@@ -281,6 +293,19 @@ async def create_event(event: EventCreate, user: dict = Depends(get_current_user
     try:
         event_data = event.model_dump()
         event_data["organizer_id"] = user["id"]
+
+        logger.info("=== BACKEND DEBUG ===")
+        logger.info(f"Received event data keys: {list(event_data.keys())}")
+        logger.info("Attribute fields:")
+        logger.info(f"  age_categories: {event_data.get('age_categories')}")
+        logger.info(f"  gender_preference: {event_data.get('gender_preference')}")
+        logger.info(f"  family_friendly: {event_data.get('family_friendly')}")
+        logger.info(
+            f"  wheelchair_accessible: {event_data.get('wheelchair_accessible')}"
+        )
+        logger.info(f"  religious_context: {event_data.get('religious_context')}")
+        logger.info(f"  skill_level: {event_data.get('skill_level')}")
+        logger.info("=====================")
 
         response = insert_record("events", event_data)
 

@@ -7,11 +7,31 @@ interface AccountDetailsProps {
   className?: string;
 }
 
+const USER_SETTINGS_KEY = 'eventradius_user_settings';
+
+// Helper to get cached user settings from localStorage
+const getCachedUserSettings = () => {
+  try {
+    const stored = localStorage.getItem(USER_SETTINGS_KEY);
+    if (stored) {
+      return JSON.parse(stored) as {
+        userProfile: { full_name?: string; email?: string } | null;
+      };
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return null;
+};
+
 export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }) => {
   // Call all hooks at the top level to ensure consistent order
   const authResult = useAuthWithBackend();
   const { user, userProfile, signOut, loading } = authResult;
   const navigate = useNavigate();
+  
+  // Get cached data for instant display
+  const cachedSettings = getCachedUserSettings();
   
   const [isOpen, setIsOpen] = useState(() => {
     const savedState = localStorage.getItem('accountDetailsOpen');
@@ -43,12 +63,12 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
     signOut();
   };
 
-  // Don't render anything while auth is loading
-  if (loading) {
-    return null;
-  }
-
-  if (!user) {
+  // Use cached data for instant display, fallback to auth data when loaded
+  const displayUser = user;
+  const displayUserProfile = userProfile || cachedSettings?.userProfile;
+  
+  // Don't render if no user at all (not even cached)
+  if (!displayUser) {
     return null;
   }
 
@@ -62,7 +82,7 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
           <User className="w-4 h-4 text-white" />
         </div>
         <span className="hidden md:block max-w-[100px] truncate">
-          {userProfile?.full_name || user.email?.split('@')[0] || 'User'}
+          {displayUserProfile?.full_name || displayUser.email?.split('@')[0] || 'User'}
         </span>
         <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
@@ -85,10 +105,10 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-semibold text-foreground truncate">
-                    {userProfile?.full_name || 'User'}
+                    {displayUserProfile?.full_name || 'User'}
                   </p>
                   <p className="text-sm text-muted-foreground truncate">
-                    {user.email}
+                    {displayUser.email}
                   </p>
                 </div>
               </div>

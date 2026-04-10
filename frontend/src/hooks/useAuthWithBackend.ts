@@ -7,6 +7,7 @@ import { apiClient, type UserProfile } from '@/integrations/backend/api';
 export type AppRole = 'admin' | 'user' | 'organizer';
 
 const ACTIVE_ROLE_KEY = 'eventradius_active_role';
+const USER_SETTINGS_KEY = 'eventradius_user_settings';
 
 function pickEffectiveRole(
   list: AppRole[],
@@ -27,14 +28,47 @@ const globalRequestPromises = new Map<string, Promise<unknown>>();
 const globalRequestResults = new Map<string, { data: unknown; timestamp: number }>();
 const CACHE_TTL = 5000; // 5 second cache
 
+// Helper to get initial user settings from localStorage
+const getStoredUserSettings = () => {
+  try {
+    const stored = localStorage.getItem(USER_SETTINGS_KEY);
+    if (stored) {
+      return JSON.parse(stored) as {
+        roles: AppRole[];
+        onboardingCompleted: boolean | null;
+        userProfile: UserProfile | null;
+        timestamp: number;
+      };
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return null;
+};
+
+// Helper to save user settings to localStorage
+const saveUserSettings = (settings: {
+  roles: AppRole[];
+  onboardingCompleted: boolean | null;
+  userProfile: UserProfile | null;
+}) => {
+  localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify({
+    ...settings,
+    timestamp: Date.now()
+  }));
+};
+
 export const useAuthWithBackend = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  const [roles, setRoles] = useState<AppRole[]>([]);
+  
+  // Initialize from localStorage to avoid flicker on refresh
+  const storedSettings = getStoredUserSettings();
+  const [roles, setRoles] = useState<AppRole[]>(storedSettings?.roles ?? []);
   const [activeRoleUi, setActiveRoleUi] = useState<'user' | 'organizer' | null>(null);
   const [loading, setLoading] = useState(true);
-  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(storedSettings?.onboardingCompleted ?? null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(storedSettings?.userProfile ?? null);
   
   // Flag to prevent race conditions during initialization
   const [isInitialized, setIsInitialized] = useState(false);
@@ -134,9 +168,20 @@ export const useAuthWithBackend = () => {
     const cached = globalRequestResults.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       const data = cached.data as { profile: UserProfile; roles: string[]; preferences: { onboarding_completed?: boolean; is_organizer?: boolean } };
+      const cachedRoles = data.roles as AppRole[];
+      const cachedOnboarding = (data.preferences?.onboarding_completed as boolean | null | undefined) ?? null;
+      
       setUserProfile(data.profile);
-      setRoles(data.roles as AppRole[]);
-      setOnboardingCompleted(data.preferences?.onboarding_completed ?? null);
+      setRoles(cachedRoles);
+      setOnboardingCompleted(cachedOnboarding);
+      
+      // Also update localStorage when using cached data
+      saveUserSettings({
+        roles: cachedRoles,
+        onboardingCompleted: cachedOnboarding,
+        userProfile: data.profile
+      });
+      
       return data;
     }
     
@@ -148,9 +193,20 @@ export const useAuthWithBackend = () => {
     const promise = (async () => {
       try {
         const data = await apiClient.getCurrentUserCombined();
+        const fetchedRoles = data.roles as AppRole[];
+        const fetchedOnboarding = (data.preferences?.onboarding_completed as boolean | null | undefined) ?? null;
+        
         setUserProfile(data.profile);
-        setRoles(data.roles as AppRole[]);
-        setOnboardingCompleted(data.preferences?.onboarding_completed ?? null);
+        setRoles(fetchedRoles);
+        setOnboardingCompleted(fetchedOnboarding);
+        
+        // Persist to localStorage for instant access on refresh
+        saveUserSettings({
+          roles: fetchedRoles,
+          onboardingCompleted: fetchedOnboarding,
+          userProfile: data.profile
+        });
+        
         globalRequestResults.set(cacheKey, { data, timestamp: Date.now() });
         return data;
       } catch (error) {
@@ -469,6 +525,7 @@ export const useAuthWithBackend = () => {
       localStorage.removeItem('supabase.auth.user');
       localStorage.removeItem('supabase.auth.token');
       localStorage.removeItem(ACTIVE_ROLE_KEY);
+      localStorage.removeItem(USER_SETTINGS_KEY);
       
       // Redirect after a short delay to ensure state is cleared
       setTimeout(() => {
@@ -490,6 +547,7 @@ export const useAuthWithBackend = () => {
       localStorage.removeItem('supabase.auth.user');
       localStorage.removeItem('supabase.auth.token');
       localStorage.removeItem(ACTIVE_ROLE_KEY);
+      localStorage.removeItem(USER_SETTINGS_KEY);
       
       setTimeout(() => {
         navigate('/');

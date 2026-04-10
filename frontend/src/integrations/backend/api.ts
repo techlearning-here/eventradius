@@ -297,9 +297,15 @@ class ApiClient {
   }
 
   async createEvent(event: EventCreate): Promise<Event> {
+    const body = JSON.stringify(event);
+    console.log('=== API CLIENT DEBUG ===');
+    console.log('createEvent URL: /api/events');
+    console.log('Request body:', body);
+    console.log('Parsed body:', JSON.parse(body));
+    console.log('========================');
     return this.request<Event>('/api/events', {
       method: 'POST',
-      body: JSON.stringify(event),
+      body: body,
     });
   }
 
