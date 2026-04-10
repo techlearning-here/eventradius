@@ -13,6 +13,9 @@ export interface ApiResponse<T = unknown> {
   message?: string;
 }
 
+// Refund policy enum matching database
+export type RefundPolicy = 'no_refunds' | 'refund_up_to_7_days' | 'refund_up_to_24_hours' | 'refund_up_to_1_hour' | 'custom';
+
 export interface Event {
   id: string;
   title: string;
@@ -78,7 +81,7 @@ export interface Event {
   format?: string;
   sub_category?: string;
   // New Event Attributes - Pricing
-  refund_policy?: string;
+  refund_policy?: RefundPolicy;
   group_discounts?: boolean;
 }
 

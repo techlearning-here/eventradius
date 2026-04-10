@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/integrations/backend/api';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { ThumbsUp, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -21,28 +21,19 @@ export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
   // Check if this is a demo event
   const isDemoEvent = eventId && eventId.startsWith('demo-');
 
-  const fetchCounts = useCallback(async () => {
-    const { data } = await supabase
-      .from('event_participants')
-      .select('status')
-      .eq('event_id', eventId);
-    if (data) {
+  const fetchParticipants = useCallback(async () => {
+    try {
+      const response = await apiClient.getEventParticipants(eventId);
       setCounts({
-        interested: data.filter(p => p.status === 'interested').length,
-        going: data.filter(p => p.status === 'going').length,
+        interested: response.counts.interested,
+        going: response.counts.going,
       });
+      if (user) {
+        setCurrentStatus(response.my_status);
+      }
+    } catch (error) {
+      console.error('Error fetching participant data:', error);
     }
-  }, [eventId]);
-
-  const fetchMyStatus = useCallback(async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from('event_participants')
-      .select('status')
-      .eq('event_id', eventId)
-      .eq('user_id', user.id)
-      .maybeSingle();
-    setCurrentStatus((data?.status as ParticipationStatus) || null);
   }, [eventId, user]);
 
   useEffect(() => {
@@ -54,10 +45,9 @@ export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
       });
       setCurrentStatus(null); // Demo events start with no participation
     } else {
-      fetchCounts();
-      if (user) fetchMyStatus();
+      fetchParticipants();
     }
-  }, [eventId, user, isDemoEvent, fetchCounts, fetchMyStatus]);
+  }, [eventId, user?.id, isDemoEvent]);
 
   const handleClick = async (status: ParticipationStatus) => {
     if (isDemoEvent) {
@@ -87,24 +77,14 @@ export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
     try {
       if (currentStatus === status) {
         // Remove participation
-        await supabase
-          .from('event_participants')
-          .delete()
-          .eq('event_id', eventId)
-          .eq('user_id', user.id);
+        await apiClient.leaveEvent(eventId);
         setCurrentStatus(null);
       } else {
         // Add or update participation
-        await supabase
-          .from('event_participants')
-          .upsert({
-            event_id: eventId,
-            user_id: user.id,
-            status,
-          });
+        await apiClient.participateEvent(eventId);
         setCurrentStatus(status);
       }
-      await fetchCounts();
+      await fetchParticipants();
     } catch (error) {
       console.error('Error updating participation:', error);
     } finally {
@@ -160,15 +140,14 @@ export const EventParticipationCounts = ({ eventId }: { eventId: string }) => {
       });
     } else {
       const fetch = async () => {
-        const { data } = await supabase
-          .from('event_participants')
-          .select('status')
-          .eq('event_id', eventId);
-        if (data) {
+        try {
+          const response = await apiClient.getEventParticipants(eventId);
           setCounts({
-            interested: data.filter(p => p.status === 'interested').length,
-            going: data.filter(p => p.status === 'going').length,
+            interested: response.counts.interested,
+            going: response.counts.going,
           });
+        } catch (error) {
+          console.error('Error fetching participant counts:', error);
         }
       };
       fetch();

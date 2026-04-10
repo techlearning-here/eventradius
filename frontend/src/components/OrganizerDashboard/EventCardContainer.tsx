@@ -1,10 +1,11 @@
 import React from 'react';
 import { Eye, Edit, Trash2, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { Event } from '@/types/event';
 
 interface EventCardContainerProps {
   children: React.ReactNode;
-  onPreview?: () => void;
+  onPreview?: (event?: Event) => void;
   onEdit?: () => void;
   onDelete?: () => void;
   className?: string;

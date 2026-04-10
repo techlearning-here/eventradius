@@ -103,7 +103,7 @@ const Landing = () => {
                   <span className="text-sm text-muted-foreground">Online</span>
                 </div>
                 <button
-                  onClick={() => navigate(role === 'organizer' ? '/organizer' : role === 'admin' ? '/admin-dashboard' : '/discover')}
+                  onClick={() => navigate('/organizer')}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium text-sm rounded-lg hover:shadow-lg hover:shadow-teal-600/25 transition-all duration-300 hover:scale-105 active:scale-95"
                 >
                   <span>Dashboard</span>

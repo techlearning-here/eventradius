@@ -55,7 +55,7 @@ const LandingSimple = () => {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={() => navigate('/discover')}
+              onClick={() => navigate('/organizer')}
               className="w-full sm:w-auto px-8 py-4 bg-[hsl(295,100%,73%)] text-foreground font-semibold text-sm uppercase tracking-wider hover:bg-[hsl(295,100%,78%)] transition-colors"
             >
               Discover Events

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarIcon, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
-import { EventDetailOverlay } from '@/components/EventDetailPage';
 import { EventParticipationCounts } from '@/components/EventParticipation';
 import { CATEGORIES } from '@/data/cities';
 import { type Event } from '@/integrations/backend/api';
@@ -17,7 +16,7 @@ interface OrganizerEventCardProps {
   variant?: 'default' | 'compact';
 }
 
-export const OrganizerEventCard: React.FC<OrganizerEventCardProps> = ({
+export const OrganizerEventCard = ({
   event,
   onEdit,
   onDelete,
@@ -25,7 +24,6 @@ export const OrganizerEventCard: React.FC<OrganizerEventCardProps> = ({
   variant = 'default'
 }) => {
   const navigate = useNavigate();
-  const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const catLabel = CATEGORIES.find(c => c.id === event.category)?.label || event.category;
 
@@ -34,7 +32,6 @@ export const OrganizerEventCard: React.FC<OrganizerEventCardProps> = ({
     if ((e.target as HTMLElement).closest('.event-actions') || (e.target as HTMLElement).closest('.event-menu')) {
       return;
     }
-    setIsOverlayOpen(true);
     onPreview?.(event);
   };
 
@@ -47,7 +44,6 @@ export const OrganizerEventCard: React.FC<OrganizerEventCardProps> = ({
   };
 
   const handlePreview = () => {
-    setIsOverlayOpen(true);
     onPreview?.(event);
   };
 
@@ -174,13 +170,6 @@ export const OrganizerEventCard: React.FC<OrganizerEventCardProps> = ({
           </div>
         </div>
       </EventCardContainer>
-
-      {/* Event Detail Overlay */}
-      <EventDetailOverlay 
-        eventId={event.id} 
-        isOpen={isOverlayOpen} 
-        onClose={() => setIsOverlayOpen(false)} 
-      />
     </>
   );
 };

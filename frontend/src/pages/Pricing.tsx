@@ -19,6 +19,10 @@ const Pricing = () => {
     navigate('/organizer');
   };
 
+  const handleStartOrganizing = () => {
+    navigate('/organizer');
+  };
+
   const handleStartDiscovering = () => {
     navigate('/discover');
   };

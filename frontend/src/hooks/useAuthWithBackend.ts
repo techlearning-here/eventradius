@@ -22,6 +22,11 @@ function pickEffectiveRole(
   return 'user';
 }
 
+// Module-level cache to persist across React StrictMode remounts
+const globalRequestPromises = new Map<string, Promise<unknown>>();
+const globalRequestResults = new Map<string, { data: unknown; timestamp: number }>();
+const CACHE_TTL = 5000; // 5 second cache
+
 export const useAuthWithBackend = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
@@ -36,74 +41,155 @@ export const useAuthWithBackend = () => {
   const isInitializingRef = useRef(false);
 
   const fetchOnboardingStatus = useCallback(async (userId: string) => {
-    try {
-      console.log('🔍 Fetching onboarding status for user:', userId);
-      const preferences = await apiClient.getUserPreferences();
-      console.log('🔍 Raw preferences from API:', preferences);
-      console.log('🔍 Available keys in preferences:', Object.keys(preferences || {}));
-      
+    const cacheKey = `userPreferences-${userId}`;
+    
+    const cached = globalRequestResults.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      const preferences = cached.data;
       const completed = (preferences?.onboarding_completed as boolean | null) ?? null;
       const isOrganizer = (preferences?.is_organizer as boolean | null) ?? null;
-      
-      console.log('🔍 onboarding_completed value:', completed);
-      console.log('🔍 is_organizer value:', isOrganizer);
-      
       setOnboardingCompleted(completed);
-      console.log('🔍 Setting onboardingCompleted to:', completed);
-
-      // If organizer preference is set, update roles accordingly
       if (isOrganizer === true && !roles.includes('organizer')) {
-        console.log('🔍 Adding organizer role based on preference');
         await addOrganizerRole();
       } else if (isOrganizer === false && !roles.includes('user')) {
-        console.log('🔍 Adding user role based on preference');
         await addUserRole();
       }
-
       return completed;
-    } catch (error) {
-      console.error('Error fetching onboarding status:', error);
-      console.log('🔍 Setting onboardingCompleted to null due to error');
-      setOnboardingCompleted(null);
-      return null;
     }
-  }, []);
+    
+    if (globalRequestPromises.has(cacheKey)) {
+      const result = await globalRequestPromises.get(cacheKey)!;
+      return result;
+    }
+    
+    const promise = (async () => {
+      try {
+        const preferences = await apiClient.getUserPreferences();
+        const completed = (preferences?.onboarding_completed as boolean | null) ?? null;
+        const isOrganizer = (preferences?.is_organizer as boolean | null) ?? null;
+        setOnboardingCompleted(completed);
+        globalRequestResults.set(cacheKey, { data: preferences, timestamp: Date.now() });
+
+        // If organizer preference is set, update roles accordingly
+        if (isOrganizer === true && !roles.includes('organizer')) {
+          await addOrganizerRole();
+        } else if (isOrganizer === false && !roles.includes('user')) {
+          await addUserRole();
+        }
+        return completed;
+      } catch (error) {
+        console.error('Error fetching onboarding status:', error);
+        setOnboardingCompleted(null);
+        return null;
+      } finally {
+        globalRequestPromises.delete(cacheKey);
+      }
+    })();
+    
+    globalRequestPromises.set(cacheKey, promise);
+    return promise;
+  }, [roles]);
 
   const fetchRoles = useCallback(async (userId: string): Promise<AppRole[]> => {
-    try {
-      const response = await apiClient.getUserRoles();
-      const roles = response.roles as AppRole[];
-      setRoles(roles);
-      return roles;
-    } catch (error) {
-      console.error('Error fetching roles:', error);
-      setRoles([]);
-      return [];
+    const cacheKey = `fetchRoles-${userId}`;
+    
+    // Check if we have a recent cached result
+    const cached = globalRequestResults.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      setRoles(cached.data);
+      return cached.data;
     }
+    
+    // If already in progress, return the existing promise
+    if (globalRequestPromises.has(cacheKey)) {
+      const result = await globalRequestPromises.get(cacheKey)!;
+      return result;
+    }
+    
+    // Create the promise
+    const promise = (async () => {
+      try {
+        const response = await apiClient.getUserRoles();
+        const roles = response.roles as AppRole[];
+        setRoles(roles);
+        globalRequestResults.set(cacheKey, { data: roles, timestamp: Date.now() });
+        return roles;
+      } catch (error) {
+        console.error('Error fetching roles:', error);
+        setRoles([]);
+        return [];
+      } finally {
+        globalRequestPromises.delete(cacheKey);
+      }
+    })();
+    
+    globalRequestPromises.set(cacheKey, promise);
+    return promise;
   }, []);
 
   const fetchUserProfile = useCallback(async (userId: string) => {
-    try {
-      const profile = await apiClient.getCurrentUserProfile();
-      setUserProfile(profile);
-      return profile;
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      setUserProfile(null);
-      return null;
+    const cacheKey = `fetchUserProfile-${userId}`;
+    
+    const cached = globalRequestResults.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      setUserProfile(cached.data);
+      return cached.data;
     }
+    
+    if (globalRequestPromises.has(cacheKey)) {
+      const result = await globalRequestPromises.get(cacheKey)!;
+      return result;
+    }
+    
+    const promise = (async () => {
+      try {
+        const profile = await apiClient.getCurrentUserProfile();
+        setUserProfile(profile);
+        globalRequestResults.set(cacheKey, { data: profile, timestamp: Date.now() });
+        return profile;
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        setUserProfile(null);
+        return null;
+      } finally {
+        globalRequestPromises.delete(cacheKey);
+      }
+    })();
+    
+    globalRequestPromises.set(cacheKey, promise);
+    return promise;
   }, []);
 
   const ensureUserPreferencesRow = useCallback(async (userId: string) => {
-    try {
-      const preferences = await apiClient.getUserPreferences();
-      if (!preferences || Object.keys(preferences).length === 0) {
-        await apiClient.updateUserPreferences({});
-        setOnboardingCompleted(false);
-      }
-    } catch (error) {
-      console.error('Error ensuring user preferences row:', error);
+    const cacheKey = `userPreferences-${userId}`;
+    
+    const cached = globalRequestResults.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return cached.data;
     }
+    
+    if (globalRequestPromises.has(cacheKey)) {
+      return globalRequestPromises.get(cacheKey)!;
+    }
+    
+    const promise = (async () => {
+      try {
+        const preferences = await apiClient.getUserPreferences();
+        globalRequestResults.set(cacheKey, { data: preferences, timestamp: Date.now() });
+        if (!preferences || Object.keys(preferences).length === 0) {
+          await apiClient.updateUserPreferences({});
+          setOnboardingCompleted(false);
+        }
+        return preferences;
+      } catch (error) {
+        console.error('Error ensuring user preferences row:', error);
+      } finally {
+        globalRequestPromises.delete(cacheKey);
+      }
+    })();
+    
+    globalRequestPromises.set(cacheKey, promise);
+    return promise;
   }, []);
 
   const syncActiveUiFromRoles = useCallback((list: AppRole[]) => {
@@ -148,15 +234,12 @@ export const useAuthWithBackend = () => {
     async (sessionUser: User) => {
       // Prevent race conditions during initialization
       if (isInitialized) {
-        console.log('🔍 Skipping loadSession - already initializing');
         return;
       }
       
       // Store user state to localStorage for persistence
       localStorage.setItem('supabase.auth.user', JSON.stringify(sessionUser));
       localStorage.setItem('supabase.auth.token', JSON.stringify(sessionUser));
-      
-      console.log('🔍 Setting user state:', sessionUser?.email || 'null');
       setUser(sessionUser);
       setIsInitialized(true);
       try {
@@ -171,7 +254,7 @@ export const useAuthWithBackend = () => {
         try {
           await fetchUserProfile(sessionUser.id);
         } catch (profileError) {
-          console.error('Error fetching profile (continuing):', profileError);
+          // Silently continue if profile fetch fails
         }
         
         if (list.includes('user') || list.includes('organizer')) {
@@ -179,17 +262,13 @@ export const useAuthWithBackend = () => {
             await ensureUserPreferencesRow(sessionUser.id);
             await fetchOnboardingStatus(sessionUser.id);
           } catch (prefError) {
-            console.error('Error fetching preferences (continuing):', prefError);
+            // Silently continue if preferences fetch fails
           }
         }
       } catch (error) {
         console.error('Error loading session:', error);
-        console.log('🔍 Session load error, keeping user state:', sessionUser?.email || 'null');
-        console.log('🔍 Error details:', error);
-        // Don't reset user state on session load error, just log it
         setRoles([]);
         setActiveRoleUi(null);
-        console.log('🔍 Setting onboardingCompleted to null - session load error');
         setOnboardingCompleted(null);
         setUserProfile(null);
         navigate('/');
@@ -262,10 +341,6 @@ export const useAuthWithBackend = () => {
     [roles]
   );
 
-  // Debug: Log user state changes
-  useEffect(() => {
-    console.log('🔍 Current user state:', user?.email || 'null', 'Loading:', loading);
-  }, [user, loading]);
 
   const hasUserRole = useMemo(
     () => roles.includes('user'),
@@ -280,7 +355,6 @@ export const useAuthWithBackend = () => {
   useEffect(() => {
     // Prevent multiple useEffect runs
     if (isInitializingRef.current) {
-      console.log('🔍 Skipping useEffect - already initializing');
       return;
     }
     
@@ -292,9 +366,7 @@ export const useAuthWithBackend = () => {
       const storedToken = localStorage.getItem('supabase.auth.token');
       
       if (storedUser && storedToken) {
-        console.log('🔍 Restoring user from localStorage');
         const parsedUser = JSON.parse(storedUser);
-        console.log('🔍 Parsed user from localStorage:', parsedUser?.email || 'null');
         await loadSession(parsedUser);
       } else {
         // Fallback to Supabase session
@@ -317,11 +389,9 @@ export const useAuthWithBackend = () => {
         await loadSession(session.user);
       } else {
         // User signed out or session expired - clear localStorage and redirect to landing page
-        console.log('🔍 Clearing user state - signing out');
         localStorage.removeItem('supabase.auth.user');
         localStorage.removeItem('supabase.auth.token');
         setUser(null);
-        console.log('🔍 Setting onboardingCompleted to null - sign out');
         setOnboardingCompleted(null);
         setRoles([]);
         setActiveRoleUi(null);
@@ -335,12 +405,9 @@ export const useAuthWithBackend = () => {
   }, []); // Empty dependency array - run only once
 
   const signOut = async () => {
-    console.log('🔍 Initiating sign out process');
-    
     try {
       // Call Supabase signOut
       await supabase.auth.signOut();
-      console.log('🔍 Supabase signOut completed');
       
       // Manually clear all auth state immediately
       setUser(null);
@@ -356,15 +423,13 @@ export const useAuthWithBackend = () => {
       localStorage.removeItem('supabase.auth.token');
       localStorage.removeItem(ACTIVE_ROLE_KEY);
       
-      console.log('🔍 Manual state clearing completed');
-      
       // Redirect after a short delay to ensure state is cleared
       setTimeout(() => {
         navigate('/');
       }, 100);
       
     } catch (error) {
-      console.error('🔍 Error during sign out:', error);
+      console.error('Error during sign out:', error);
       // Even if Supabase signOut fails, still clear local state
       setUser(null);
       setRoles([]);
@@ -378,8 +443,6 @@ export const useAuthWithBackend = () => {
       localStorage.removeItem('supabase.auth.user');
       localStorage.removeItem('supabase.auth.token');
       localStorage.removeItem(ACTIVE_ROLE_KEY);
-      
-      console.log('🔍 Manual state clearing completed (error fallback)');
       
       setTimeout(() => {
         navigate('/');

@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr
 
 from config.auth import get_current_user
@@ -308,10 +308,13 @@ async def get_organizer_status(user: dict = Depends(get_current_user)):
 
 
 @router.get("/{user_id}", response_model=UserProfile)
-async def get_user_profile(user_id: str):
+async def get_user_profile(user_id: str, request: Request):
     """
     Get a user's public profile.
     """
+    logger.info(
+        f"[API] GET /api/users/{user_id} called from {request.client.host if request.client else 'unknown'}"
+    )
     try:
         table = get_table("profiles")
         response = table.select("*").eq("user_id", user_id).execute()

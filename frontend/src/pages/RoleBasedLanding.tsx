@@ -24,7 +24,7 @@ const RoleBasedLanding = () => {
     // If onboarding is completed, redirect based on role
     if (onboardingCompleted === true) {
       if (hasOrganizerRole) {
-        navigate('/create-event');
+        navigate('/organizer');
       } else if (hasUserRole) {
         navigate('/discover');
       } else {
@@ -133,7 +133,7 @@ const RoleBasedLanding = () => {
                       Design and manage your events with powerful tools and analytics.
                     </p>
                     <button
-                      onClick={() => navigate('/create-event')}
+                      onClick={() => navigate('/organizer')}
                       className="w-full bg-[hsl(295,100%,73%)] text-white px-4 py-3 rounded-lg font-semibold hover:bg-[hsl(295,100%,78%)] transition-colors"
                     >
                       Go to Creator

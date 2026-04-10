@@ -9,21 +9,33 @@ import { type Event } from '@/integrations/backend/api';
 
 interface EventCardProps {
   event: Event;
+  onPreview?: (event: Event) => void;
 }
 
-export const EventCard: React.FC<EventCardProps> = ({ event }) => {
+export const EventCard: React.FC<EventCardProps> = ({ event, onPreview }) => {
   const navigate = useNavigate();
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const catLabel = CATEGORIES.find(c => c.id === event.category)?.label || event.category;
 
   const handleEventClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsOverlayOpen(true);
+    if (onPreview) {
+      onPreview(event);
+    } else {
+      setIsOverlayOpen(true);
+    }
   };
 
   return (
     <div className="group cursor-pointer" onClick={handleEventClick}>
-      <EventDetailOverlay eventId={event.id} isOpen={isOverlayOpen} onClose={() => setIsOverlayOpen(false)} />
+      {!onPreview && (
+        <EventDetailOverlay 
+          eventId={event.id} 
+          isOpen={isOverlayOpen} 
+          onClose={() => setIsOverlayOpen(false)}
+          eventData={event}
+        />
+      )}
       
       {/* Main Card Content */}
       <div className="relative bg-background border border-border rounded-2xl overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 ease-out group-hover:-translate-y-2">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { apiClient } from '@/integrations/backend/api';
 import { EventRegistration } from './EventRegistration';
@@ -26,13 +26,18 @@ interface EventDetailOverlayProps {
   isOpen: boolean;
   onClose: () => void;
   isDeleted?: boolean;
+  eventData?: Event | null; // Pre-loaded event data to skip fetch
+  organizerProfileData?: { business_name?: string; full_name?: string } | null; // Pre-loaded organizer profile
 }
 
-export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId, isOpen, onClose, isDeleted = false }) => {
+export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(({ eventId, isOpen, onClose, isDeleted = false, eventData, organizerProfileData }) => {
+  // Guard against duplicate fetches from React StrictMode
+  const hasFetchedRef = useRef<string | null>(null);
+  
   const [isRegistered, setIsRegistered] = useState(false);
-  const [event, setEvent] = useState<Event | null>(null);
-  const [organizerProfile, setOrganizerProfile] = useState<{ business_name?: string; full_name?: string } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [event, setEvent] = useState<Event | null>(eventData || null);
+  const [organizerProfile, setOrganizerProfile] = useState<{ business_name?: string; full_name?: string } | null>(organizerProfileData || null);
+  const [loading, setLoading] = useState(!eventData); // Skip loading if we have pre-loaded data
   const [error, setError] = useState<string | null>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
@@ -55,46 +60,51 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId,
         setEvent(data);
         setError(null);
         
-        // Fetch organizer profile to get business name
-        if (data.organizer_id) {
-          try {
-            const profile = await apiClient.getUserPreferences();
-            setOrganizerProfile(profile as { business_name?: string; full_name?: string });
-          } catch (profileErr) {
-            console.error('Error fetching organizer profile:', profileErr);
-            setOrganizerProfile(null);
-          }
+        // Fetch organizer profile to get business name (in parallel)
+        // Skip if we already have pre-loaded organizer profile data
+        if (data.organizer_id && !organizerProfileData) {
+          apiClient.getUserProfile(data.organizer_id)
+            .then(profile => setOrganizerProfile(profile as { business_name?: string; full_name?: string }))
+            .catch(() => setOrganizerProfile(null));
         }
       } else {
         setEvent(null);
         setError('Event not found');
       }
     } catch (err) {
-      console.error('Error fetching event:', err);
       setError(err instanceof Error ? err.message : 'Failed to load event');
     } finally {
       setLoading(false);
     }
-  }, [eventId]);
+  }, [eventId, organizerProfileData]);
 
   const checkRegistration = useCallback(async () => {
     if (!eventId) return;
     try {
-      const registrations = await apiClient.getUserEvents();
-      const isEventRegistered = registrations.participating.some(event => event.id === eventId);
-      setIsRegistered(isEventRegistered);
-    } catch (error) {
-      console.error('Error checking registration:', error);
+      // Use combined endpoint to get registration status + participant counts
+      const response = await apiClient.getEventParticipants(eventId);
+      setIsRegistered(response.is_registered);
+    } catch {
       setIsRegistered(false);
     }
   }, [eventId]);
 
   useEffect(() => {
-    if (isOpen) {
-      fetchEvent();
+    if (isOpen && eventId && hasFetchedRef.current !== eventId) {
+      // Only fetch event if we don't have pre-loaded data
+      if (!eventData) {
+        // Mark as fetched to prevent duplicate calls from StrictMode
+        hasFetchedRef.current = eventId;
+        fetchEvent();
+      } else {
+        // Still mark as fetched even when using pre-loaded data
+        hasFetchedRef.current = eventId;
+      }
+      
+      // Check registration in background (non-blocking)
       checkRegistration();
     }
-  }, [eventId, isOpen, fetchEvent, checkRegistration]);
+  }, [eventId, isOpen, fetchEvent, checkRegistration, eventData]);
 
   const handleGetDirections = () => {
     if (event) {
@@ -326,6 +336,6 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({ eventId,
     </div>,
     document.body
   );
-};
+});
 
 export default EventDetailOverlay;

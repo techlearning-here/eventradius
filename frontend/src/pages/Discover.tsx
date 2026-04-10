@@ -14,6 +14,7 @@ import { CATEGORIES } from '@/data/cities';
 import { SEOHead } from '@/components/SEOHead';
 import { EventParticipationCounts } from '@/components/EventParticipation';
 import { EventCard } from '@/components/discover/EventCard';
+import { EventDetailOverlay } from '@/components/EventDetailPage';
 import { type Event } from '@/integrations/backend/api';
 
 
@@ -54,6 +55,15 @@ const Discover = () => {
   }, [loading, error, events]);
   const [prefs, setPrefs] = useState<UserPrefs | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  
+  // Track preview state
+  const [previewEventId, setPreviewEventId] = useState<string | null>(null);
+  const [previewEvent, setPreviewEvent] = useState<Event | null>(null);
+  
+  const handlePreviewEvent = (event: Event) => {
+    setPreviewEventId(event.id);
+    setPreviewEvent(event);
+  };
 
   useEffect(() => {
     if (user && role === 'user' && onboardingCompleted === false) {
@@ -149,7 +159,7 @@ const Discover = () => {
 
         <section className="px-4 md:px-8 pb-8">
           <div className="max-w-6xl mx-auto">
-            <div className="bg-background/60 backdrop-blur-sm border border-border rounded-2xl p-6 shadow-lg">
+            <div className="bg-card border border-border rounded-2xl p-6 shadow-lg">
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-1 h-4 bg-primary rounded-full" />
@@ -383,10 +393,23 @@ const Discover = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                   {filteredEvents.map((event, i) => (
                     <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${i * 0.05}s`, animationFillMode: 'both' }}>
-                      <EventCard event={event} />
+                      <EventCard event={event} onPreview={handlePreviewEvent} />
                     </div>
                   ))}
                 </div>
+                
+                {/* Event Preview Overlay */}
+                {previewEventId && previewEvent && (
+                  <EventDetailOverlay
+                    eventId={previewEventId}
+                    isOpen={!!previewEventId}
+                    onClose={() => {
+                      setPreviewEventId(null);
+                      setPreviewEvent(null);
+                    }}
+                    eventData={previewEvent}
+                  />
+                )}
               </div>
             )}
           </div>

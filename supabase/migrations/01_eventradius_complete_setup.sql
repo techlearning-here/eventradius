@@ -6,6 +6,11 @@
 -- 
 -- Run this in Supabase SQL Editor to set up the complete database
 -- This script is safe to run multiple times (uses IF EXISTS/IF NOT EXISTS)
+--
+-- ⚠️ IMPORTANT: If you have an existing database with old schema:
+--    1. Run clear/drop_all_tables.sql FIRST to drop all views
+--    2. Then run this script to recreate everything
+--    Or: Run clear/clear_all_events.sql to clear data only
 -- =====================================================
 
 -- =====================================================
@@ -53,6 +58,15 @@ DO $$ BEGIN
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
+
+-- =====================================================
+-- 1.5 DROP EXISTING VIEWS (for clean migration)
+-- =====================================================
+-- Drop views first to avoid column dependency conflicts
+DROP VIEW IF EXISTS public.events_with_participants CASCADE;
+DROP VIEW IF EXISTS public.user_events_view CASCADE;
+DROP VIEW IF EXISTS public.events_enhanced_view CASCADE;
+DROP VIEW IF EXISTS public.deleted_events_with_countdown CASCADE;
 
 -- =====================================================
 -- 2. CORE TABLES
@@ -1481,10 +1495,10 @@ DROP VIEW IF EXISTS public.events_enhanced_view;
 CREATE OR REPLACE VIEW public.events_enhanced_view AS
 SELECT
   e.*,
-  v.name as venue_name,
-  v.address as venue_address,
-  v.city as venue_city,
-  v.capacity as venue_capacity,
+  v.name as v_name,
+  v.address as v_address,
+  v.city as v_city,
+  v.capacity as v_capacity,
   p.display_name as organizer_name,
   p.avatar_url as organizer_avatar,
   COALESCE(tt.total_tickets, 0) as total_ticket_types,
@@ -2043,6 +2057,7 @@ DROP TRIGGER IF EXISTS cleanup_on_event_access ON public.events;
 COMMENT ON TABLE public.events IS 'Events table with soft delete (recycle bin) and 30-day automatic permanent deletion';
 
 -- 8. Create a view to show events with days until deletion
+DROP VIEW IF EXISTS public.deleted_events_with_countdown;
 CREATE OR REPLACE VIEW public.deleted_events_with_countdown AS
 SELECT 
     e.*,
@@ -2313,24 +2328,29 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 -- Enable RLS
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
--- Create RLS Policies
+-- Create RLS Policies (drop first if they exist)
+DROP POLICY IF EXISTS "Users can view their own profile" ON user_profiles;
 CREATE POLICY "Users can view their own profile"
     ON user_profiles FOR SELECT
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own profile" ON user_profiles;
 CREATE POLICY "Users can insert their own profile"
     ON user_profiles FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own profile" ON user_profiles;
 CREATE POLICY "Users can update their own profile"
     ON user_profiles FOR UPDATE
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own profile" ON user_profiles;
 CREATE POLICY "Users can delete their own profile"
     ON user_profiles FOR DELETE
     USING (auth.uid() = user_id);
 
 -- Allow public read access to basic profile info (for event listings)
+DROP POLICY IF EXISTS "Public can view basic profile info" ON user_profiles;
 CREATE POLICY "Public can view basic profile info"
     ON user_profiles FOR SELECT
     USING (true);
@@ -2579,162 +2599,6 @@ SELECT column_name, data_type
 FROM information_schema.columns 
 WHERE table_name = 'events' 
 ORDER BY ordinal_position;
--- Fix enum columns - change to text to allow flexible values
--- Run this in Supabase SQL Editor
-
--- Convert refund_policy from enum to text
-ALTER TABLE public.events 
-    ALTER COLUMN refund_policy DROP DEFAULT,
-    ALTER COLUMN refund_policy TYPE TEXT USING refund_policy::TEXT,
-    ALTER COLUMN refund_policy SET DEFAULT NULL;
-
--- Convert traditional_attire from enum to text (if it exists as enum)
-ALTER TABLE public.events 
-    ALTER COLUMN traditional_attire DROP DEFAULT,
-    ALTER COLUMN traditional_attire TYPE TEXT USING traditional_attire::TEXT,
-    ALTER COLUMN traditional_attire SET DEFAULT NULL;
-
--- Convert skill_level from enum to text
-ALTER TABLE public.events 
-    ALTER COLUMN skill_level DROP DEFAULT,
-    ALTER COLUMN skill_level TYPE TEXT USING skill_level::TEXT,
-    ALTER COLUMN skill_level SET DEFAULT NULL;
-
--- Convert physical_fitness from enum to text
-ALTER TABLE public.events 
-    ALTER COLUMN physical_fitness DROP DEFAULT,
-    ALTER COLUMN physical_fitness TYPE TEXT USING physical_fitness::TEXT,
-    ALTER COLUMN physical_fitness SET DEFAULT NULL;
-
--- Convert noise_level from enum to text
-ALTER TABLE public.events 
-    ALTER COLUMN noise_level DROP DEFAULT,
-    ALTER COLUMN noise_level TYPE TEXT USING noise_level::TEXT,
-    ALTER COLUMN noise_level SET DEFAULT NULL;
-
--- Convert physical_intensity from enum to text
-ALTER TABLE public.events 
-    ALTER COLUMN physical_intensity DROP DEFAULT,
-    ALTER COLUMN physical_intensity TYPE TEXT USING physical_intensity::TEXT,
-    ALTER COLUMN physical_intensity SET DEFAULT NULL;
-
--- Verify changes
-SELECT column_name, data_type 
-FROM information_schema.columns 
-WHERE table_name = 'events' 
-ORDER BY ordinal_position;
--- Fix enum columns - need to drop dependent views first, then recreate them
--- Run this in Supabase SQL Editor
-
--- Step 1: Drop ALL dependent views
-DROP VIEW IF EXISTS public.deleted_events_with_countdown;
-DROP VIEW IF EXISTS public.events_enhanced_view;
-DROP VIEW IF EXISTS public.events_with_participants;
-DROP VIEW IF EXISTS public.user_events_view;
-
--- Step 2: Convert all enum columns to text type
-ALTER TABLE public.events 
-    ALTER COLUMN refund_policy DROP DEFAULT,
-    ALTER COLUMN refund_policy TYPE TEXT USING refund_policy::TEXT,
-    ALTER COLUMN refund_policy SET DEFAULT NULL;
-
-ALTER TABLE public.events 
-    ALTER COLUMN traditional_attire DROP DEFAULT,
-    ALTER COLUMN traditional_attire TYPE TEXT USING traditional_attire::TEXT,
-    ALTER COLUMN traditional_attire SET DEFAULT NULL;
-
-ALTER TABLE public.events 
-    ALTER COLUMN skill_level DROP DEFAULT,
-    ALTER COLUMN skill_level TYPE TEXT USING skill_level::TEXT,
-    ALTER COLUMN skill_level SET DEFAULT NULL;
-
-ALTER TABLE public.events 
-    ALTER COLUMN physical_fitness DROP DEFAULT,
-    ALTER COLUMN physical_fitness TYPE TEXT USING physical_fitness::TEXT,
-    ALTER COLUMN physical_fitness SET DEFAULT NULL;
-
-ALTER TABLE public.events 
-    ALTER COLUMN noise_level DROP DEFAULT,
-    ALTER COLUMN noise_level TYPE TEXT USING noise_level::TEXT,
-    ALTER COLUMN noise_level SET DEFAULT NULL;
-
-ALTER TABLE public.events 
-    ALTER COLUMN physical_intensity DROP DEFAULT,
-    ALTER COLUMN physical_intensity TYPE TEXT USING physical_intensity::TEXT,
-    ALTER COLUMN physical_intensity SET DEFAULT NULL;
-
--- Step 3: Recreate ALL views
-
--- 3.1 events_with_participants
-CREATE OR REPLACE VIEW public.events_with_participants AS
-SELECT
-  e.*,
-  p.display_name as organizer_name,
-  p.avatar_url as organizer_avatar
-FROM public.events e
-LEFT JOIN public.profiles p ON e.organizer_id = p.user_id;
-
--- 3.2 user_events_view  
-CREATE OR REPLACE VIEW public.user_events_view AS
-SELECT
-  e.*,
-  CASE
-    WHEN ep.user_id IS NOT NULL THEN 'registered'
-    WHEN e.organizer_id = auth.uid() THEN 'organizer'
-    ELSE 'available'
-  END as participation_status,
-  p.display_name as organizer_name,
-  p.avatar_url as organizer_avatar
-FROM public.events e
-LEFT JOIN public.profiles p ON e.organizer_id = p.user_id
-LEFT JOIN public.event_participants ep ON e.id = ep.event_id AND ep.user_id = auth.uid()
-WHERE e.is_public = true OR e.organizer_id = auth.uid();
-
--- 3.3 events_enhanced_view
-CREATE OR REPLACE VIEW public.events_enhanced_view AS
-SELECT
-  e.*,
-  v.name as venue_name,
-  v.address as venue_address,
-  v.city as venue_city,
-  v.capacity as venue_capacity,
-  p.display_name as organizer_name,
-  p.avatar_url as organizer_avatar,
-  COALESCE(tt.total_tickets, 0) as total_ticket_types,
-  COALESCE(et.media_count, 0) as media_count,
-  COALESCE(tag.tag_count, 0) as tag_count
-FROM public.events e
-LEFT JOIN public.venues v ON e.primary_venue_id = v.id
-LEFT JOIN public.profiles p ON e.organizer_id = p.user_id
-LEFT JOIN (
-  SELECT event_id, COUNT(*) as total_tickets
-  FROM public.ticket_types
-  GROUP BY event_id
-) tt ON e.id = tt.event_id
-LEFT JOIN (
-  SELECT event_id, COUNT(*) as media_count
-  FROM public.event_media
-  GROUP BY event_id
-) et ON e.id = et.event_id
-LEFT JOIN (
-  SELECT event_id, COUNT(*) as tag_count
-  FROM public.event_tags
-  GROUP BY event_id
-) tag ON e.id = tag.event_id;
-
--- 3.4 deleted_events_with_countdown
-CREATE OR REPLACE VIEW public.deleted_events_with_countdown AS
-SELECT 
-    e.*,
-    public.get_days_until_deletion(e.deleted_at) as days_until_deletion
-FROM public.events e
-WHERE e.deleted_at IS NOT NULL;
-
--- Step 4: Grant permissions
-GRANT SELECT ON public.deleted_events_with_countdown TO authenticated;
-GRANT SELECT ON public.events_with_participants TO authenticated;
-GRANT SELECT ON public.user_events_view TO authenticated;
-GRANT SELECT ON public.events_enhanced_view TO authenticated;
 
 -- Step 4: Verify changes
 SELECT column_name, data_type 
@@ -2757,15 +2621,8 @@ FROM information_schema.routines
 WHERE routine_schema = 'public'
 AND routine_definition LIKE '%regexp%' OR routine_definition LIKE '%~%';
 -- Temporarily disable all triggers on events table to identify the problematic one
--- Run this in Supabase SQL Editor
-
--- Disable all triggers
-ALTER TABLE public.events DISABLE TRIGGER ALL;
-
--- Check which triggers exist
-SELECT trigger_name, event_manipulation, action_timing
-FROM information_schema.triggers
-WHERE event_object_table = 'events';
+-- Note: This was a helper script to check triggers. Disabled for production use.
+-- To check triggers, run: SELECT trigger_name FROM information_schema.triggers WHERE event_object_table = 'events';
 -- Check only user-defined triggers (not system triggers)
 SELECT 
     trigger_name,

@@ -181,7 +181,7 @@ BEGIN
     END IF;
     
     IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_schema = 'public' AND routine_name = 'permanently_delete_event') THEN
-        DROP FUNCTION public.permanently_delete_event(UUID) CASCADE;
+        DROP FUNCTION public.permanently_delete_event(UUID, UUID) CASCADE;
         RAISE NOTICE 'Dropped function: permanently_delete_event';
     END IF;
     

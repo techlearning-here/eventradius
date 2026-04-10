@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from config.auth import get_current_user, optional_auth
@@ -407,7 +407,7 @@ async def seed_dummy_events(user: dict = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"Error seeding dummy events: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_ERROR,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to seed dummy events: {str(e)}",
         )
 
@@ -730,11 +730,95 @@ async def leave_event(event_id: str, user: dict = Depends(get_current_user)):
         )
 
 
+@router.get("/{event_id}/is-registered")
+async def check_registration(
+    event_id: str, request: Request, user: dict = Depends(get_current_user)
+):
+    """
+    Check if current user is registered for a specific event.
+    Lightweight endpoint - returns boolean only.
+    """
+    logger.info(
+        f"[API] GET /api/events/{event_id}/is-registered called from {request.client.host if request.client else 'unknown'} for user {user.get('id', 'unknown')[:8]}..."
+    )
+    try:
+        # Single row check with limit 1 for speed
+        response = (
+            get_table("event_participants")
+            .select("id", count="exact")
+            .eq("event_id", event_id)
+            .eq("user_id", user["id"])
+            .limit(1)
+            .execute()
+        )
+
+        is_registered = response.count is not None and response.count > 0
+        logger.info(
+            f"[API] User {user.get('id', 'unknown')[:8]}... is_registered={is_registered} for event {event_id}"
+        )
+        return {"is_registered": is_registered}
+    except Exception as e:
+        logger.error(f"Error checking registration for event {event_id}: {e}")
+        return {"is_registered": False}
+
+
+@router.get("/{event_id}/participants")
+async def get_event_participants(
+    event_id: str, request: Request, user: dict = Depends(get_current_user)
+):
+    """
+    Get participant counts and current user's status for an event.
+    Returns counts by status (interested, going, not_going) and current user's participation status.
+    """
+    try:
+        # Get all participants for this event
+        response = (
+            get_table("event_participants")
+            .select("status,user_id")
+            .eq("event_id", event_id)
+            .execute()
+        )
+
+        counts = {"interested": 0, "going": 0, "not_going": 0}
+        my_status = None
+        is_registered = False
+
+        if response.data:
+            for record in response.data:
+                status = record.get("status")
+                if status in counts:
+                    counts[status] += 1
+                # Check if current user is in the list
+                if user and record.get("user_id") == user["id"]:
+                    my_status = status
+                    is_registered = True
+
+        return {
+            "event_id": event_id,
+            "counts": counts,
+            "total": sum(counts.values()),
+            "my_status": my_status,
+            "is_registered": is_registered,
+        }
+    except Exception as e:
+        logger.error(f"Error fetching participants for event {event_id}: {e}")
+        return {
+            "event_id": event_id,
+            "counts": {"interested": 0, "going": 0, "not_going": 0},
+            "total": 0,
+            "my_status": None,
+            "is_registered": False,
+        }
+
+
 @router.get("/{event_id}")
-async def get_event_by_id(event_id: str):
+async def get_event_by_id(event_id: str, request: Request):
     """
     Get a single event by ID.
     """
+    logger.info(
+        f"[API] GET /api/events/{event_id} called from {request.client.host if request.client else 'unknown'}"
+    )
     try:
         table = get_table("events")
         response = (

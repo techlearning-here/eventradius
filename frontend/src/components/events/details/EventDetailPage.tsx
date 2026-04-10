@@ -1007,7 +1007,7 @@ export const EventDetailPage: React.FC<{ eventId?: string }> = ({ eventId }) => 
         <div className="text-center mt-20">
           <h1 className="text-4xl font-medium mb-4">Event Not Found</h1>
           <p className="text-lg text-muted-foreground mb-8">The event you're looking for doesn't exist or has been removed.</p>
-          <button onClick={() => navigate('/discover')}
+          <button onClick={() => navigate('/organizer')}
             className="px-6 py-3 bg-foreground text-background border border-foreground hover:opacity-90 transition-colors uppercase text-sm font-medium">
             Browse Events
           </button>

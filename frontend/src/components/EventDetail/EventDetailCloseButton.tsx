@@ -8,7 +8,6 @@ export const EventDetailCloseButton: React.FC<EventDetailCloseButtonProps> = ({ 
   return (
     <button
       onClick={(e) => {
-        e.preventDefault();
         e.stopPropagation();
         onClose();
       }}

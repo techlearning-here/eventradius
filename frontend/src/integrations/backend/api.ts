@@ -3,6 +3,9 @@ import { dummyEvents, isDummyEvent } from '@/components/EventDetail/data/dummyEv
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://eventradius-api.onrender.com';
 
+// Refund policy enum matching database
+export type RefundPolicy = 'no_refunds' | 'refund_up_to_7_days' | 'refund_up_to_24_hours' | 'refund_up_to_1_hour' | 'custom';
+
 // Types for API responses
 export interface Event {
   id: string;
@@ -69,7 +72,7 @@ export interface Event {
   format?: string;
   sub_category?: string;
   // New Event Attributes - Pricing
-  refund_policy?: string;
+  refund_policy?: RefundPolicy;
   group_discounts?: boolean;
 }
 
@@ -83,6 +86,8 @@ export interface EventCreate {
   category?: string;
   max_participants?: number;
   is_public?: boolean;
+  is_paid_event?: boolean;
+  ticketing_website?: string;
   // New Event Attributes
   age_categories?: string[];
   gender_preference?: string;
@@ -123,7 +128,7 @@ export interface EventCreate {
   event_type?: string;
   format?: string;
   sub_category?: string;
-  refund_policy?: string;
+  refund_policy?: RefundPolicy;
   group_discounts?: boolean;
 }
 
@@ -177,7 +182,7 @@ export interface EventUpdate {
   event_type?: string;
   format?: string;
   sub_category?: string;
-  refund_policy?: string;
+  refund_policy?: RefundPolicy;
   group_discounts?: boolean;
 }
 
@@ -240,11 +245,6 @@ class ApiClient {
     // Get auth token from Supabase
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
-    
-    console.log('🔍 API Request:', endpoint, options.method || 'GET');
-    console.log('🔍 Session exists:', !!session);
-    console.log('🔍 Token exists:', !!token);
-    console.log('🔍 Token length:', token?.length || 0);
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -253,9 +253,6 @@ class ApiClient {
 
     if (token) {
       headers.Authorization = `Bearer ${token}`;
-      console.log('🔍 Authorization header added');
-    } else {
-      console.log('🚫 No token available - request will be unauthenticated');
     }
 
     const response = await fetch(url, {
@@ -349,6 +346,21 @@ class ApiClient {
     return this.request<{ message: string }>(`/api/events/${eventId}/participate`, {
       method: 'DELETE',
     });
+  }
+
+  async checkIsRegistered(eventId: string): Promise<boolean> {
+    const response = await this.request<{ is_registered: boolean }>(`/api/events/${eventId}/is-registered`);
+    return response.is_registered;
+  }
+
+  async getEventParticipants(eventId: string): Promise<{
+    event_id: string;
+    counts: { interested: number; going: number; not_going: number };
+    total: number;
+    my_status: 'interested' | 'going' | 'not_going' | null;
+    is_registered: boolean;
+  }> {
+    return this.request(`/api/events/${eventId}/participants`);
   }
 
   // User endpoints
