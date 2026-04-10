@@ -12,10 +12,9 @@ export const EventDetailLocation: React.FC<EventDetailLocationProps> = ({
   address,
   onGetDirections 
 }) => {
+  const [copied, setCopied] = React.useState(false);
   const displayLocation = location || address;
   if (!displayLocation) return null;
-  
-  const [copied, setCopied] = React.useState(false);
   
   const handleCopyAddress = () => {
     navigator.clipboard.writeText(displayLocation);

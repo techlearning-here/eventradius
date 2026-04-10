@@ -26,7 +26,6 @@ class TestHealthEndpoint:
         assert data["status"] == "healthy"
 
 
-
 class TestEventsAPI:
     """Test events API endpoints."""
 
