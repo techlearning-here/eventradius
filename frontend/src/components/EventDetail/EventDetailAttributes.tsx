@@ -66,13 +66,13 @@ const FeatureBadge = ({ icon: Icon, label, active, colorClass }: { icon: React.E
 
 const TabButton = ({ icon: Icon, label, isActive, onClick, color, hasContent }: { icon: React.ElementType; label: string; isActive: boolean; onClick: () => void; color: string; hasContent: boolean }) => (
   <button onClick={onClick} disabled={!hasContent} className={cn(
-    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 text-left whitespace-nowrap shrink-0 min-w-[120px] md:min-w-0 md:w-full",
-    isActive ? `${color} text-white shadow-lg md:translate-x-1` : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground",
+    "flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-200 text-left whitespace-nowrap shrink-0 min-w-[120px] md:min-w-0 md:w-full",
+    isActive ? `${color} text-white shadow-md` : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground",
     !hasContent && "opacity-50 cursor-not-allowed"
   )}>
     <Icon className="w-5 h-5 shrink-0" />
-    <span className="font-medium text-sm md:text-base">{label}</span>
-    {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white" />}
+    <span className="font-medium text-sm">{label}</span>
+    <div className={cn("ml-auto w-1.5 h-1.5 rounded-full transition-opacity duration-200", isActive ? "bg-white opacity-100" : "opacity-0")} />
   </button>
 );
 
@@ -129,9 +129,9 @@ export const EventDetailAttributes: React.FC<EventDetailAttributesProps> = ({ ev
         <h2 className="text-2xl font-bold text-foreground">Event Details</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-4">
         {/* Tabs - Horizontal scroll on mobile, Vertical on desktop */}
-        <div className="md:col-span-1 flex md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide -mx-2 px-2 md:mx-0 md:px-0">
+        <div className="flex md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide -mx-2 px-2 md:mx-0 md:px-0">
           {tabs.filter(t => t.hasContent).map(tab => (
             <TabButton 
               key={tab.id} 
@@ -146,7 +146,7 @@ export const EventDetailAttributes: React.FC<EventDetailAttributesProps> = ({ ev
         </div>
 
         {/* Content - Right Side */}
-        <div className="md:col-span-3 min-h-[250px]">
+        <div className="min-h-[250px]">
         <TabContent isActive={currentTab === 'audience'}>
           <SectionCard 
             title="Who's Welcome" 

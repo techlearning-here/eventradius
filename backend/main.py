@@ -60,17 +60,7 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    try:
-        # Test Supabase connection via config.database
-        from config.database import SupabaseClient
-
-        if SupabaseClient.test_connection():
-            return {"status": "healthy", "database": "connected"}
-        else:
-            return {"status": "unhealthy", "database": "disconnected"}
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
+    return {"status": "healthy"}
 
 
 if __name__ == "__main__":

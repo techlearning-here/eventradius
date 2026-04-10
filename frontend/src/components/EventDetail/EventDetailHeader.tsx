@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowLeft, Heart, Share2, Bookmark, LayoutGrid } from 'lucide-react';
 
 interface EventDetailHeaderProps {
   category?: string;
@@ -7,37 +8,56 @@ interface EventDetailHeaderProps {
 
 export const EventDetailHeader: React.FC<EventDetailHeaderProps> = ({ category, onClose }) => {
   return (
-    <div className="bg-gradient-to-r from-background via-background/95 to-background border-b border-border/50 backdrop-blur-sm px-8 py-4 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/60 px-4 sm:px-6 lg:px-8 py-3">
+      <div className="flex items-center justify-between max-w-7xl mx-auto">
+        {/* Left Section - Back & Category */}
+        <div className="flex items-center gap-3">
           <button 
             onClick={(e) => {
               e.stopPropagation();
               onClose();
             }}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-background/50"
+            className="group flex items-center gap-2 text-muted-foreground hover:text-foreground transition-all duration-200 p-2 rounded-xl hover:bg-muted"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            <span className="text-sm font-medium">Back to Events</span>
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted group-hover:bg-background transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+            </div>
+            <span className="text-sm font-medium hidden sm:inline">Back</span>
           </button>
-          <div className="h-4 w-px bg-border"></div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Category:</span>
-            <span className="text-sm font-medium text-foreground capitalize px-2 py-1 bg-primary/10 text-primary rounded-md">{category}</span>
-          </div>
+          
+          <div className="h-6 w-px bg-border/60 hidden sm:block" />
+          
+          {category && (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10">
+                <LayoutGrid className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <span className="hidden sm:inline text-sm font-medium text-foreground capitalize">
+                {category}
+              </span>
+            </div>
+          )}
         </div>
-        <div className="flex items-center gap-3">
-          <button className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-background/50">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
+
+        {/* Right Section - Actions */}
+        <div className="flex items-center gap-1">
+          <button 
+            className="group p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all duration-200"
+            title="Save event"
+          >
+            <Bookmark className="w-4 h-4 group-hover:scale-110 transition-transform" />
           </button>
-          <button className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-background/50">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a9.001 9.001 0 01-7.432 0m9.032-4.026A9.001 9.001 0 0112 3c-4.474 0-8.268 3.12-9.032 7.326m0 0A9.001 9.001 0 0012 21c4.474 0 8.268-3.12 9.032-7.326" />
-            </svg>
+          <button 
+            className="group p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all duration-200"
+            title="Favorite"
+          >
+            <Heart className="w-4 h-4 group-hover:scale-110 transition-transform" />
+          </button>
+          <button 
+            className="group p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all duration-200"
+            title="Share event"
+          >
+            <Share2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
           </button>
         </div>
       </div>

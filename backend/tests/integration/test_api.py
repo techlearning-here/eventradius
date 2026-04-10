@@ -19,25 +19,12 @@ class TestHealthEndpoint:
 
     def test_health_endpoint(self):
         """Test GET /health returns healthy status."""
-        with patch("config.database.SupabaseClient.test_connection", return_value=True):
-            response = self.client.get("/health")
+        response = self.client.get("/health")
 
-            assert response.status_code == 200
-            data = response.json()
-            assert data["status"] == "healthy"
-            assert data["database"] == "connected"
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "healthy"
 
-    def test_health_endpoint_database_down(self):
-        """Test GET /health returns database disconnected when connection fails."""
-        with patch(
-            "config.database.SupabaseClient.test_connection", return_value=False
-        ):
-            response = self.client.get("/health")
-
-            assert response.status_code == 200
-            data = response.json()
-            assert data["status"] == "unhealthy"
-            assert data["database"] == "disconnected"
 
 
 class TestEventsAPI:

@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, Navigation, ExternalLink, Copy, CheckCircle2 } from 'lucide-react';
 
 interface EventDetailLocationProps {
   location?: string;
@@ -15,35 +15,83 @@ export const EventDetailLocation: React.FC<EventDetailLocationProps> = ({
   const displayLocation = location || address;
   if (!displayLocation) return null;
   
+  const [copied, setCopied] = React.useState(false);
+  
+  const handleCopyAddress = () => {
+    navigator.clipboard.writeText(displayLocation);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  
   return (
-    <section>
-      <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center gap-2">
-        <div className="w-1 h-6 bg-primary rounded-full"></div>
-        Location & Venue
-      </h2>
-      <div className="bg-gradient-to-br from-card to-background border border-border rounded-2xl p-6 shadow-sm">
-        <div className="flex items-start gap-4 mb-4">
-          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-            <MapPin className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">Event Location</h3>
-            <p className="text-muted-foreground mb-4">{displayLocation}</p>
-            <button
-              onClick={onGetDirections}
-              className="text-primary hover:text-primary/80 font-medium text-sm border-b border-primary/30 hover:border-primary/80 transition-colors"
-            >
-              Get Directions
-            </button>
+    <section className="relative">
+      {/* Section Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-500/10">
+          <MapPin className="w-5 h-5 text-blue-600" />
+        </div>
+        <div>
+          <h2 className="text-xl md:text-2xl font-bold text-foreground">Location & Venue</h2>
+          <p className="text-sm text-muted-foreground">Where the event takes place</p>
+        </div>
+      </div>
+      
+      {/* Location Card */}
+      <div className="bg-gradient-to-br from-card to-card/30 border border-border/60 rounded-2xl overflow-hidden shadow-sm">
+        {/* Address Header */}
+        <div className="p-5 md:p-6 border-b border-border/50">
+          <div className="flex items-start gap-4">
+            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 flex-shrink-0">
+              <Navigation className="w-7 h-7 text-blue-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-semibold text-foreground mb-1">Event Location</h3>
+              <p className="text-muted-foreground text-base leading-relaxed">{displayLocation}</p>
+              
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2 mt-4">
+                <button
+                  onClick={onGetDirections}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl font-medium text-sm hover:bg-primary/90 transition-colors shadow-sm"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Get Directions
+                </button>
+                <button
+                  onClick={handleCopyAddress}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-muted text-foreground rounded-xl font-medium text-sm hover:bg-muted/80 transition-colors"
+                >
+                  {copied ? (
+                    <><CheckCircle2 className="w-4 h-4 text-emerald-500" /> Copied!</>
+                  ) : (
+                    <><Copy className="w-4 h-4" /> Copy Address</>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="rounded-xl overflow-hidden border border-border">
-          <iframe
-            src={`https://www.google.com/maps?q=${encodeURIComponent(displayLocation)}&output=embed`}
-            className="w-full h-[300px] border-0"
-            loading="lazy"
-            title="Event Location Map"
-          />
+        
+        {/* Map Container */}
+        <div className="relative bg-muted/30">
+          <div className="aspect-video w-full">
+            <iframe
+              src={`https://www.google.com/maps?q=${encodeURIComponent(displayLocation)}&output=embed`}
+              className="w-full h-full border-0"
+              loading="lazy"
+              title="Event Location Map"
+              allowFullScreen
+            />
+          </div>
+          
+          {/* Map overlay hint */}
+          <div className="absolute bottom-4 left-4 right-4">
+            <div className="bg-background/95 backdrop-blur-sm rounded-xl px-4 py-3 shadow-lg border border-border/50 text-center">
+              <p className="text-sm text-muted-foreground">
+                Click on the map to open in Google Maps
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </section>

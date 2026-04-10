@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarIcon, MapPin, Users, Clock, Star, ArrowRight } from 'lucide-react';
+import { CalendarIcon, MapPin, Users, Clock, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { EventDetailOverlay } from '@/components/EventDetailPage';
 import { CATEGORIES } from '@/data/cities';
@@ -40,7 +40,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPreview, particip
       {/* Main Card Content */}
       <div className="relative bg-background border border-border rounded-2xl overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 ease-out group-hover:-translate-y-2">
         {/* Event Image */}
-        <div className="relative h-56 overflow-hidden">
+        <div className="relative h-44 overflow-hidden">
           {event.image_url ? (
             <>
               <img 
@@ -63,25 +63,18 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPreview, particip
             </div>
           )}
           
-          {/* Category Badge */}
-          <div className="absolute top-4 left-4">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-background/90 backdrop-blur-md border border-border/50 rounded-full text-xs font-medium text-foreground shadow-lg">
-              <span className="text-sm">{CATEGORIES.find(c => c.id === event.category)?.emoji || '📅'}</span>
-              {catLabel}
-            </span>
-          </div>
           
           {/* Free/Paid Badge */}
           {!event.is_paid_event ? (
-            <div className="absolute top-4 right-4">
-              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-emerald-700 to-emerald-600 border border-emerald-500 rounded-full text-xs font-semibold text-white shadow-lg">
+            <div className="absolute top-3 right-3">
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-emerald-700 to-emerald-600 border border-emerald-500 rounded-full text-xs font-semibold text-white shadow-md">
                 <div className="w-1.5 h-1.5 bg-white rounded-full" />
                 FREE
               </span>
             </div>
           ) : (
-            <div className="absolute top-4 right-4">
-              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-amber-600 to-amber-500 border border-amber-400 rounded-full text-xs font-semibold text-white shadow-lg">
+            <div className="absolute top-3 right-3">
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-amber-600 to-amber-500 border border-amber-400 rounded-full text-xs font-semibold text-white shadow-md">
                 <div className="w-1.5 h-1.5 bg-white rounded-full" />
                 PAID
               </span>
@@ -90,60 +83,71 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPreview, particip
         </div>
         
         {/* Event Details */}
-        <div className="p-6 space-y-4">
-          {/* Title */}
-          <div>
-            <h3 className="text-xl font-bold text-foreground line-clamp-2 leading-tight transition-colors duration-300 group-hover:text-primary mb-2">
-              {event.title}
-            </h3>
+        <div className="p-4 space-y-3">
+          {/* Category & Date Row */}
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold">
+              <span>{CATEGORIES.find(c => c.id === event.category)?.emoji || '📅'}</span>
+              {catLabel}
+            </span>
+            {event.start_time && (
+              <span className="text-xs text-muted-foreground font-medium">
+                {format(new Date(event.start_time), 'MMM d')}
+              </span>
+            )}
           </div>
+
+          {/* Title */}
+          <h3 className="text-lg font-bold text-foreground line-clamp-2 leading-tight transition-colors duration-300 group-hover:text-primary">
+            {event.title}
+          </h3>
           
-          {/* Date and Time */}
+          {/* Time */}
           {event.start_time && (
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg">
-                <CalendarIcon className="w-4 h-4 text-primary" />
-                <span className="font-medium">{format(new Date(event.start_time), 'MMM d')}</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg">
-                <Clock className="w-4 h-4 text-primary" />
-                <span className="font-medium">{format(new Date(event.start_time), 'h:mm a')}</span>
-              </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="w-3.5 h-3.5 text-primary/70" />
+              <span className="font-medium">{format(new Date(event.start_time), 'h:mm a')}</span>
             </div>
           )}
           
           {/* Location */}
-          <div className="flex items-center gap-2 text-sm text-foreground/80 transition-colors duration-300 group-hover:text-foreground">
-            <MapPin className="w-4 h-4 text-primary transition-colors duration-300 group-hover:text-primary/80" />
-            <span className="font-medium">{event.location || 'Online Event'}</span>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center w-6 h-6 rounded-md bg-secondary">
+              <MapPin className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <span className="font-medium truncate">{event.location || 'Online Event'}</span>
           </div>
           
-          {/* Participants */}
-          <div className="flex items-center justify-between pt-4 border-t border-border">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Users className="w-4 h-4" />
-                <span className="font-medium">{event.current_participants || 0} going</span>
+          {/* Participants with Progress */}
+          <div className="pt-3 border-t border-border/60">
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center w-6 h-6 rounded-md bg-secondary">
+                  <Users className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <span className="text-sm font-semibold text-foreground">
+                  {event.current_participants || 0} <span className="text-muted-foreground font-normal">going</span>
+                </span>
               </div>
-              {event.max_participants && (
+              {event.max_participants && event.max_participants > 0 && (
                 <span className="text-xs text-muted-foreground">
-                  / {event.max_participants} max
+                  {Math.round(((event.current_participants || 0) / event.max_participants) * 100)}% full
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              {participantCounts && (
-                <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                  {participantCounts.interested > 0 && <span>👍 {participantCounts.interested}</span>}
-                  {participantCounts.going > 0 && <span>✅ {participantCounts.going}</span>}
-                </div>
-              )}
-            </div>
+            {event.max_participants && event.max_participants > 0 && (
+              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(((event.current_participants || 0) / event.max_participants) * 100, 100)}%` }}
+                />
+              </div>
+            )}
           </div>
           
           {/* Hover Action Button */}
-          <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg shadow-primary/25">
+          <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-md shadow-primary/25">
               <ArrowRight className="w-4 h-4" />
             </div>
           </div>
