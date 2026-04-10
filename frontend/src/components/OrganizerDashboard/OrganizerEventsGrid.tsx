@@ -13,6 +13,7 @@ interface OrganizerEventsGridProps {
   onViewModeChange?: (mode: 'grid' | 'list') => void;
   isLoading?: boolean;
   emptyState?: React.ReactNode;
+  participantCounts?: Map<string, { interested: number; going: number }>;
 }
 
 export const OrganizerEventsGrid: React.FC<OrganizerEventsGridProps> = ({
@@ -23,7 +24,8 @@ export const OrganizerEventsGrid: React.FC<OrganizerEventsGridProps> = ({
   viewMode = 'grid',
   onViewModeChange,
   isLoading,
-  emptyState
+  emptyState,
+  participantCounts
 }) => {
   if (isLoading) {
     return (
@@ -101,6 +103,7 @@ export const OrganizerEventsGrid: React.FC<OrganizerEventsGridProps> = ({
               onDelete={onDelete}
               onPreview={onPreview}
               variant="default"
+              participantCounts={participantCounts?.get(event.id)}
             />
           ))}
         </div>
@@ -114,6 +117,7 @@ export const OrganizerEventsGrid: React.FC<OrganizerEventsGridProps> = ({
               onDelete={onDelete}
               onPreview={onPreview}
               variant="compact"
+              participantCounts={participantCounts?.get(event.id)}
             />
           ))}
         </div>

@@ -127,6 +127,44 @@ export const useAuthWithBackend = () => {
     return promise;
   }, []);
 
+  // Combined user data fetch - reduces API calls from 3 to 1
+  const fetchCombinedUserData = useCallback(async (userId: string) => {
+    const cacheKey = `userCombined-${userId}`;
+    
+    const cached = globalRequestResults.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      const data = cached.data as { profile: UserProfile; roles: string[]; preferences: { onboarding_completed?: boolean; is_organizer?: boolean } };
+      setUserProfile(data.profile);
+      setRoles(data.roles as AppRole[]);
+      setOnboardingCompleted(data.preferences?.onboarding_completed ?? null);
+      return data;
+    }
+    
+    if (globalRequestPromises.has(cacheKey)) {
+      const result = await globalRequestPromises.get(cacheKey)!;
+      return result;
+    }
+    
+    const promise = (async () => {
+      try {
+        const data = await apiClient.getCurrentUserCombined();
+        setUserProfile(data.profile);
+        setRoles(data.roles as AppRole[]);
+        setOnboardingCompleted(data.preferences?.onboarding_completed ?? null);
+        globalRequestResults.set(cacheKey, { data, timestamp: Date.now() });
+        return data;
+      } catch (error) {
+        console.error('Error fetching combined user data:', error);
+        throw error;
+      } finally {
+        globalRequestPromises.delete(cacheKey);
+      }
+    })();
+    
+    globalRequestPromises.set(cacheKey, promise);
+    return promise;
+  }, []);
+
   const fetchUserProfile = useCallback(async (userId: string) => {
     const cacheKey = `fetchUserProfile-${userId}`;
     
@@ -243,26 +281,35 @@ export const useAuthWithBackend = () => {
       setUser(sessionUser);
       setIsInitialized(true);
       try {
-        let list = await fetchRoles(sessionUser.id);
-        if (list.length === 0) {
-          await seedFirstRole(sessionUser.id, sessionUser.user_metadata);
-          list = await fetchRoles(sessionUser.id);
-        }
-        syncActiveUiFromRoles(list);
-        
-        // Don't let profile fetch failure break the session
+        // Use combined endpoint to fetch all user data in one call
+        let list: AppRole[];
         try {
-          await fetchUserProfile(sessionUser.id);
-        } catch (profileError) {
-          // Silently continue if profile fetch fails
-        }
-        
-        if (list.includes('user') || list.includes('organizer')) {
+          const combinedData = await fetchCombinedUserData(sessionUser.id);
+          list = combinedData.roles as AppRole[];
+          syncActiveUiFromRoles(list);
+        } catch (combinedError) {
+          // Fallback to individual calls if combined fails
+          console.warn('Combined fetch failed, using individual calls:', combinedError);
+          list = await fetchRoles(sessionUser.id);
+          if (list.length === 0) {
+            await seedFirstRole(sessionUser.id, sessionUser.user_metadata);
+            list = await fetchRoles(sessionUser.id);
+          }
+          syncActiveUiFromRoles(list);
+          
           try {
-            await ensureUserPreferencesRow(sessionUser.id);
-            await fetchOnboardingStatus(sessionUser.id);
-          } catch (prefError) {
-            // Silently continue if preferences fetch fails
+            await fetchUserProfile(sessionUser.id);
+          } catch (profileError) {
+            // Silently continue if profile fetch fails
+          }
+          
+          if (list.includes('user') || list.includes('organizer')) {
+            try {
+              await ensureUserPreferencesRow(sessionUser.id);
+              await fetchOnboardingStatus(sessionUser.id);
+            } catch (prefError) {
+              // Silently continue if preferences fetch fails
+            }
           }
         }
       } catch (error) {
@@ -274,7 +321,7 @@ export const useAuthWithBackend = () => {
         navigate('/');
       }
     },
-    [fetchRoles, seedFirstRole, syncActiveUiFromRoles, fetchUserProfile, ensureUserPreferencesRow, fetchOnboardingStatus, isInitialized]
+    [fetchRoles, seedFirstRole, syncActiveUiFromRoles, fetchUserProfile, ensureUserPreferencesRow, fetchOnboardingStatus, isInitialized, fetchCombinedUserData]
   );
 
   const setActiveRole = useCallback(

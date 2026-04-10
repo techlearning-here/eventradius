@@ -597,6 +597,82 @@ async def debug_user_preferences(user: dict = Depends(get_current_user)):
         return {"error": str(e), "user_id": user["id"]}
 
 
+@router.get("/me/combined")
+async def get_current_user_combined(user: dict = Depends(get_current_user)):
+    """
+    Get current user's profile, roles, and preferences in a single call.
+    This reduces API calls from 3 to 1 for initial user data loading.
+    """
+    try:
+        # Fetch all user data in parallel
+        profile_task = (
+            get_table("profiles").select("*").eq("user_id", user["id"]).execute()
+        )
+        roles_task = (
+            get_table("user_roles").select("role").eq("user_id", user["id"]).execute()
+        )
+        prefs_task = (
+            get_table("user_preferences")
+            .select("*")
+            .eq("user_id", user["id"])
+            .execute()
+        )
+
+        # Get profile
+        profile = None
+        if profile_task.data and len(profile_task.data) > 0:
+            profile = profile_task.data[0]
+        else:
+            # Create default profile if none exists
+            profile = {
+                "user_id": user["id"],
+                "email": user.get("email", ""),
+                "full_name": "",
+                "avatar_url": None,
+            }
+
+        # Get roles
+        roles = [r["role"] for r in roles_task.data] if roles_task.data else []
+        if not roles:
+            # Assign default role
+            try:
+                insert_record("user_roles", {"user_id": user["id"], "role": "user"})
+                roles = ["user"]
+            except Exception:
+                pass
+
+        # Get preferences
+        preferences = None
+        if prefs_task.data and len(prefs_task.data) > 0:
+            preferences = prefs_task.data[0]
+        else:
+            # Create default preferences
+            preferences = {
+                "user_id": user["id"],
+                "age_range": None,
+                "has_kids": False,
+                "interests": [],
+                "city": None,
+                "distance_range": 25,
+                "onboarding_completed": False,
+                "is_organizer": False,
+            }
+
+        return {
+            "user_id": user["id"],
+            "email": user.get("email", ""),
+            "profile": profile,
+            "roles": roles,
+            "preferences": preferences,
+        }
+    except Exception as e:
+        logger.error(f"Error fetching combined user data: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch user data",
+        )
+
+
 @router.get("/debug/tables")
 async def debug_tables():
     """

@@ -3,6 +3,13 @@ import { apiClient, type Event, type EventCreate, type EventUpdate } from '@/int
 
 export type { EventCreate } from '@/integrations/backend/api';
 
+// Module-level request cache to deduplicate concurrent requests (React StrictMode fix)
+const inFlightRequests = new Map<string, Promise<Event[]>>();
+
+const getCacheKey = (params: Record<string, unknown>): string => {
+  return JSON.stringify(params);
+};
+
 export const useEvents = (params: {
   limit?: number;
   offset?: number;
@@ -15,7 +22,7 @@ export const useEvents = (params: {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    // Cancel any ongoing request
+    // Cancel any ongoing request from this hook instance
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -25,18 +32,32 @@ export const useEvents = (params: {
     const { signal } = abortControllerRef.current;
 
     let isMounted = true;
+    const cacheKey = getCacheKey(params);
 
     const fetchEvents = async () => {
+      // Check if there's already an in-flight request for these params
+      let requestPromise = inFlightRequests.get(cacheKey);
+      
+      if (!requestPromise) {
+        // Create new request and cache it
+        requestPromise = apiClient.getEvents(params);
+        inFlightRequests.set(cacheKey, requestPromise);
+        
+        // Clean up cache after request completes (success or error)
+        requestPromise.finally(() => {
+          inFlightRequests.delete(cacheKey);
+        });
+      }
+
       try {
         setLoading(true);
         setError(null);
-        const fetchedEvents = await apiClient.getEvents(params);
+        const fetchedEvents = await requestPromise;
         if (isMounted && !signal.aborted) {
           setEvents(fetchedEvents);
         }
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') {
-          // Request was aborted, don't show error
           return;
         }
         if (isMounted && !signal.aborted) {

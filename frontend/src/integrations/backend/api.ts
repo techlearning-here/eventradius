@@ -282,7 +282,7 @@ class ApiClient {
     if (params.is_public !== undefined) searchParams.append('is_public', params.is_public.toString());
 
     const query = searchParams.toString();
-    return this.request<Event[]>(`/api/events${query ? `?${query}` : ''}`);
+    return this.request<Event[]>(`/api/events/${query ? `?${query}` : ''}`);
   }
 
   async getEvent(eventId: string): Promise<Event> {
@@ -363,6 +363,23 @@ class ApiClient {
     return this.request(`/api/events/${eventId}/participants`);
   }
 
+  // Bulk participant counts - reduces API calls from N to 1 for event listings
+  async getBulkEventParticipants(eventIds: string[]): Promise<{
+    [eventId: string]: {
+      event_id: string;
+      counts: { interested: number; going: number; not_going: number };
+      total: number;
+      my_status: 'interested' | 'going' | 'not_going' | null;
+      is_registered: boolean;
+    };
+  }> {
+    if (eventIds.length === 0) return {};
+    return this.request('/api/events/participants/bulk', {
+      method: 'POST',
+      body: JSON.stringify(eventIds),
+    });
+  }
+
   // User endpoints
   async getCurrentUserProfile(): Promise<UserProfile> {
     return this.request<UserProfile>('/api/users/me');
@@ -377,6 +394,17 @@ class ApiClient {
 
   async getUserProfile(userId: string): Promise<UserProfile> {
     return this.request<UserProfile>(`/api/users/${userId}`);
+  }
+
+  // Combined user data endpoint - reduces API calls from 3 to 1
+  async getCurrentUserCombined(): Promise<{
+    user_id: string;
+    email: string;
+    profile: UserProfile;
+    roles: string[];
+    preferences: UserPreferences;
+  }> {
+    return this.request('/api/users/me/combined');
   }
 
   async getUserEvents(): Promise<{

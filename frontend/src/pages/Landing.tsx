@@ -83,6 +83,14 @@ const Landing = () => {
               Pricing
             </button>
 
+            {/* Organizer Hub Link */}
+            <button
+              onClick={() => navigate('/organizer-hub')}
+              className="hidden sm:inline-flex items-center gap-2 px-3 py-2 font-medium text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Organizer Hub
+            </button>
+
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}

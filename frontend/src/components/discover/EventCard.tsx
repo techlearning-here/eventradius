@@ -3,16 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { CalendarIcon, MapPin, Users, Clock, Star, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { EventDetailOverlay } from '@/components/EventDetailPage';
-import { EventParticipationCounts } from '@/components/EventParticipation';
 import { CATEGORIES } from '@/data/cities';
 import { type Event } from '@/integrations/backend/api';
 
 interface EventCardProps {
   event: Event;
   onPreview?: (event: Event) => void;
+  participantCounts?: { interested: number; going: number };
 }
 
-export const EventCard: React.FC<EventCardProps> = ({ event, onPreview }) => {
+export const EventCard: React.FC<EventCardProps> = ({ event, onPreview, participantCounts }) => {
   const navigate = useNavigate();
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const catLabel = CATEGORIES.find(c => c.id === event.category)?.label || event.category;
@@ -132,7 +132,12 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPreview }) => {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <EventParticipationCounts eventId={event.id} />
+              {participantCounts && (
+                <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                  {participantCounts.interested > 0 && <span>👍 {participantCounts.interested}</span>}
+                  {participantCounts.going > 0 && <span>✅ {participantCounts.going}</span>}
+                </div>
+              )}
             </div>
           </div>
           

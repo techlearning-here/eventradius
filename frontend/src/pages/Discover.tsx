@@ -7,12 +7,12 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { useEvents } from '@/hooks/useEvents';
+import { apiClient } from '@/integrations/backend/api';
 import { CalendarIcon, MapPin, Plus, ArrowRight, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CATEGORIES } from '@/data/cities';
 import { SEOHead } from '@/components/SEOHead';
-import { EventParticipationCounts } from '@/components/EventParticipation';
 import { EventCard } from '@/components/discover/EventCard';
 import { EventDetailOverlay } from '@/components/EventDetailPage';
 import { type Event } from '@/integrations/backend/api';
@@ -42,6 +42,7 @@ const Discover = () => {
   const [date, setDate] = useState<Date | undefined>(undefined);
   const { events, loading, error, refetch } = useEvents();
   
+  
   useEffect(() => {
     if (user && role === 'user' && onboardingCompleted === false) {
       navigate('/onboarding');
@@ -59,6 +60,39 @@ const Discover = () => {
   // Track preview state
   const [previewEventId, setPreviewEventId] = useState<string | null>(null);
   const [previewEvent, setPreviewEvent] = useState<Event | null>(null);
+  
+  // Bulk participant counts for all events - reduces API calls from N to 1
+  const [participantCounts, setParticipantCounts] = useState<Map<string, { interested: number; going: number }>>(new Map());
+  
+  // Fetch all participant counts in bulk when events load
+  useEffect(() => {
+    if (events.length === 0) return;
+    
+    const fetchBulkParticipants = async () => {
+      try {
+        const eventIds = events.map(e => e.id);
+        console.log('[Discover] Fetching bulk participants for', eventIds.length, 'events');
+        const response = await apiClient.getBulkEventParticipants(eventIds);
+        console.log('[Discover] Bulk participants response:', Object.keys(response).length, 'events');
+        
+        const countsMap = new Map<string, { interested: number; going: number }>();
+        Object.entries(response).forEach(([eventId, data]) => {
+          countsMap.set(eventId, {
+            interested: data.counts.interested,
+            going: data.counts.going
+          });
+        });
+        
+        setParticipantCounts(countsMap);
+      } catch (err) {
+        console.error('Failed to fetch bulk participants:', err);
+      }
+    };
+    
+    // Small delay to batch rapid updates, but faster than component-level delays
+    const timeout = setTimeout(fetchBulkParticipants, 50);
+    return () => clearTimeout(timeout);
+  }, [events]);
   
   const handlePreviewEvent = (event: Event) => {
     setPreviewEventId(event.id);
@@ -241,39 +275,6 @@ const Discover = () => {
           </div>
         </section>
 
-        {/* Become an Organizer CTA - Show for users without organizer role */}
-        {user && !hasOrganizerRole && (
-          <section className="px-4 md:px-8 pb-8">
-            <div className="max-w-6xl mx-auto">
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20 shadow-lg backdrop-blur-sm">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
-                <div className="relative p-8">
-                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-primary/20 rounded-xl shadow-lg shadow-primary/10">
-                        <Building2 className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-foreground mb-2">Ready to Create Events?</h3>
-                        <p className="text-muted-foreground leading-relaxed">
-                          Join our community of event organizers and start creating amazing experiences for others.
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => navigate('/organizer-onboarding')}
-                      className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-primary/25"
-                    >
-                      Become an Organizer
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
         <section className="px-4 md:px-8 pb-20">
           <div className="max-w-6xl mx-auto">
             {loading ? (
@@ -393,7 +394,11 @@ const Discover = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                   {filteredEvents.map((event, i) => (
                     <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${i * 0.05}s`, animationFillMode: 'both' }}>
-                      <EventCard event={event} onPreview={handlePreviewEvent} />
+                      <EventCard 
+                        event={event} 
+                        onPreview={handlePreviewEvent}
+                        participantCounts={participantCounts.get(event.id)}
+                      />
                     </div>
                   ))}
                 </div>
@@ -408,12 +413,52 @@ const Discover = () => {
                       setPreviewEvent(null);
                     }}
                     eventData={previewEvent}
+                    participantData={(() => {
+                      const counts = participantCounts.get(previewEventId);
+                      return counts ? {
+                        is_registered: false, // Will be determined by checkRegistration if needed
+                        counts: counts
+                      } : null;
+                    })()}
                   />
                 )}
               </div>
             )}
           </div>
         </section>
+
+        {/* Become an Organizer CTA - Show for users without organizer role */}
+        {user && !hasOrganizerRole && (
+          <section className="px-4 md:px-8 pb-8">
+            <div className="max-w-6xl mx-auto">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20 shadow-lg backdrop-blur-sm">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+                <div className="relative p-8">
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 bg-primary/20 rounded-xl shadow-lg shadow-primary/10">
+                        <Building2 className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-foreground mb-2">Ready to Create Events?</h3>
+                        <p className="text-muted-foreground leading-relaxed">
+                          Join our community of event organizers and start creating amazing experiences for others.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => navigate('/organizer-onboarding')}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-primary/25"
+                    >
+                      Become an Organizer
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
       </div>
 
     </>

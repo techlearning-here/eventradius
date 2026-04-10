@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from config.auth import get_current_user, optional_auth
@@ -808,6 +808,70 @@ async def get_event_participants(
             "total": 0,
             "my_status": None,
             "is_registered": False,
+        }
+
+
+@router.post("/participants/bulk")
+async def get_bulk_event_participants(
+    request: Request,
+    event_ids: list[str] = Body(
+        ..., description="List of event IDs to fetch participant counts for"
+    ),
+    user: dict = Depends(get_current_user),
+):
+    """
+    Get participant counts for multiple events in a single call.
+    This reduces API calls from N to 1 for event listings.
+    """
+    if not event_ids or len(event_ids) == 0:
+        return {}
+
+    try:
+        # Fetch all participants for the given event IDs
+        response = (
+            get_table("event_participants")
+            .select("event_id,status,user_id")
+            .in_("event_id", event_ids)
+            .execute()
+        )
+
+        # Initialize result dict for all events
+        results = {}
+        for event_id in event_ids:
+            results[event_id] = {
+                "event_id": event_id,
+                "counts": {"interested": 0, "going": 0, "not_going": 0},
+                "total": 0,
+                "my_status": None,
+                "is_registered": False,
+            }
+
+        # Process the data
+        if response.data:
+            for record in response.data:
+                event_id = record.get("event_id")
+                status = record.get("status")
+                if event_id in results and status in results[event_id]["counts"]:
+                    results[event_id]["counts"][status] += 1
+                    results[event_id]["total"] += 1
+                    # Check if current user
+                    if user and record.get("user_id") == user["id"]:
+                        results[event_id]["my_status"] = status
+                        results[event_id]["is_registered"] = True
+
+        return results
+    except Exception as e:
+        logger.error(f"Error fetching bulk participants: {e}")
+        # Return empty counts for all events
+        return {
+            event_id: {
+                "event_id": event_id,
+                "counts": {"interested": 0, "going": 0, "not_going": 0},
+                "total": 0,
+                "my_status": None,
+                "is_registered": False,
+            }
+            for event_id in event_ids
         }
 
 

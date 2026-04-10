@@ -28,13 +28,14 @@ interface EventDetailOverlayProps {
   isDeleted?: boolean;
   eventData?: Event | null; // Pre-loaded event data to skip fetch
   organizerProfileData?: { business_name?: string; full_name?: string } | null; // Pre-loaded organizer profile
+  participantData?: { is_registered: boolean; counts: { interested: number; going: number } } | null; // Pre-loaded participant data
 }
 
-export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(({ eventId, isOpen, onClose, isDeleted = false, eventData, organizerProfileData }) => {
+export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(({ eventId, isOpen, onClose, isDeleted = false, eventData, organizerProfileData, participantData }) => {
   // Guard against duplicate fetches from React StrictMode
   const hasFetchedRef = useRef<string | null>(null);
   
-  const [isRegistered, setIsRegistered] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(participantData?.is_registered ?? false);
   const [event, setEvent] = useState<Event | null>(eventData || null);
   const [organizerProfile, setOrganizerProfile] = useState<{ business_name?: string; full_name?: string } | null>(organizerProfileData || null);
   const [loading, setLoading] = useState(!eventData); // Skip loading if we have pre-loaded data
@@ -79,7 +80,11 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
   }, [eventId, organizerProfileData]);
 
   const checkRegistration = useCallback(async () => {
-    if (!eventId) return;
+    console.log('[EventDetail] checkRegistration called', { eventId, hasParticipantData: !!participantData });
+    if (!eventId || participantData) {
+      console.log('[EventDetail] Skipping registration check - pre-loaded data available');
+      return; // Skip if pre-loaded data available
+    }
     try {
       // Use combined endpoint to get registration status + participant counts
       const response = await apiClient.getEventParticipants(eventId);
@@ -87,7 +92,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
     } catch {
       setIsRegistered(false);
     }
-  }, [eventId]);
+  }, [eventId, participantData]);
 
   useEffect(() => {
     if (isOpen && eventId && hasFetchedRef.current !== eventId) {
@@ -131,7 +136,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
       onClick={onClose}
     >
       <div 
-        className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95vw] h-[98vh] md:w-[90vw] md:h-[95vh] lg:w-[85vw] lg:h-[92vh] xl:w-[80vw] xl:h-[90vh] 2xl:w-[75vw] 2xl:h-[88vh] bg-background rounded-2xl shadow-2xl relative flex flex-col"
+        className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[94vw] h-[97vh] md:w-[89vw] md:h-[94vh] lg:w-[84vw] lg:h-[91vh] xl:w-[79vw] xl:h-[89vh] 2xl:w-[74vw] 2xl:h-[87vh] bg-background rounded-2xl shadow-2xl relative flex flex-col ring-2 ring-primary/30 border-[3px] border-primary/50 m-2 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <EventDetailCloseButton onClose={onClose} />
@@ -151,7 +156,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
               />
             </div>
 
-            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 rounded-b-2xl">
               <div className="h-full">
                 <EventDetailHeader 
                   category={event?.category} 
@@ -313,6 +318,10 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
                   <EventParticipation 
                     eventId={event.id} 
                     onAuthRequired={handleAuthRequired}
+                    preLoadedData={participantData ? {
+                      counts: participantData.counts,
+                      my_status: null // Will be fetched separately if needed
+                    } : null}
                   />
                   
                   <div className="border-t border-border pt-6">

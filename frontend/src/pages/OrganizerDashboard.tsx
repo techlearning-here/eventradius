@@ -68,7 +68,40 @@ const OrganizerDashboard = () => {
 
   // Track last preview time to prevent duplicates
   const lastPreviewTime = useRef<number>(0);
-  
+
+  // Bulk participant counts for all events - reduces API calls from N to 1
+  const [participantCounts, setParticipantCounts] = useState<Map<string, { interested: number; going: number }>>(new Map());
+
+  // Fetch all participant counts in bulk when events load
+  useEffect(() => {
+    if (events.length === 0) return;
+
+    const fetchBulkParticipants = async () => {
+      try {
+        const eventIds = events.map(e => e.id);
+        console.log('[OrganizerDashboard] Fetching bulk participants for', eventIds.length, 'events');
+        const response = await apiClient.getBulkEventParticipants(eventIds);
+        console.log('[OrganizerDashboard] Bulk participants response:', Object.keys(response).length, 'events');
+
+        const countsMap = new Map<string, { interested: number; going: number }>();
+        Object.entries(response).forEach(([eventId, data]) => {
+          countsMap.set(eventId, {
+            interested: data.counts.interested,
+            going: data.counts.going
+          });
+        });
+
+        setParticipantCounts(countsMap);
+      } catch (err) {
+        console.error('Failed to fetch bulk participants:', err);
+      }
+    };
+
+    // Small delay to batch rapid updates, but faster than component-level delays
+    const timeout = setTimeout(fetchBulkParticipants, 50);
+    return () => clearTimeout(timeout);
+  }, [events]);
+
   const handlePreviewEvent = (event: Event) => {
     const now = Date.now();
     // Debounce: prevent multiple previews within 500ms
@@ -610,6 +643,7 @@ const OrganizerDashboard = () => {
                       onPreview={handlePreviewEvent}
                       viewMode="grid"
                       isLoading={loading}
+                      participantCounts={participantCounts}
                     />
                   </>
                 ) : (
@@ -748,6 +782,13 @@ const OrganizerDashboard = () => {
                   }}
                   isDeleted={activeSection === 'recycle-bin'}
                   eventData={previewEvent}
+                  participantData={(() => {
+                    const counts = participantCounts.get(previewEventId);
+                    return counts ? {
+                      is_registered: false,
+                      counts: counts
+                    } : null;
+                  })()}
                 />
               </>
             )}

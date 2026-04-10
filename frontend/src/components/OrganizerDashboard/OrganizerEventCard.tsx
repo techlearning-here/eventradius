@@ -14,6 +14,7 @@ interface OrganizerEventCardProps {
   onDelete?: (eventId: string) => void;
   onPreview?: (event: Event) => void;
   variant?: 'default' | 'compact';
+  participantCounts?: { interested: number; going: number } | null;
 }
 
 export const OrganizerEventCard = ({
@@ -21,7 +22,8 @@ export const OrganizerEventCard = ({
   onEdit,
   onDelete,
   onPreview,
-  variant = 'default'
+  variant = 'default',
+  participantCounts
 }) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
@@ -159,7 +161,7 @@ export const OrganizerEventCard = ({
               <div className="pt-3 border-t border-border bg-muted/20 rounded-b-lg -mx-4 px-4 pb-0">
                 <div className="flex items-center justify-between py-2">
                   <div className="flex items-center gap-2">
-                    <EventParticipationCounts eventId={event.id} />
+                    <EventParticipationCounts eventId={event.id} preLoadedCounts={participantCounts} />
                   </div>
                   <div className="text-[10px] text-muted-foreground font-medium">
                     {event.current_participants || 0} going

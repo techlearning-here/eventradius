@@ -13,18 +13,25 @@ type ParticipationStatus = 'interested' | 'going' | 'not_going';
 interface Props {
   eventId: string;
   onAuthRequired?: () => void;
+  preLoadedData?: { counts: { interested: number; going: number }; my_status: ParticipationStatus | null } | null;
 }
 
-export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
+export const EventParticipation = ({ eventId, onAuthRequired, preLoadedData }: Props) => {
   const { user } = useAuthWithBackend();
-  const [currentStatus, setCurrentStatus] = useState<ParticipationStatus | null>(null);
-  const [counts, setCounts] = useState({ interested: 0, going: 0 });
-  const [loading, setLoading] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState<ParticipationStatus | null>(preLoadedData?.my_status ?? null);
+  const [counts, setCounts] = useState(preLoadedData?.counts ?? { interested: 0, going: 0 });
+  const [loading, setLoading] = useState(!preLoadedData);
 
   // Check if this is a demo event
   const isDemoEvent = eventId && eventId.startsWith('demo-');
 
   const fetchParticipants = useCallback(async () => {
+    console.log('[EventParticipation] fetchParticipants called', { eventId, hasPreloadedData: !!preLoadedData });
+    if (preLoadedData) {
+      console.log('[EventParticipation] Skipping fetch - pre-loaded data available');
+      return; // Skip if pre-loaded data available
+    }
+    
     const cacheKey = `fetchParticipants-${eventId}-${user?.id || 'anon'}`;
     
     if (globalRequestPromises.has(cacheKey)) {
@@ -54,9 +61,15 @@ export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
     } finally {
       setTimeout(() => globalRequestPromises.delete(cacheKey), 1000);
     }
-  }, [eventId, user]);
+  }, [eventId, user, preLoadedData]);
 
   useEffect(() => {
+    console.log('[EventParticipation] useEffect triggered', { eventId, hasPreloadedData: !!preLoadedData, isDemoEvent });
+    if (preLoadedData) {
+      console.log('[EventParticipation] useEffect - skipping due to preLoadedData');
+      return; // Skip fetch if pre-loaded data available
+    }
+    
     if (isDemoEvent) {
       // Use mock data for demo events
       setCounts({
@@ -67,7 +80,7 @@ export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
     } else {
       fetchParticipants();
     }
-  }, [eventId, user?.id, isDemoEvent, fetchParticipants]);
+  }, [eventId, user?.id, isDemoEvent, fetchParticipants, preLoadedData]);
 
   const handleClick = async (status: ParticipationStatus) => {
     if (isDemoEvent) {
@@ -146,13 +159,23 @@ export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
   );
 };
 
-export const EventParticipationCounts = ({ eventId }: { eventId: string }) => {
-  const [counts, setCounts] = useState({ interested: 0, going: 0 });
+export const EventParticipationCounts = ({ 
+  eventId, 
+  preLoadedCounts 
+}: { 
+  eventId: string;
+  preLoadedCounts?: { interested: number; going: number } | null;
+}) => {
+  const [counts, setCounts] = useState(preLoadedCounts ?? { interested: 0, going: 0 });
 
   // Check if this is a demo event
   const isDemoEvent = eventId && eventId.startsWith('demo-');
 
   const fetchCounts = useCallback(async () => {
+    // Skip if pre-loaded data available
+    if (preLoadedCounts) {
+      return;
+    }
     try {
       const response = await apiClient.getEventParticipants(eventId);
       setCounts({
@@ -162,9 +185,15 @@ export const EventParticipationCounts = ({ eventId }: { eventId: string }) => {
     } catch (error) {
       console.error('Error fetching participant counts:', error);
     }
-  }, [eventId]);
+  }, [eventId, preLoadedCounts]);
 
   useEffect(() => {
+    // Update counts if preLoadedCounts changes
+    if (preLoadedCounts) {
+      setCounts(preLoadedCounts);
+      return;
+    }
+    
     if (isDemoEvent) {
       // Use mock data for demo events
       setCounts({
@@ -172,9 +201,17 @@ export const EventParticipationCounts = ({ eventId }: { eventId: string }) => {
         going: Math.floor(Math.random() * 20) + 10
       });
     } else {
-      fetchCounts();
+      // Delay individual fetch to allow parent bulk fetch to complete first
+      // This prevents N individual API calls when bulk data is loading
+      const timeout = setTimeout(() => {
+        // Double-check preLoadedCounts hasn't arrived during delay
+        if (!preLoadedCounts) {
+          fetchCounts();
+        }
+      }, 300);
+      return () => clearTimeout(timeout);
     }
-  }, [fetchCounts, isDemoEvent]);
+  }, [fetchCounts, isDemoEvent, preLoadedCounts]);
 
   if (counts.interested === 0 && counts.going === 0) return null;
 
