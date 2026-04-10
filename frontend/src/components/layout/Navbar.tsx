@@ -74,14 +74,14 @@ export const Navbar: React.FC = () => {
 
   return createPortal(
     <>
-      {/* Site Name */}
-      <div className="fixed top-4 left-4 md:left-8 z-[2000]">
+      {/* Site Name - with safe area for iPhone notch */}
+      <div className="fixed top-[max(1rem,env(safe-area-inset-top))] left-4 md:left-8 z-[2000]">
         <Link to="/" className="text-2xl font-bold text-foreground hover:shadow-lg transition-all">
           EventRadius
         </Link>
       </div>
 
-      <nav className="fixed top-12 right-4 md:right-8 z-[2000] flex items-center gap-1">
+      <nav className="fixed top-[max(3rem,env(safe-area-inset-top)+2rem)] right-[max(1rem,env(safe-area-inset-right))] md:right-8 z-[2000] flex items-center gap-1">
         {/* Logo */}
         <Link to="/" className="bg-foreground text-primary-foreground h-[34px] w-[34px] border border-foreground flex items-center justify-center">
           <Zap className="w-4 h-4" />
