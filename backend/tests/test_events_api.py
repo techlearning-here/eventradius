@@ -229,6 +229,186 @@ class TestEventsAPI:
             assert len(data) == 2
             assert data[0]["message_text"] == "Hello"
 
+    @patch("config.auth.AuthService.require_auth")
+    def test_create_paid_event_success(self, mock_auth):
+        """Test creating a paid event with ticketing website"""
+        mock_user = {"id": "test-user-id"}
+        mock_auth.return_value = mock_user
+
+        event_data = {
+            "title": "Paid Workshop",
+            "description": "A paid workshop event",
+            "location": "Test Venue",
+            "category": "education",
+            "max_participants": 50,
+            "is_public": True,
+            "is_paid_event": True,
+            "ticketing_website": "https://tickets.example.com/event-123",
+            "format": "workshop",
+            "sub_category": "tech_workshop",
+            "event_type": "in_person",
+            "primary_language": "english",
+            "refund_policy": "full_refund_24h",
+            "group_discounts": True,
+        }
+
+        with patch("api.events.insert_record") as mock_insert:
+            mock_response = MagicMock()
+            mock_response.data = [
+                {
+                    "id": "new-event-id",
+                    "title": "Paid Workshop",
+                    "description": "A paid workshop event",
+                    "location": "Test Venue",
+                    "category": "education",
+                    "max_participants": 50,
+                    "is_public": True,
+                    "is_paid_event": True,
+                    "ticketing_website": "https://tickets.example.com/event-123",
+                    "format": "workshop",
+                    "sub_category": "tech_workshop",
+                    "event_type": "in_person",
+                    "primary_language": "english",
+                    "refund_policy": "full_refund_24h",
+                    "group_discounts": True,
+                    "organizer_id": "test-user-id",
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "updated_at": "2024-01-01T00:00:00Z",
+                }
+            ]
+            mock_insert.return_value = mock_response
+
+            response = client.post(
+                "/api/events",
+                json=event_data,
+                headers={"Authorization": "Bearer valid-token"},
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["is_paid_event"] is True
+            assert data["ticketing_website"] == "https://tickets.example.com/event-123"
+            assert data["format"] == "workshop"
+            assert data["refund_policy"] == "full_refund_24h"
+
+    @patch("config.auth.AuthService.require_auth")
+    def test_create_free_event_success(self, mock_auth):
+        """Test creating a free event"""
+        mock_user = {"id": "test-user-id"}
+        mock_auth.return_value = mock_user
+
+        event_data = {
+            "title": "Free Meetup",
+            "description": "A free community meetup",
+            "location": "Community Center",
+            "category": "social",
+            "max_participants": 100,
+            "is_public": True,
+            "is_paid_event": False,
+            "format": "social_meetup",
+            "sub_category": "community_gathering",
+            "event_type": "in_person",
+            "primary_language": "english",
+            "refund_policy": "not_applicable",
+            "group_discounts": False,
+        }
+
+        with patch("api.events.insert_record") as mock_insert:
+            mock_response = MagicMock()
+            mock_response.data = [
+                {
+                    "id": "free-event-id",
+                    "title": "Free Meetup",
+                    "description": "A free community meetup",
+                    "location": "Community Center",
+                    "category": "social",
+                    "max_participants": 100,
+                    "is_public": True,
+                    "is_paid_event": False,
+                    "ticketing_website": None,
+                    "format": "social_meetup",
+                    "sub_category": "community_gathering",
+                    "event_type": "in_person",
+                    "primary_language": "english",
+                    "refund_policy": "not_applicable",
+                    "group_discounts": False,
+                    "organizer_id": "test-user-id",
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "updated_at": "2024-01-01T00:00:00Z",
+                }
+            ]
+            mock_insert.return_value = mock_response
+
+            response = client.post(
+                "/api/events",
+                json=event_data,
+                headers={"Authorization": "Bearer valid-token"},
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["is_paid_event"] is False
+            assert data["ticketing_website"] is None
+            assert data["format"] == "social_meetup"
+
+    @patch("config.auth.AuthService.require_auth")
+    def test_get_events_with_paid_status(self, mock_auth):
+        """Test that is_paid_event is returned in events list"""
+        mock_user = {"id": "test-user-id"}
+        mock_auth.return_value = mock_user
+
+        mock_events = [
+            {
+                "id": "event-1",
+                "title": "Paid Concert",
+                "description": "A paid concert",
+                "is_paid_event": True,
+                "ticketing_website": "https://tickets.example.com/concert",
+                "organizer_id": "user-1",
+                "created_at": "2024-01-01T00:00:00Z",
+                "updated_at": "2024-01-01T00:00:00Z",
+                "current_participants": 0,
+            },
+            {
+                "id": "event-2",
+                "title": "Free Workshop",
+                "description": "A free workshop",
+                "is_paid_event": False,
+                "ticketing_website": None,
+                "organizer_id": "user-2",
+                "created_at": "2024-01-02T00:00:00Z",
+                "updated_at": "2024-01-02T00:00:00Z",
+                "current_participants": 0,
+            },
+        ]
+
+        with patch("api.events.get_table") as mock_get_table:
+            mock_table = MagicMock()
+            mock_query = MagicMock()
+            mock_response = MagicMock()
+            mock_response.data = mock_events
+
+            mock_table.select.return_value = mock_query
+            mock_query.is_.return_value = mock_query
+            mock_query.limit.return_value = mock_query
+            mock_query.offset.return_value = mock_query
+            mock_query.execute.return_value = mock_response
+
+            mock_get_table.return_value = mock_table
+
+            response = client.get(
+                "/api/events",
+                headers={"Authorization": "Bearer valid-token"},
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert len(data) == 2
+            assert data[0]["is_paid_event"] is True
+            assert data[0]["ticketing_website"] == "https://tickets.example.com/concert"
+            assert data[1]["is_paid_event"] is False
+            assert data[1]["ticketing_website"] is None
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

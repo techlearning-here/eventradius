@@ -1686,3 +1686,1151 @@ ORDER BY event_object_table, trigger_name;
 --
 -- Safe to run multiple times - uses IF EXISTS/IF NOT EXISTS throughout
 -- =====================================================
+-- Add enhanced event schema fields (only missing ones)
+-- Migration: Add missing rich event features to match dummy event schema
+
+-- Add columns that don't already exist in events table
+DO $$
+BEGIN
+    -- Check and add background_image_url if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'events' AND column_name = 'background_image_url'
+    ) THEN
+        ALTER TABLE events ADD COLUMN background_image_url TEXT;
+    END IF;
+    
+    -- Check and add organizer_phone if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'events' AND column_name = 'organizer_phone'
+    ) THEN
+        ALTER TABLE events ADD COLUMN organizer_phone TEXT;
+    END IF;
+    
+    -- Check and add organizer_website if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'events' AND column_name = 'organizer_website'
+    ) THEN
+        ALTER TABLE events ADD COLUMN organizer_website TEXT;
+    END IF;
+    
+    -- Add event_status column if it doesn't exist (use status column as fallback)
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'events' AND column_name = 'event_status'
+    ) THEN
+        ALTER TABLE events ADD COLUMN event_status TEXT DEFAULT 'published';
+        
+        -- Add constraint for new event_status column
+        ALTER TABLE events ADD CONSTRAINT events_event_status_check 
+        CHECK (event_status IN ('draft', 'published', 'cancelled', 'pending'));
+    ELSE
+        -- If column exists, add constraint if it doesn't exist
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.check_constraints 
+            WHERE constraint_name = 'events_event_status_check'
+        ) THEN
+            ALTER TABLE events ADD CONSTRAINT events_event_status_check 
+            CHECK (event_status IN ('draft', 'published', 'cancelled', 'pending'));
+        END IF;
+    END IF;
+    
+    -- Update event_type enum to include recurring and multi_date if needed
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_enum WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'event_type') AND enumlabel = 'recurring'
+    ) THEN
+        ALTER TYPE event_type ADD VALUE 'recurring';
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_enum WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'event_type') AND enumlabel = 'multi_date'
+    ) THEN
+        ALTER TYPE event_type ADD VALUE 'multi_date';
+    END IF;
+END $$;
+
+-- Add indexes for performance (only if they don't exist)
+CREATE INDEX IF NOT EXISTS idx_events_background_image_url ON events(background_image_url);
+CREATE INDEX IF NOT EXISTS idx_events_organizer_phone ON events(organizer_phone);
+CREATE INDEX IF NOT EXISTS idx_events_organizer_website ON events(organizer_website);
+
+-- Add comments for documentation
+COMMENT ON COLUMN events.background_image_url IS 'Background image for event detail pages';
+COMMENT ON COLUMN events.organizer_phone IS 'Organizer contact phone';
+COMMENT ON COLUMN events.organizer_website IS 'Organizer website URL';
+
+-- Update existing events to have default values for new fields
+UPDATE events SET 
+    background_image_url = image_url,
+    organizer_phone = COALESCE(split_part(event_contact_email, '@', 1) || '-phone', '555-0000'),
+    organizer_website = COALESCE(event_website, 'https://example.com')
+WHERE background_image_url IS NULL 
+   OR organizer_phone IS NULL 
+   OR organizer_website IS NULL;
+
+-- Create a view or update logic to map existing fields to expected interface
+-- Note: event_contact_email maps to organizer_email in our interface
+-- ticket_pricing_description already exists
+-- ticketing_website already exists  
+-- event_status already exists
+-- timezone already exists
+-- is_paid_event already exists
+-- Migration: Add soft delete (recycle bin) support to events table
+-- Created: April 2026
+-- Description: Adds deleted_at column and updates RLS policies for soft delete functionality
+
+-- 1. Add deleted_at column to events table
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+
+-- 2. Create index for efficient querying of deleted/non-deleted events
+CREATE INDEX IF NOT EXISTS idx_events_deleted_at ON public.events(deleted_at) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_events_deleted_at_only ON public.events(deleted_at) WHERE deleted_at IS NOT NULL;
+
+-- 3. Update RLS policy to exclude deleted events from default queries
+-- First, drop and recreate the "Events are viewable by everyone" policy to exclude deleted events
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Events are viewable by everyone" ON public.events;
+    
+    -- Create new policy that excludes deleted events
+    CREATE POLICY "Events are viewable by everyone"
+    ON public.events
+    FOR SELECT
+    USING (deleted_at IS NULL);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- 4. Create policy for organizers to view their own deleted events (for recycle bin)
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Organizers can view their deleted events" ON public.events;
+    
+    CREATE POLICY "Organizers can view their deleted events"
+    ON public.events
+    FOR SELECT
+    TO authenticated
+    USING (auth.uid() = organizer_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- 5. Create function to soft delete events (set deleted_at instead of hard delete)
+CREATE OR REPLACE FUNCTION public.soft_delete_event(event_id UUID, user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    event_organizer_id UUID;
+BEGIN
+    -- Get the organizer_id of the event
+    SELECT organizer_id INTO event_organizer_id
+    FROM public.events
+    WHERE id = event_id;
+    
+    -- Check if event exists and user is the organizer
+    IF event_organizer_id IS NULL THEN
+        RETURN FALSE;
+    END IF;
+    
+    IF event_organizer_id != user_id THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- Soft delete: set deleted_at timestamp
+    UPDATE public.events
+    SET deleted_at = NOW(),
+        updated_at = NOW()
+    WHERE id = event_id;
+    
+    RETURN TRUE;
+END;
+$$;
+
+-- 6. Create function to restore soft-deleted events
+CREATE OR REPLACE FUNCTION public.restore_event(event_id UUID, user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    event_organizer_id UUID;
+BEGIN
+    -- Get the organizer_id of the event
+    SELECT organizer_id INTO event_organizer_id
+    FROM public.events
+    WHERE id = event_id AND deleted_at IS NOT NULL;
+    
+    -- Check if deleted event exists and user is the organizer
+    IF event_organizer_id IS NULL THEN
+        RETURN FALSE;
+    END IF;
+    
+    IF event_organizer_id != user_id THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- Restore: clear deleted_at timestamp
+    UPDATE public.events
+    SET deleted_at = NULL,
+        updated_at = NOW()
+    WHERE id = event_id;
+    
+    RETURN TRUE;
+END;
+$$;
+
+-- 7. Create function to permanently delete events (for recycle bin cleanup)
+CREATE OR REPLACE FUNCTION public.permanently_delete_event(event_id UUID, user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    event_organizer_id UUID;
+BEGIN
+    -- Get the organizer_id of the event
+    SELECT organizer_id INTO event_organizer_id
+    FROM public.events
+    WHERE id = event_id AND deleted_at IS NOT NULL;
+    
+    -- Check if deleted event exists and user is the organizer
+    IF event_organizer_id IS NULL THEN
+        RETURN FALSE;
+    END IF;
+    
+    IF event_organizer_id != user_id THEN
+        RETURN FALSE;
+    END IF;
+    
+    -- Hard delete the event (only if it's already soft deleted)
+    DELETE FROM public.events
+    WHERE id = event_id AND deleted_at IS NOT NULL;
+    
+    RETURN TRUE;
+END;
+$$;
+
+-- 8. Grant execute permissions on functions
+GRANT EXECUTE ON FUNCTION public.soft_delete_event(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.restore_event(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.permanently_delete_event(UUID, UUID) TO authenticated;
+
+-- 9. Comment on column for documentation
+COMMENT ON COLUMN public.events.deleted_at IS 'Timestamp when event was soft deleted (moved to recycle bin). NULL means event is active.';
+-- Migration: Add automatic 30-day cleanup for soft-deleted events
+-- Created: April 2026
+-- Description: Automatically permanently deletes events that have been in recycle bin for 30+ days
+
+-- 1. Create function to permanently delete old soft-deleted events
+CREATE OR REPLACE FUNCTION public.cleanup_old_deleted_events()
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    deleted_count INTEGER;
+BEGIN
+    -- Permanently delete events that have been soft-deleted for more than 30 days
+    DELETE FROM public.events
+    WHERE deleted_at IS NOT NULL
+      AND deleted_at < NOW() - INTERVAL '30 days';
+    
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    
+    -- Log the cleanup action
+    IF deleted_count > 0 THEN
+        INSERT INTO public.event_audit (event_id, action, old_data, changed_by, changed_at)
+        VALUES (
+            gen_random_uuid(),
+            'CLEANUP_OLD_DELETED',
+            jsonb_build_object('deleted_count', deleted_count, 'cutoff_days', 30),
+            auth.uid(),
+            NOW()
+        );
+    END IF;
+    
+    RETURN deleted_count;
+END;
+$$;
+
+-- 2. Create function to get days remaining until permanent deletion
+CREATE OR REPLACE FUNCTION public.get_days_until_deletion(event_deleted_at TIMESTAMP WITH TIME ZONE)
+RETURNS INTEGER
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    days_remaining INTEGER;
+BEGIN
+    IF event_deleted_at IS NULL THEN
+        RETURN NULL;
+    END IF;
+    
+    -- Calculate days remaining (30 days total - days since deletion)
+    days_remaining := 30 - EXTRACT(DAY FROM (NOW() - event_deleted_at));
+    
+    -- Return 0 if already past 30 days
+    RETURN GREATEST(days_remaining, 0);
+END;
+$$;
+
+-- 3. Grant execute permissions
+GRANT EXECUTE ON FUNCTION public.cleanup_old_deleted_events() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_days_until_deletion(TIMESTAMP WITH TIME ZONE) TO authenticated;
+
+-- 4. Comment on functions
+COMMENT ON FUNCTION public.cleanup_old_deleted_events() IS 'Permanently deletes events that have been soft-deleted for more than 30 days';
+COMMENT ON FUNCTION public.get_days_until_deletion(TIMESTAMP WITH TIME ZONE) IS 'Returns the number of days remaining until a soft-deleted event is permanently deleted (max 30 days)';
+
+-- 5. Create pg_cron job to run cleanup daily (if pg_cron extension is available)
+-- Note: This requires the pg_cron extension to be enabled in Supabase
+-- If pg_cron is not available, the cleanup can be triggered manually or via an external scheduler
+DO $$
+BEGIN
+    -- Try to create the cron job, but don't fail if pg_cron is not available
+    BEGIN
+        -- Schedule cleanup to run daily at 3 AM UTC
+        PERFORM cron.schedule(
+            'cleanup-old-deleted-events',  -- job name
+            '0 3 * * *',                   -- cron expression (daily at 3 AM UTC)
+            'SELECT public.cleanup_old_deleted_events()'  -- SQL to execute
+        );
+        
+        RAISE NOTICE 'pg_cron job created successfully';
+    EXCEPTION
+        WHEN OTHERS THEN
+            RAISE NOTICE 'pg_cron not available or error creating job. Manual cleanup or external scheduler required. Error: %', SQLERRM;
+    END;
+END $$;
+
+-- 6. Alternative: Create a trigger to run cleanup when events are accessed
+-- This ensures cleanup runs periodically even without pg_cron
+CREATE OR REPLACE FUNCTION public.trigger_cleanup_on_event_access()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    -- Run cleanup occasionally (1% chance) when events table is accessed
+    -- This is a fallback mechanism when pg_cron is not available
+    IF random() < 0.01 THEN
+        PERFORM public.cleanup_old_deleted_events();
+    END IF;
+    
+    RETURN NEW;
+END;
+$$;
+
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS cleanup_on_event_access ON public.events;
+
+-- Create trigger (uncomment if you want to use this fallback mechanism)
+-- CREATE TRIGGER cleanup_on_event_access
+--     BEFORE INSERT OR UPDATE ON public.events
+--     FOR EACH STATEMENT
+--     EXECUTE FUNCTION public.trigger_cleanup_on_event_access();
+
+-- 7. Add comments explaining the 30-day retention policy
+COMMENT ON TABLE public.events IS 'Events table with soft delete (recycle bin) and 30-day automatic permanent deletion';
+
+-- 8. Create a view to show events with days until deletion
+CREATE OR REPLACE VIEW public.deleted_events_with_countdown AS
+SELECT 
+    e.*,
+    public.get_days_until_deletion(e.deleted_at) as days_until_deletion,
+    e.deleted_at + INTERVAL '30 days' as permanent_deletion_date
+FROM public.events e
+WHERE e.deleted_at IS NOT NULL;
+
+-- Grant permissions on view
+GRANT SELECT ON public.deleted_events_with_countdown TO authenticated;
+-- =====================================================
+-- 09 - Fix Event Registrations RLS Policies
+-- =====================================================
+-- This migration adds the missing RLS policies for event_registrations table
+-- The table exists but has no policies, causing 400 errors
+
+-- Enable RLS if not already enabled
+ALTER TABLE IF EXISTS public.event_registrations ENABLE ROW LEVEL SECURITY;
+
+-- 5.8 Event Registrations RLS policies
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can view their own registrations" ON public.event_registrations;
+    CREATE POLICY "Users can view their own registrations"
+    ON public.event_registrations
+    FOR SELECT
+    TO authenticated
+    USING (auth.uid() = user_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can insert their own registrations" ON public.event_registrations;
+    CREATE POLICY "Users can insert their own registrations"
+    ON public.event_registrations
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = user_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can delete their own registrations" ON public.event_registrations;
+    CREATE POLICY "Users can delete their own registrations"
+    ON public.event_registrations
+    FOR DELETE
+    TO authenticated
+    USING (auth.uid() = user_id);
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Event organizers can view all registrations for their events" ON public.event_registrations;
+    CREATE POLICY "Event organizers can view all registrations for their events"
+    ON public.event_registrations
+    FOR SELECT
+    TO authenticated
+    USING (EXISTS (
+        SELECT 1 FROM public.events 
+        WHERE events.id = event_registrations.event_id 
+        AND events.organizer_id = auth.uid()
+    ));
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Admins can view all registrations" ON public.event_registrations;
+    CREATE POLICY "Admins can view all registrations"
+    ON public.event_registrations
+    FOR SELECT
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.user_roles 
+            WHERE user_roles.user_id = auth.uid() 
+            AND user_roles.role = 'admin'
+        )
+    );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+-- =====================================================
+-- 10 - Fix User Roles Default Assignment
+-- =====================================================
+-- This migration ensures every user has a default 'user' role
+-- and fixes any missing role assignments
+
+-- Function to assign default role to new users
+CREATE OR REPLACE FUNCTION public.assign_default_role()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Insert default 'user' role for new users
+    INSERT INTO public.user_roles (user_id, role)
+    VALUES (NEW.id, 'user')
+    ON CONFLICT (user_id, role) DO NOTHING;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+-- Create trigger to assign default role on user signup
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION public.assign_default_role();
+
+-- Ensure existing users have default roles
+INSERT INTO public.user_roles (user_id, role)
+SELECT id, 'user'
+FROM auth.users
+WHERE id NOT IN (
+    SELECT user_id 
+    FROM public.user_roles 
+    WHERE role = 'user'
+)
+ON CONFLICT (user_id, role) DO NOTHING;
+
+-- Grant necessary permissions
+GRANT EXECUTE ON FUNCTION public.assign_default_role TO authenticated;
+GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT SELECT ON public.user_roles TO authenticated;
+-- Migration: Add Comprehensive Event Attributes
+-- Description: Add demographic, accessibility, cultural, prerequisite, and content rating fields to events table
+-- Created: 2026-04-08
+
+-- Add Audience & Demographics fields
+ALTER TABLE events
+ADD COLUMN IF NOT EXISTS age_categories text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS gender_preference varchar(50) DEFAULT 'all',
+ADD COLUMN IF NOT EXISTS family_friendly boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS senior_friendly boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS singles_friendly boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS couples_oriented boolean DEFAULT false;
+
+-- Add Accessibility fields
+ALTER TABLE events
+ADD COLUMN IF NOT EXISTS wheelchair_accessible boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS mobility_friendly boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS hearing_accessible boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS vision_accessible boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS sensory_friendly boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS service_animals_allowed boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS accessibility_notes text;
+
+-- Add Cultural Context fields
+ALTER TABLE events
+ADD COLUMN IF NOT EXISTS religious_context text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS dietary_context text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS traditional_attire varchar(50) DEFAULT 'not_applicable';
+
+-- Add Prerequisites & Requirements fields
+ALTER TABLE events
+ADD COLUMN IF NOT EXISTS skill_level varchar(50) DEFAULT 'all_levels',
+ADD COLUMN IF NOT EXISTS prior_experience varchar(50) DEFAULT 'none_required',
+ADD COLUMN IF NOT EXISTS physical_fitness varchar(50) DEFAULT 'sedentary',
+ADD COLUMN IF NOT EXISTS equipment_required text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS dress_code varchar(50) DEFAULT 'casual',
+ADD COLUMN IF NOT EXISTS prerequisites_notes text;
+
+-- Add Content & Intensity fields
+ALTER TABLE events
+ADD COLUMN IF NOT EXISTS content_rating varchar(50) DEFAULT 'all_ages',
+ADD COLUMN IF NOT EXISTS alcohol_served varchar(50) DEFAULT 'no_alcohol',
+ADD COLUMN IF NOT EXISTS smoking_policy varchar(50) DEFAULT 'non_smoking',
+ADD COLUMN IF NOT EXISTS noise_level varchar(50) DEFAULT 'moderate',
+ADD COLUMN IF NOT EXISTS physical_intensity varchar(50) DEFAULT 'none';
+
+-- Add Social & Networking fields
+ALTER TABLE events
+ADD COLUMN IF NOT EXISTS networking_focus boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS social_mixer boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS ice_breakers boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS group_activities boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS team_building boolean DEFAULT false;
+
+-- Add comments for documentation
+COMMENT ON COLUMN events.age_categories IS 'Array of age groups suitable for the event: all_ages, kids, teens, young_adults, adults_25_35, middle_age, 50_plus, seniors_65_plus, etc.';
+COMMENT ON COLUMN events.gender_preference IS 'Target gender audience: all, women_only, men_only, lgbtq_friendly, gender_neutral';
+COMMENT ON COLUMN events.religious_context IS 'Array of religious/spiritual contexts: hindu, christian, muslim, buddhist, jewish, sikh, jain, interfaith, secular, etc.';
+COMMENT ON COLUMN events.dietary_context IS 'Array of dietary accommodations: vegetarian, vegan, halal, kosher, jain, gluten_free, nut_free, dairy_free';
+COMMENT ON COLUMN events.skill_level IS 'Required skill level: beginner, intermediate, advanced, all_levels';
+COMMENT ON COLUMN events.content_rating IS 'Age appropriateness: all_ages, pg, pg_13, mature_18, explicit';
+COMMENT ON COLUMN events.wheelchair_accessible IS 'Venue is wheelchair accessible with ramps and wide doorways';
+
+-- Create indexes for common filter queries
+CREATE INDEX IF NOT EXISTS idx_events_age_categories ON events USING GIN (age_categories);
+CREATE INDEX IF NOT EXISTS idx_events_religious_context ON events USING GIN (religious_context);
+CREATE INDEX IF NOT EXISTS idx_events_dietary_context ON events USING GIN (dietary_context);
+CREATE INDEX IF NOT EXISTS idx_events_equipment_required ON events USING GIN (equipment_required);
+CREATE INDEX IF NOT EXISTS idx_events_family_friendly ON events (family_friendly) WHERE family_friendly = true;
+CREATE INDEX IF NOT EXISTS idx_events_senior_friendly ON events (senior_friendly) WHERE senior_friendly = true;
+CREATE INDEX IF NOT EXISTS idx_events_wheelchair_accessible ON events (wheelchair_accessible) WHERE wheelchair_accessible = true;
+CREATE INDEX IF NOT EXISTS idx_events_content_rating ON events (content_rating);
+CREATE INDEX IF NOT EXISTS idx_events_skill_level ON events (skill_level);
+
+-- Add composite index for AI matching queries
+CREATE INDEX IF NOT EXISTS idx_events_matching_attributes ON events 
+  (gender_preference, skill_level, content_rating, family_friendly, senior_friendly);
+
+-- Update RLS policies to include new fields if needed
+-- (New fields are automatically covered by existing SELECT/INSERT/UPDATE policies)
+
+-- Verify migration
+DO $$
+DECLARE
+  v_count INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO v_count
+  FROM information_schema.columns
+  WHERE table_name = 'events'
+  AND column_name IN (
+    'age_categories', 'gender_preference', 'family_friendly',
+    'wheelchair_accessible', 'religious_context', 'skill_level',
+    'content_rating', 'networking_focus'
+  );
+  
+  IF v_count >= 8 THEN
+    RAISE NOTICE 'Migration successful: % new attribute columns added to events table', v_count;
+  ELSE
+    RAISE WARNING 'Migration may be incomplete: only % columns found', v_count;
+  END IF;
+END $$;
+-- Migration: Create User Profiles Table
+-- Description: Create the user_profiles table with basic structure before adding attributes
+-- Created: 2026-04-08
+
+-- Create user_profiles table
+CREATE TABLE IF NOT EXISTS user_profiles (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    
+    -- Basic Profile Info
+    full_name varchar(255),
+    avatar_url text,
+    bio text,
+    phone varchar(50),
+    
+    -- Role & Status
+    role varchar(50) DEFAULT 'discoverer', -- discoverer, organizer, admin
+    is_organizer boolean DEFAULT false,
+    is_verified boolean DEFAULT false,
+    
+    -- Location
+    city varchar(100),
+    state varchar(100),
+    country varchar(100),
+    timezone varchar(100) DEFAULT 'UTC',
+    
+    -- Preferences
+    email_notifications boolean DEFAULT true,
+    push_notifications boolean DEFAULT true,
+    marketing_emails boolean DEFAULT false,
+    
+    -- Timestamps
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    
+    -- Constraints
+    CONSTRAINT user_profiles_user_id_key UNIQUE (user_id)
+);
+
+-- Enable RLS
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS Policies
+CREATE POLICY "Users can view their own profile"
+    ON user_profiles FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own profile"
+    ON user_profiles FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own profile"
+    ON user_profiles FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own profile"
+    ON user_profiles FOR DELETE
+    USING (auth.uid() = user_id);
+
+-- Allow public read access to basic profile info (for event listings)
+CREATE POLICY "Public can view basic profile info"
+    ON user_profiles FOR SELECT
+    USING (true);
+
+-- Create index on user_id for faster lookups
+CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
+
+-- Create index on role for filtering
+CREATE INDEX IF NOT EXISTS idx_user_profiles_role ON user_profiles(role);
+
+-- Create updated_at trigger
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
+CREATE TRIGGER update_user_profiles_updated_at
+    BEFORE UPDATE ON user_profiles
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Grant permissions
+GRANT SELECT, INSERT, UPDATE, DELETE ON user_profiles TO authenticated;
+GRANT SELECT ON user_profiles TO anon;
+
+COMMENT ON TABLE user_profiles IS 'Extended user profile information for event matching and recommendations';
+-- Migration: Add User Profile Attributes for Event Matching
+-- Description: Add comprehensive user attributes for personalized event recommendations
+-- Created: 2026-04-08
+
+-- Add Cultural Identity fields
+ALTER TABLE user_profiles
+ADD COLUMN IF NOT EXISTS religion varchar(50),
+ADD COLUMN IF NOT EXISTS religious_observance varchar(50),
+ADD COLUMN IF NOT EXISTS ethnicity text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS nationality varchar(100),
+ADD COLUMN IF NOT EXISTS cultural_background text;
+
+-- Add Language fields
+ALTER TABLE user_profiles
+ADD COLUMN IF NOT EXISTS primary_language varchar(50) DEFAULT 'en',
+ADD COLUMN IF NOT EXISTS secondary_languages text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS preferred_event_languages text[] DEFAULT '{}';
+
+-- Add Interests (stored as JSONB for flexibility)
+ALTER TABLE user_profiles
+ADD COLUMN IF NOT EXISTS interests jsonb DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS music_genres text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS sports_fitness text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS arts_culture text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS food_drink text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS tech_gaming text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS wellness_mindfulness text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS outdoor_activities text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS learning_education text[] DEFAULT '{}';
+
+-- Add Social Preferences
+ALTER TABLE user_profiles
+ADD COLUMN IF NOT EXISTS preferred_group_size varchar(50),
+ADD COLUMN IF NOT EXISTS social_style varchar(50),
+ADD COLUMN IF NOT EXISTS looking_for text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS event_companion varchar(50),
+ADD COLUMN IF NOT EXISTS comfort_level varchar(50);
+
+-- Add Event Preferences
+ALTER TABLE user_profiles
+ADD COLUMN IF NOT EXISTS preferred_days text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS preferred_times text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS max_event_duration varchar(50),
+ADD COLUMN IF NOT EXISTS price_comfort varchar(50),
+ADD COLUMN IF NOT EXISTS virtual_comfort varchar(50);
+
+-- Add Accessibility Needs
+ALTER TABLE user_profiles
+ADD COLUMN IF NOT EXISTS accessibility_needs text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS dietary_restrictions text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS sensory_sensitivities boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS service_animal boolean DEFAULT false;
+
+-- Add Family & Relationship
+ALTER TABLE user_profiles
+ADD COLUMN IF NOT EXISTS relationship_status varchar(50),
+ADD COLUMN IF NOT EXISTS has_children boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS children_ages text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS pet_owner boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS pet_types text[] DEFAULT '{}';
+
+-- Add Professional/Educational
+ALTER TABLE user_profiles
+ADD COLUMN IF NOT EXISTS industry varchar(100),
+ADD COLUMN IF NOT EXISTS job_function varchar(100),
+ADD COLUMN IF NOT EXISTS career_level varchar(50),
+ADD COLUMN IF NOT EXISTS education_level varchar(50);
+
+-- Add Geographic Preferences
+ALTER TABLE user_profiles
+ADD COLUMN IF NOT EXISTS preferred_search_radius varchar(50),
+ADD COLUMN IF NOT EXISTS willing_to_travel boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS max_travel_distance varchar(50);
+
+-- Add comments for documentation
+COMMENT ON COLUMN user_profiles.interests IS 'JSONB object containing user interest categories with weights for AI matching';
+COMMENT ON COLUMN user_profiles.looking_for IS 'Array of goals: friends, networking, dating, learning, entertainment, professional_growth';
+COMMENT ON COLUMN user_profiles.social_style IS 'User personality: introvert, extrovert, ambivert';
+COMMENT ON COLUMN user_profiles.virtual_comfort IS 'Preference for virtual events: in_person_only, virtual_ok, hybrid_ok, virtual_preferred';
+COMMENT ON COLUMN user_profiles.price_comfort IS 'Budget preference: free_only, under_25, under_50, under_100, any';
+
+-- Create GIN indexes for array fields (fast containment queries)
+CREATE INDEX IF NOT EXISTS idx_user_profiles_ethnicity ON user_profiles USING GIN (ethnicity);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_interests ON user_profiles USING GIN (interests);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_music_genres ON user_profiles USING GIN (music_genres);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_sports_fitness ON user_profiles USING GIN (sports_fitness);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_looking_for ON user_profiles USING GIN (looking_for);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_dietary_restrictions ON user_profiles USING GIN (dietary_restrictions);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_accessibility_needs ON user_profiles USING GIN (accessibility_needs);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_preferred_days ON user_profiles USING GIN (preferred_days);
+
+-- Create B-tree indexes for common filter fields
+CREATE INDEX IF NOT EXISTS idx_user_profiles_religion ON user_profiles (religion);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_primary_language ON user_profiles (primary_language);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_social_style ON user_profiles (social_style);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_career_level ON user_profiles (career_level);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_relationship_status ON user_profiles (relationship_status);
+
+-- Add composite index for matching queries
+CREATE INDEX IF NOT EXISTS idx_user_profiles_matching ON user_profiles 
+  (social_style, preferred_group_size, price_comfort, has_children);
+
+-- Create a function to calculate event match score
+CREATE OR REPLACE FUNCTION calculate_event_match_score(
+  p_user_id uuid,
+  p_event_id uuid
+)
+RETURNS numeric
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_score numeric := 0;
+  v_user user_profiles%ROWTYPE;
+  v_event events%ROWTYPE;
+BEGIN
+  -- Get user and event data
+  SELECT * INTO v_user FROM user_profiles WHERE id = p_user_id;
+  SELECT * INTO v_event FROM events WHERE id = p_event_id;
+  
+  IF v_user IS NULL OR v_event IS NULL THEN
+    RETURN 0;
+  END IF;
+  
+  -- Strict matches (deal breakers) - high weight
+  IF v_event.age_categories && ARRAY['all_ages'] OR 
+     v_event.age_categories && v_user.children_ages THEN
+    v_score := v_score + 25;
+  END IF;
+  
+  -- Accessibility match
+  IF v_user.accessibility_needs && ARRAY['wheelchair'] AND v_event.wheelchair_accessible THEN
+    v_score := v_score + 20;
+  END IF;
+  
+  -- Dietary match
+  IF v_user.dietary_restrictions && v_event.dietary_context THEN
+    v_score := v_score + 15;
+  END IF;
+  
+  -- Religious/cultural match
+  IF v_user.religion IS NOT NULL AND v_event.religious_context @> ARRAY[v_user.religion] THEN
+    v_score := v_score + 10;
+  END IF;
+  
+  -- Family friendly match
+  IF v_user.has_children AND v_event.family_friendly THEN
+    v_score := v_score + 10;
+  END IF;
+  
+  -- Skill level match (all_levels matches everyone)
+  IF v_event.skill_level = 'all_levels' OR v_user.career_level = 'entry' THEN
+    v_score := v_score + 10;
+  END IF;
+  
+  -- Content rating appropriateness
+  IF v_user.has_children AND v_event.content_rating IN ('all_ages', 'pg') THEN
+    v_score := v_score + 10;
+  END IF;
+  
+  RETURN LEAST(v_score, 100);
+END;
+$$;
+
+-- Grant execute permission
+GRANT EXECUTE ON FUNCTION calculate_event_match_score(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION calculate_event_match_score(uuid, uuid) TO anon;
+
+-- Verify migration
+DO $$
+DECLARE
+  v_count INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO v_count
+  FROM information_schema.columns
+  WHERE table_name = 'user_profiles'
+  AND column_name IN (
+    'religion', 'ethnicity', 'interests', 'looking_for',
+    'social_style', 'accessibility_needs', 'dietary_restrictions',
+    'preferred_days', 'has_children'
+  );
+  
+  IF v_count >= 9 THEN
+    RAISE NOTICE 'Migration successful: % new attribute columns added to user_profiles table', v_count;
+  ELSE
+    RAISE WARNING 'Migration may be incomplete: only % columns found', v_count;
+  END IF;
+END $$;
+-- Migration to add missing event columns for paid events and extended attributes
+-- Run this in Supabase SQL Editor
+
+-- Add paid event columns
+ALTER TABLE public.events 
+    ADD COLUMN IF NOT EXISTS is_paid_event BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS ticketing_website TEXT;
+
+-- Add language columns
+ALTER TABLE public.events 
+    ADD COLUMN IF NOT EXISTS primary_language TEXT,
+    ADD COLUMN IF NOT EXISTS secondary_languages TEXT[],
+    ADD COLUMN IF NOT EXISTS interpretation_available BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS sign_language_interpreter BOOLEAN DEFAULT FALSE;
+
+-- Add format columns
+ALTER TABLE public.events 
+    ADD COLUMN IF NOT EXISTS event_type TEXT,
+    ADD COLUMN IF NOT EXISTS format TEXT,
+    ADD COLUMN IF NOT EXISTS sub_category TEXT;
+
+-- Add pricing columns
+ALTER TABLE public.events 
+    ADD COLUMN IF NOT EXISTS refund_policy TEXT,
+    ADD COLUMN IF NOT EXISTS group_discounts BOOLEAN DEFAULT FALSE;
+
+-- Verify columns were added
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'events' 
+ORDER BY ordinal_position;
+-- Fix enum columns - change to text to allow flexible values
+-- Run this in Supabase SQL Editor
+
+-- Convert refund_policy from enum to text
+ALTER TABLE public.events 
+    ALTER COLUMN refund_policy DROP DEFAULT,
+    ALTER COLUMN refund_policy TYPE TEXT USING refund_policy::TEXT,
+    ALTER COLUMN refund_policy SET DEFAULT NULL;
+
+-- Convert traditional_attire from enum to text (if it exists as enum)
+ALTER TABLE public.events 
+    ALTER COLUMN traditional_attire DROP DEFAULT,
+    ALTER COLUMN traditional_attire TYPE TEXT USING traditional_attire::TEXT,
+    ALTER COLUMN traditional_attire SET DEFAULT NULL;
+
+-- Convert skill_level from enum to text
+ALTER TABLE public.events 
+    ALTER COLUMN skill_level DROP DEFAULT,
+    ALTER COLUMN skill_level TYPE TEXT USING skill_level::TEXT,
+    ALTER COLUMN skill_level SET DEFAULT NULL;
+
+-- Convert physical_fitness from enum to text
+ALTER TABLE public.events 
+    ALTER COLUMN physical_fitness DROP DEFAULT,
+    ALTER COLUMN physical_fitness TYPE TEXT USING physical_fitness::TEXT,
+    ALTER COLUMN physical_fitness SET DEFAULT NULL;
+
+-- Convert noise_level from enum to text
+ALTER TABLE public.events 
+    ALTER COLUMN noise_level DROP DEFAULT,
+    ALTER COLUMN noise_level TYPE TEXT USING noise_level::TEXT,
+    ALTER COLUMN noise_level SET DEFAULT NULL;
+
+-- Convert physical_intensity from enum to text
+ALTER TABLE public.events 
+    ALTER COLUMN physical_intensity DROP DEFAULT,
+    ALTER COLUMN physical_intensity TYPE TEXT USING physical_intensity::TEXT,
+    ALTER COLUMN physical_intensity SET DEFAULT NULL;
+
+-- Verify changes
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'events' 
+ORDER BY ordinal_position;
+-- Fix enum columns - need to drop dependent views first, then recreate them
+-- Run this in Supabase SQL Editor
+
+-- Step 1: Drop ALL dependent views
+DROP VIEW IF EXISTS public.deleted_events_with_countdown;
+DROP VIEW IF EXISTS public.events_enhanced_view;
+DROP VIEW IF EXISTS public.events_with_participants;
+DROP VIEW IF EXISTS public.user_events_view;
+
+-- Step 2: Convert all enum columns to text type
+ALTER TABLE public.events 
+    ALTER COLUMN refund_policy DROP DEFAULT,
+    ALTER COLUMN refund_policy TYPE TEXT USING refund_policy::TEXT,
+    ALTER COLUMN refund_policy SET DEFAULT NULL;
+
+ALTER TABLE public.events 
+    ALTER COLUMN traditional_attire DROP DEFAULT,
+    ALTER COLUMN traditional_attire TYPE TEXT USING traditional_attire::TEXT,
+    ALTER COLUMN traditional_attire SET DEFAULT NULL;
+
+ALTER TABLE public.events 
+    ALTER COLUMN skill_level DROP DEFAULT,
+    ALTER COLUMN skill_level TYPE TEXT USING skill_level::TEXT,
+    ALTER COLUMN skill_level SET DEFAULT NULL;
+
+ALTER TABLE public.events 
+    ALTER COLUMN physical_fitness DROP DEFAULT,
+    ALTER COLUMN physical_fitness TYPE TEXT USING physical_fitness::TEXT,
+    ALTER COLUMN physical_fitness SET DEFAULT NULL;
+
+ALTER TABLE public.events 
+    ALTER COLUMN noise_level DROP DEFAULT,
+    ALTER COLUMN noise_level TYPE TEXT USING noise_level::TEXT,
+    ALTER COLUMN noise_level SET DEFAULT NULL;
+
+ALTER TABLE public.events 
+    ALTER COLUMN physical_intensity DROP DEFAULT,
+    ALTER COLUMN physical_intensity TYPE TEXT USING physical_intensity::TEXT,
+    ALTER COLUMN physical_intensity SET DEFAULT NULL;
+
+-- Step 3: Recreate ALL views
+
+-- 3.1 events_with_participants
+CREATE OR REPLACE VIEW public.events_with_participants AS
+SELECT
+  e.*,
+  p.display_name as organizer_name,
+  p.avatar_url as organizer_avatar
+FROM public.events e
+LEFT JOIN public.profiles p ON e.organizer_id = p.user_id;
+
+-- 3.2 user_events_view  
+CREATE OR REPLACE VIEW public.user_events_view AS
+SELECT
+  e.*,
+  CASE
+    WHEN ep.user_id IS NOT NULL THEN 'registered'
+    WHEN e.organizer_id = auth.uid() THEN 'organizer'
+    ELSE 'available'
+  END as participation_status,
+  p.display_name as organizer_name,
+  p.avatar_url as organizer_avatar
+FROM public.events e
+LEFT JOIN public.profiles p ON e.organizer_id = p.user_id
+LEFT JOIN public.event_participants ep ON e.id = ep.event_id AND ep.user_id = auth.uid()
+WHERE e.is_public = true OR e.organizer_id = auth.uid();
+
+-- 3.3 events_enhanced_view
+CREATE OR REPLACE VIEW public.events_enhanced_view AS
+SELECT
+  e.*,
+  v.name as venue_name,
+  v.address as venue_address,
+  v.city as venue_city,
+  v.capacity as venue_capacity,
+  p.display_name as organizer_name,
+  p.avatar_url as organizer_avatar,
+  COALESCE(tt.total_tickets, 0) as total_ticket_types,
+  COALESCE(et.media_count, 0) as media_count,
+  COALESCE(tag.tag_count, 0) as tag_count
+FROM public.events e
+LEFT JOIN public.venues v ON e.primary_venue_id = v.id
+LEFT JOIN public.profiles p ON e.organizer_id = p.user_id
+LEFT JOIN (
+  SELECT event_id, COUNT(*) as total_tickets
+  FROM public.ticket_types
+  GROUP BY event_id
+) tt ON e.id = tt.event_id
+LEFT JOIN (
+  SELECT event_id, COUNT(*) as media_count
+  FROM public.event_media
+  GROUP BY event_id
+) et ON e.id = et.event_id
+LEFT JOIN (
+  SELECT event_id, COUNT(*) as tag_count
+  FROM public.event_tags
+  GROUP BY event_id
+) tag ON e.id = tag.event_id;
+
+-- 3.4 deleted_events_with_countdown
+CREATE OR REPLACE VIEW public.deleted_events_with_countdown AS
+SELECT 
+    e.*,
+    public.get_days_until_deletion(e.deleted_at) as days_until_deletion
+FROM public.events e
+WHERE e.deleted_at IS NOT NULL;
+
+-- Step 4: Grant permissions
+GRANT SELECT ON public.deleted_events_with_countdown TO authenticated;
+GRANT SELECT ON public.events_with_participants TO authenticated;
+GRANT SELECT ON public.user_events_view TO authenticated;
+GRANT SELECT ON public.events_enhanced_view TO authenticated;
+
+-- Step 4: Verify changes
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'events' 
+ORDER BY ordinal_position;
+-- Check for triggers on events table that might use regex
+SELECT 
+    trigger_name,
+    event_manipulation,
+    action_statement
+FROM information_schema.triggers
+WHERE event_object_table = 'events';
+
+-- Check for functions that might use regex
+SELECT 
+    routine_name,
+    routine_definition
+FROM information_schema.routines
+WHERE routine_schema = 'public'
+AND routine_definition LIKE '%regexp%' OR routine_definition LIKE '%~%';
+-- Temporarily disable all triggers on events table to identify the problematic one
+-- Run this in Supabase SQL Editor
+
+-- Disable all triggers
+ALTER TABLE public.events DISABLE TRIGGER ALL;
+
+-- Check which triggers exist
+SELECT trigger_name, event_manipulation, action_timing
+FROM information_schema.triggers
+WHERE event_object_table = 'events';
+-- Check only user-defined triggers (not system triggers)
+SELECT 
+    trigger_name,
+    event_manipulation,
+    action_timing,
+    action_statement
+FROM information_schema.triggers
+WHERE event_object_table = 'events'
+AND trigger_schema = 'public'
+AND trigger_name NOT LIKE 'RI_%'  -- Exclude referential integrity triggers
+AND trigger_name NOT LIKE 'pg_%';  -- Exclude postgres system triggers
+-- Fix the validate_event_data_enhanced function - remove invalid regex
+-- The regex patterns had issues with escaping
+
+CREATE OR REPLACE FUNCTION public.validate_event_data_enhanced()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Validate timezone
+  IF NEW.timezone IS NOT NULL THEN
+    -- Basic timezone validation (can be enhanced with proper timezone library)
+    IF NEW.timezone !~ '^[A-Za-z_]+/[A-Za-z_]+$' AND NEW.timezone NOT IN ('UTC', 'GMT') THEN
+      RAISE EXCEPTION 'Invalid timezone format';
+    END IF;
+  END IF;
+  
+  -- Validate registration timing
+  IF NEW.registration_start_time IS NOT NULL AND NEW.registration_end_time IS NOT NULL THEN
+    IF NEW.registration_end_time <= NEW.registration_start_time THEN
+      RAISE EXCEPTION 'Registration end time must be after registration start time';
+    END IF;
+  END IF;
+  
+  -- Validate doors open time
+  IF NEW.doors_open_time IS NOT NULL AND NEW.start_time IS NOT NULL THEN
+    IF NEW.doors_open_time > NEW.start_time THEN
+      RAISE EXCEPTION 'Doors open time must be before event start time';
+    END IF;
+  END IF;
+  
+  -- Validate virtual event requirements
+  IF NEW.event_type = 'online' AND NEW.virtual_event_url IS NULL THEN
+    RAISE EXCEPTION 'Online events must have a virtual event URL';
+  END IF;
+  
+  -- Validate event contact email (simplified regex)
+  IF NEW.event_contact_email IS NOT NULL THEN
+    IF NEW.event_contact_email !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN
+      RAISE EXCEPTION 'Invalid event contact email format';
+    END IF;
+  END IF;
+  
+  -- Validate ticketing website URL format (simplified - just check for http/https)
+  IF NEW.ticketing_website IS NOT NULL THEN
+    IF NEW.ticketing_website !~ '^https?://' THEN
+      RAISE EXCEPTION 'Invalid ticketing website URL format - must start with http:// or https://';
+    END IF;
+  END IF;
+  
+  -- Validate event website URL format (simplified)
+  IF NEW.event_website IS NOT NULL THEN
+    IF NEW.event_website !~ '^https?://' THEN
+      RAISE EXCEPTION 'Invalid event website URL format - must start with http:// or https://';
+    END IF;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SET search_path = public;

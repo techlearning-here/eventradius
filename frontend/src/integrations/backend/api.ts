@@ -326,7 +326,13 @@ class ApiClient {
   }
 
   async getDeletedEvents(): Promise<Event[]> {
-    return this.request<Event[]>('/api/events/deleted/me');
+    return this.request<Event[]>('/api/events/deleted');
+  }
+
+  async seedDummyEvents(): Promise<{ message: string; events: { id: string; title: string }[] }> {
+    return this.request<{ message: string; events: { id: string; title: string }[] }>('/api/events/seed-dummy-events', {
+      method: 'POST',
+    });
   }
 
   async getDeletedEvent(eventId: string): Promise<Event> {

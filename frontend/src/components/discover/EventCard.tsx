@@ -59,12 +59,19 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
             </span>
           </div>
           
-          {/* Free Badge */}
-          {!event.is_paid_event && (
+          {/* Free/Paid Badge */}
+          {!event.is_paid_event ? (
             <div className="absolute top-4 right-4">
               <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-emerald-700 to-emerald-600 border border-emerald-500 rounded-full text-xs font-semibold text-white shadow-lg">
                 <div className="w-1.5 h-1.5 bg-white rounded-full" />
                 FREE
+              </span>
+            </div>
+          ) : (
+            <div className="absolute top-4 right-4">
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-amber-600 to-amber-500 border border-amber-400 rounded-full text-xs font-semibold text-white shadow-lg">
+                <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                PAID
               </span>
             </div>
           )}

@@ -14,28 +14,28 @@ SET session_replication_role = 'replica';
 -- Truncate user-related tables in order of dependencies
 
 -- 1. Comprehensive event management data (depends on users and events)
-TRUNCATE TABLE public.event_schedule CASCADE;
-TRUNCATE TABLE public.event_tags CASCADE;
-TRUNCATE TABLE public.event_notifications CASCADE;
-TRUNCATE TABLE public.event_media CASCADE;
-TRUNCATE TABLE public.registration_fields CASCADE;
-TRUNCATE TABLE public.ticket_types CASCADE;
-TRUNCATE TABLE public.event_venues CASCADE;
-TRUNCATE TABLE public.venues CASCADE;
+TRUNCATE TABLE IF EXISTS public.event_schedule CASCADE;
+TRUNCATE TABLE IF EXISTS public.event_tags CASCADE;
+TRUNCATE TABLE IF EXISTS public.event_notifications CASCADE;
+TRUNCATE TABLE IF EXISTS public.event_media CASCADE;
+TRUNCATE TABLE IF EXISTS public.registration_fields CASCADE;
+TRUNCATE TABLE IF EXISTS public.ticket_types CASCADE;
+TRUNCATE TABLE IF EXISTS public.event_venues CASCADE;
+TRUNCATE TABLE IF EXISTS public.venues CASCADE;
 
 -- 2. Core event data (depends on users)
-TRUNCATE TABLE public.event_audit CASCADE;
-TRUNCATE TABLE public.event_registrations CASCADE;
-TRUNCATE TABLE public.event_categories CASCADE;
-TRUNCATE TABLE public.event_participants CASCADE;
-TRUNCATE TABLE public.events CASCADE;
+TRUNCATE TABLE IF EXISTS public.event_audit CASCADE;
+TRUNCATE TABLE IF EXISTS public.event_registrations CASCADE;
+TRUNCATE TABLE IF EXISTS public.event_categories CASCADE;
+TRUNCATE TABLE IF EXISTS public.event_participants CASCADE;
+TRUNCATE TABLE IF EXISTS public.events CASCADE;
 
 -- 3. User preferences and roles
-TRUNCATE TABLE public.user_preferences CASCADE;
-TRUNCATE TABLE public.user_roles CASCADE;
+TRUNCATE TABLE IF EXISTS public.user_preferences CASCADE;
+TRUNCATE TABLE IF EXISTS public.user_roles CASCADE;
 
 -- 4. User profiles
-TRUNCATE TABLE public.profiles CASCADE;
+TRUNCATE TABLE IF EXISTS public.profiles CASCADE;
 
 -- 5. Core authentication users table
 -- This removes all user accounts from the auth system

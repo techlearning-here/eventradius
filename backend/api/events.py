@@ -34,6 +34,8 @@ class EventBase(BaseModel):
     category: Optional[str] = None
     max_participants: Optional[int] = Field(None, ge=1)
     is_public: bool = True
+    is_paid_event: bool = False
+    ticketing_website: Optional[str] = None
 
 
 class EventAttributes(BaseModel):
@@ -83,6 +85,21 @@ class EventAttributes(BaseModel):
     group_activities: Optional[bool] = None
     team_building: Optional[bool] = None
 
+    # Language
+    primary_language: Optional[str] = None
+    secondary_languages: Optional[List[str]] = None
+    interpretation_available: Optional[bool] = None
+    sign_language_interpreter: Optional[bool] = None
+
+    # Format & Type
+    event_type: Optional[str] = None
+    format: Optional[str] = None
+    sub_category: Optional[str] = None
+
+    # Pricing
+    refund_policy: Optional[str] = None
+    group_discounts: Optional[bool] = None
+
 
 class EventCreate(EventBase, EventAttributes):
     pass
@@ -98,6 +115,8 @@ class EventUpdate(BaseModel):
     category: Optional[str] = None
     max_participants: Optional[int] = Field(None, ge=1)
     is_public: Optional[bool] = None
+    is_paid_event: Optional[bool] = None
+    ticketing_website: Optional[str] = None
 
     # New attributes
     age_categories: Optional[List[str]] = None
@@ -133,6 +152,21 @@ class EventUpdate(BaseModel):
     group_activities: Optional[bool] = None
     team_building: Optional[bool] = None
 
+    # Language
+    primary_language: Optional[str] = None
+    secondary_languages: Optional[List[str]] = None
+    interpretation_available: Optional[bool] = None
+    sign_language_interpreter: Optional[bool] = None
+
+    # Format & Type
+    event_type: Optional[str] = None
+    format: Optional[str] = None
+    sub_category: Optional[str] = None
+
+    # Pricing
+    refund_policy: Optional[str] = None
+    group_discounts: Optional[bool] = None
+
 
 class EventResponse(EventBase, EventAttributes):
     id: str
@@ -147,7 +181,7 @@ class EventResponse(EventBase, EventAttributes):
 # Event endpoints
 @router.get("/", response_model=List[EventResponse])
 async def get_events(
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     category: Optional[str] = None,
     is_public: Optional[bool] = None,
@@ -260,11 +294,121 @@ async def create_event(event: EventCreate, user: dict = Depends(get_current_user
         created_event["current_participants"] = 0
 
         return created_event
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating event: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create event",
+        )
+
+
+@router.post("/seed-dummy-events", response_model=dict)
+async def seed_dummy_events(user: dict = Depends(get_current_user)):
+    """Seed dummy events for testing purposes."""
+    try:
+        import uuid
+        from datetime import datetime, timedelta
+
+        # Get user's organizer_id or create one
+        user_id = user.get("id", str(uuid.uuid4()))
+
+        # Sample dummy events data - using only core fields that exist in DB
+        dummy_events = [
+            {
+                "title": "Seniors Social Tea & Conversation",
+                "description": "Join us for a relaxing afternoon tea with stimulating conversation and gentle music. Perfect for seniors looking to connect and socialize.",
+                "category": "social",
+                "location": "Golden Years Community Center, 45 Park Avenue",
+                "start_time": (datetime.now() + timedelta(days=5)).isoformat(),
+                "end_time": (datetime.now() + timedelta(days=5, hours=2)).isoformat(),
+                "max_participants": 25,
+                "is_public": True,
+                "is_paid_event": True,
+            },
+            {
+                "title": "Tech Networking Happy Hour",
+                "description": "Connect with fellow tech professionals in a relaxed setting. Great for developers, designers, product managers, and entrepreneurs.",
+                "category": "networking",
+                "location": "The Craft Brewery, Downtown District",
+                "start_time": (datetime.now() + timedelta(days=7)).isoformat(),
+                "end_time": (datetime.now() + timedelta(days=7, hours=3)).isoformat(),
+                "max_participants": 60,
+                "is_public": True,
+                "is_paid_event": True,
+            },
+            {
+                "title": "Beach Volleyball Tournament",
+                "description": "Fun beach volleyball tournament for all skill levels. Teams of 4 players. Equipment provided. Come ready to play!",
+                "category": "sports",
+                "location": "Ocean Beach, San Francisco",
+                "start_time": (datetime.now() + timedelta(days=3)).isoformat(),
+                "end_time": (datetime.now() + timedelta(days=3, hours=4)).isoformat(),
+                "max_participants": 32,
+                "is_public": True,
+                "is_paid_event": True,
+            },
+            {
+                "title": "Italian Cooking Masterclass",
+                "description": "Learn authentic Italian cooking from Chef Maria. Hands-on pasta making, sauce preparation, and traditional techniques.",
+                "category": "food",
+                "location": "Culinary Institute, Kitchen Studio B",
+                "start_time": (datetime.now() + timedelta(days=10)).isoformat(),
+                "end_time": (datetime.now() + timedelta(days=10, hours=3)).isoformat(),
+                "max_participants": 16,
+                "is_public": True,
+                "is_paid_event": True,
+            },
+            {
+                "title": "Free Community Yoga in the Park",
+                "description": "Start your weekend with free yoga for all levels. Bring your own mat and water. All are welcome!",
+                "category": "wellness",
+                "location": "Central Park, Great Lawn",
+                "start_time": (datetime.now() + timedelta(days=2)).isoformat(),
+                "end_time": (
+                    datetime.now() + timedelta(days=2, hours=1, minutes=30)
+                ).isoformat(),
+                "max_participants": 50,
+                "is_public": True,
+                "is_paid_event": False,
+            },
+            {
+                "title": "Outdoor Movie Night - Family Friendly",
+                "description": "Bring blankets and snacks for an outdoor screening of 'The Lion King'. Free popcorn for kids!",
+                "category": "entertainment",
+                "location": "Riverside Park, Amphitheater",
+                "start_time": (datetime.now() + timedelta(days=4)).isoformat(),
+                "end_time": (
+                    datetime.now() + timedelta(days=4, hours=2, minutes=30)
+                ).isoformat(),
+                "max_participants": 100,
+                "is_public": True,
+                "is_paid_event": False,
+            },
+        ]
+
+        created_events = []
+        for event_data in dummy_events:
+            event_id = str(uuid.uuid4())
+            event_data["id"] = event_id
+            event_data["organizer_id"] = user_id
+            event_data["created_at"] = datetime.now().isoformat()
+            event_data["updated_at"] = datetime.now().isoformat()
+
+            # Insert into database
+            get_table("events").insert(event_data).execute()
+            created_events.append({"id": event_id, "title": event_data["title"]})
+
+        return {
+            "message": f"Successfully created {len(created_events)} dummy events",
+            "events": created_events,
+        }
+    except Exception as e:
+        logger.error(f"Error seeding dummy events: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_ERROR,
+            detail=f"Failed to seed dummy events: {str(e)}",
         )
 
 

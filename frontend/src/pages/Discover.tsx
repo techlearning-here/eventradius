@@ -8,13 +8,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { useEvents } from '@/hooks/useEvents';
 import { CalendarIcon, MapPin, Plus, ArrowRight, Building2 } from 'lucide-react';
-import { dummyEvents } from '@/components/EventDetail/data/dummyEvents';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CATEGORIES } from '@/data/cities';
 import { SEOHead } from '@/components/SEOHead';
 import { EventParticipationCounts } from '@/components/EventParticipation';
-import { EventDetailOverlay } from '@/components/EventDetailPage';
 import { EventCard } from '@/components/discover/EventCard';
 import { type Event } from '@/integrations/backend/api';
 
@@ -42,33 +40,23 @@ const Discover = () => {
   const navigate = useNavigate();
   const [date, setDate] = useState<Date | undefined>(undefined);
   const { events, loading, error, refetch } = useEvents();
-  const [showDemoEvent, setShowDemoEvent] = useState<string | null>(null);
-
+  
   useEffect(() => {
-    console.log('Discover redirect check:', { user: !!user, role, onboardingCompleted });
     if (user && role === 'user' && onboardingCompleted === false) {
-      console.log('Redirecting to onboarding...');
       navigate('/onboarding');
     }
   }, [user, role, onboardingCompleted, navigate]);
 
   useEffect(() => {
-    console.log('🔍 Debug - Events loading state:', loading);
-    console.log('🔍 Debug - Events error state:', error);
-    if (loading) {
-      console.log('🔍 Debug - Still loading events...');
-    }
     if (error) {
-      console.log('🔍 Debug - API Error:', error);
+      console.error('API Error:', error);
     }
-  }, [loading, error]);
+  }, [loading, error, events]);
   const [prefs, setPrefs] = useState<UserPrefs | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    console.log('Discover redirect check:', { user: !!user, role, onboardingCompleted });
     if (user && role === 'user' && onboardingCompleted === false) {
-      console.log('Redirecting to onboarding...');
       navigate('/onboarding');
     }
   }, [user, role, onboardingCompleted, navigate]);
@@ -96,31 +84,13 @@ const Discover = () => {
   };
 
   const filteredEvents = useMemo(() => {
-    const now = Date.now();
-    const oneHour = 3600000;
-    
     // Only log in development
     if (import.meta.env.DEV) {
       console.log('=== EVENT FILTERING DEBUG ===');
-      console.log('Current time:', new Date(now));
-      console.log('One hour ago:', new Date(now - oneHour));
       console.log('Total events fetched:', events.length);
     }
     
     const filtered = events.filter((event, index) => {
-      // If event has a start_time, use it. If not, treat it as upcoming (not past)
-      let target;
-      let isPastEvent = false;
-      
-      if (event.start_time) {
-        target = new Date(event.start_time).getTime();
-        isPastEvent = target < now - oneHour;
-      } else {
-        // Events without start_time are considered upcoming
-        target = new Date(event.created_at).getTime();
-        isPastEvent = false; // Don't filter out events without start_time
-      }
-      
       const matchesDate = !date || new Date(event.start_time || event.created_at).toDateString() === date.toDateString();
       const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(event.category || '');
       
@@ -128,19 +98,14 @@ const Discover = () => {
         console.log(`\n--- Event ${index + 1} ---`);
         console.log('ID:', event.id);
         console.log('Title:', event.title);
-        console.log('Start time:', event.start_time);
-        console.log('Created at:', event.created_at);
-        console.log('Target time:', new Date(target));
-        console.log('Has start_time:', !!event.start_time);
-        console.log('Is past event:', isPastEvent);
         console.log('Matches date filter:', matchesDate);
         console.log('Matches category filter:', matchesCategory);
         console.log('Selected categories:', selectedCategories);
         console.log('Event category:', event.category);
-        console.log('Will pass filter:', !isPastEvent && matchesDate && matchesCategory);
+        console.log('Will pass filter:', matchesDate && matchesCategory);
       }
       
-      return !isPastEvent && matchesDate && matchesCategory;
+      return matchesDate && matchesCategory;
     });
     
     if (import.meta.env.DEV) {
@@ -301,33 +266,6 @@ const Discover = () => {
 
         <section className="px-4 md:px-8 pb-20">
           <div className="max-w-6xl mx-auto">
-            {/* Demo Event Cards - Only in development */}
-            {import.meta.env.DEV && (
-              <div className="mb-12">
-                <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-8 backdrop-blur-sm shadow-lg">
-                  <div className="text-center mb-8">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/20 border border-primary/30 rounded-full mb-4">
-                      <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                      <span className="text-sm font-semibold text-primary">Development Demo</span>
-                    </div>
-                    <h3 className="text-3xl font-bold text-foreground mb-3">Family Event Demos</h3>
-                    <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                      Explore our full-featured event cards with participation tracking, RSVP management, and interactive elements
-                    </p>
-                  </div>
-                  
-                  {/* Demo Events Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {Object.values(dummyEvents).map((event, i) => (
-                      <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${i * 0.1}s`, animationFillMode: 'both' }}>
-                        <EventCard event={event} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <div className="relative mb-8">
@@ -455,42 +393,6 @@ const Discover = () => {
         </section>
       </div>
 
-      {/* Demo Event Overlays */}
-      <EventDetailOverlay 
-        eventId="demo-family-all-ages" 
-        isOpen={showDemoEvent === 'demo-family-all-ages'} 
-        onClose={() => setShowDemoEvent(null)} 
-      />
-      <EventDetailOverlay 
-        eventId="demo-seniors-social" 
-        isOpen={showDemoEvent === 'demo-seniors-social'} 
-        onClose={() => setShowDemoEvent(null)} 
-      />
-      <EventDetailOverlay 
-        eventId="demo-kids-sensory" 
-        isOpen={showDemoEvent === 'demo-kids-sensory'} 
-        onClose={() => setShowDemoEvent(null)} 
-      />
-      <EventDetailOverlay 
-        eventId="demo-adults-networking" 
-        isOpen={showDemoEvent === 'demo-adults-networking'} 
-        onClose={() => setShowDemoEvent(null)} 
-      />
-      <EventDetailOverlay 
-        eventId="demo-cultural-festival" 
-        isOpen={showDemoEvent === 'demo-cultural-festival'} 
-        onClose={() => setShowDemoEvent(null)} 
-      />
-      <EventDetailOverlay 
-        eventId="demo-sports-intensive" 
-        isOpen={showDemoEvent === 'demo-sports-intensive'} 
-        onClose={() => setShowDemoEvent(null)} 
-      />
-      <EventDetailOverlay 
-        eventId="demo-virtual-class" 
-        isOpen={showDemoEvent === 'demo-virtual-class'} 
-        onClose={() => setShowDemoEvent(null)} 
-      />
     </>
   );
 };
