@@ -13,7 +13,52 @@ EventRadius.ai competes in the event management and discovery space with three m
 
 ## 🏆 Main Competitors
 
-### 1. Eventbrite (The Ticketing Giant)
+### 1. Luma (The Rising Threat) ⚠️
+
+**Founded**: 2020  
+**Market Position**: Fast-growing event platform with community focus  
+**Users**: 2M monthly event signups, 5x growth (2023-2024)  
+**Notable Customers**: NBA, Stripe, Alo  
+
+**📋 Deep-Dive Analysis**: See `Competitive_Analysis_Luma.md` for comprehensive analysis
+
+#### Pricing Model
+| Tier | Price | Features |
+|------|-------|----------|
+| **Free** | $0 + 5% platform fee | Unlimited events, basic features |
+| **Luma Plus** | $69/month | 0% fee, 5K invites/week, API, Zapier |
+| **Enterprise** | Custom | Multi-user, dedicated support |
+
+#### Key Features
+- ✅ Beautiful event pages with cover image gallery
+- ✅ Community calendars (subscribable)
+- ✅ QR code check-ins
+- ✅ Zoom auto-integration
+- ✅ SMS + Email invites
+- ✅ Guest chat and referrals
+- ✅ Crypto payments (SOL/USDC) + token-gating
+- ✅ Zapier integration
+
+#### Strengths
+- **Fastest growing**: 5x user growth in one year
+- **Community focus**: Subscribable calendars, viral referrals
+- **Web3 leadership**: Crypto payments, token-gating
+- **Enterprise traction**: Major brand adoption
+- **Beautiful UX**: Design-first approach
+
+#### Weaknesses
+- ❌ **No preference matching**: Users must browse/search
+- ❌ **No cultural/demographic targeting**: One-size-fits-all
+- ❌ **No accessibility features**: Ignores inclusive design
+- ❌ **No dynamic pricing**: Fixed prices only
+- ❌ **5% transaction fee**: Expensive for paid events
+- ❌ **Limited to community events**: Not for yield management
+
+**Threat Level**: 🔴 **HIGH** - Validated our core value proposition (proactive discovery via community calendars) with 2M monthly users
+
+---
+
+### 2. Eventbrite (The Ticketing Giant)
 
 **Founded**: 2006
 **Market Position**: Global leader in event ticketing and management
@@ -202,18 +247,24 @@ with AI-powered dynamic pricing and proactive notifications"
 
 ### Key Differentiators
 
-| Feature | EventRadius | Eventbrite | Meetup | Nextdoor | Facebook |
-|---------|:-----------:|:----------:|:------:|:--------:|:--------:|
-| **Dynamic Pricing** | ✅ AI-powered | ❌ Fixed | ❌ Fixed | ❌ None | ❌ Fixed |
-| **Real-time Notifications** | ✅ Push alerts | ❌ Email only | ❌ Digests | ❌ None | ❌ Algorithm |
-| **Perishable Inventory Focus** | ✅ Core feature | ❌ Generic | ❌ Community | ❌ Casual | ❌ Generic |
-| **Yield Management** | ✅ AI recommendations | ❌ None | ❌ None | ❌ None | ❌ None |
-| **Predictive Demand** | ✅ Forecasting | ❌ None | ❌ None | ❌ None | ❌ None |
-| **Proactive Discovery** | ✅ "Find me events" | ❌ Search only | ❌ Browse | ❌ Local only | ❌ Social only |
-| **Smart Targeting** | ✅ Audience matching | ❌ Manual | ❌ Interest-based | ❌ Location | ❌ Friends |
-| **Pricing Tiers** | ✅ Monthly SaaS | ❌ Per-ticket | ❌ Per-group | ✅ Free | ✅ Free |
-| **Business Analytics** | ✅ Full dashboard | ✅ Basic | ❌ Minimal | ❌ None | ❌ Minimal |
-| **API Access** | ✅ Enterprise | ✅ Limited | ❌ None | ❌ None | ❌ Limited |
+| Feature | EventRadius | Luma | Eventbrite | Meetup | Nextdoor | Facebook |
+|---------|:-----------:|:----:|:----------:|:------:|:--------:|:--------:|
+| **Dynamic Pricing** | ✅ AI-powered | ❌ Fixed | ❌ Fixed | ❌ Fixed | ❌ None | ❌ Fixed |
+| **Real-time Notifications** | ✅ Push alerts | 🟡 Calendar subs | ❌ Email only | ❌ Digests | ❌ None | ❌ Algorithm |
+| **Perishable Inventory Focus** | ✅ Core feature | ❌ Generic | ❌ Generic | ❌ Community | ❌ Casual | ❌ Generic |
+| **Yield Management** | ✅ AI recommendations | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None |
+| **Predictive Demand** | ✅ Forecasting | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None |
+| **Proactive Discovery** | ✅ "Find me events" | 🟡 Calendars | ❌ Search only | ❌ Browse | ❌ Local only | ❌ Social only |
+| **Smart Targeting** | ✅ Audience matching | ❌ None | ❌ Manual | ❌ Interest-based | ❌ Location | ❌ Friends |
+| **Community Calendars** | 🟡 Planned | ✅ Built-in | ❌ None | ✅ Groups | ❌ None | ❌ None |
+| **QR Check-ins** | ❌ None | ✅ Built-in | ✅ Yes | ❌ None | ❌ None | ❌ None |
+| **Guest Referrals** | ❌ None | ✅ Viral | ❌ None | ❌ None | ✅ Sharing | ✅ Sharing |
+| **Cultural/Demographic** | ✅ Comprehensive | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None |
+| **Accessibility** | ✅ Detailed | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None |
+| **Crypto/Token-gating** | ❌ None | ✅ Yes | ❌ None | ❌ None | ❌ None | ❌ None |
+| **Pricing Tiers** | ✅ Monthly SaaS | ✅ Free+Plus | ❌ Per-ticket | ❌ Per-group | ✅ Free | ✅ Free |
+| **Business Analytics** | ✅ Full dashboard | ✅ Yes | ✅ Basic | ❌ Minimal | ❌ None | ❌ Minimal |
+| **API Access** | ✅ Enterprise | ✅ Plus tier | ✅ Limited | ❌ None | ❌ None | ❌ Limited |
 
 ---
 

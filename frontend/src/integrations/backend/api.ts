@@ -88,6 +88,26 @@ export interface EventCreate {
   is_public?: boolean;
   is_paid_event?: boolean;
   ticketing_website?: string;
+  status?: 'draft' | 'published';
+  // Event Wizard fields
+  subtitle?: string;
+  summary?: string;
+  language?: string;
+  timezone?: string;
+  virtual_event_url?: string;
+  virtual_event_platform?: string;
+  event_contact_email?: string;
+  event_contact_phone?: string;
+  event_contact_phone_country_code?: string;
+  venue_address?: string;
+  venue_street?: string;
+  venue_city?: string;
+  venue_state?: string;
+  venue_zip_code?: string;
+  venue_country?: string;
+  venue_building_name?: string;
+  ticket_pricing_description?: string;
+  custom_refund_policy?: string;
   // New Event Attributes
   age_categories?: string[];
   gender_preference?: string;
@@ -142,6 +162,27 @@ export interface EventUpdate {
   category?: string;
   max_participants?: number;
   is_public?: boolean;
+  is_paid_event?: boolean;
+  ticketing_website?: string;
+  // Event Wizard fields
+  subtitle?: string;
+  summary?: string;
+  language?: string;
+  timezone?: string;
+  virtual_event_url?: string;
+  virtual_event_platform?: string;
+  event_contact_email?: string;
+  event_contact_phone?: string;
+  event_contact_phone_country_code?: string;
+  venue_address?: string;
+  venue_street?: string;
+  venue_city?: string;
+  venue_state?: string;
+  venue_zip_code?: string;
+  venue_country?: string;
+  venue_building_name?: string;
+  ticket_pricing_description?: string;
+  custom_refund_policy?: string;
   // New Event Attributes
   age_categories?: string[];
   gender_preference?: string;

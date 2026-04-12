@@ -4,7 +4,7 @@ Event-related API endpoints.
 
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -57,6 +57,20 @@ class EventBase(BaseModel):
     accessibility_options: Optional[str] = None
     custom_refund_policy: Optional[str] = None
     ticket_pricing_description: Optional[str] = None
+    # Venue fields
+    venue_address: Optional[str] = None
+    venue_street: Optional[str] = None
+    venue_city: Optional[str] = None
+    venue_state: Optional[str] = None
+    venue_zip_code: Optional[str] = None
+    venue_country: Optional[str] = None
+    venue_building_name: Optional[str] = None
+    # Virtual event URL
+    virtual_event_url: Optional[str] = None
+    # Status
+    status: Optional[Literal["draft", "published"]] = None
+    # Language
+    language: Optional[str] = None
 
 
 class EventAttributes(BaseModel):
@@ -118,7 +132,15 @@ class EventAttributes(BaseModel):
     sub_category: Optional[str] = None
 
     # Pricing
-    refund_policy: Optional[str] = None
+    refund_policy: Optional[
+        Literal[
+            "no_refunds",
+            "refund_up_to_7_days",
+            "refund_up_to_24_hours",
+            "refund_up_to_1_hour",
+            "custom",
+        ]
+    ] = None
     group_discounts: Optional[bool] = None
 
 
@@ -206,8 +228,30 @@ class EventUpdate(BaseModel):
     sub_category: Optional[str] = None
 
     # Pricing
-    refund_policy: Optional[str] = None
+    refund_policy: Optional[
+        Literal[
+            "no_refunds",
+            "refund_up_to_7_days",
+            "refund_up_to_24_hours",
+            "refund_up_to_1_hour",
+            "custom",
+        ]
+    ] = None
     group_discounts: Optional[bool] = None
+    # Venue fields
+    venue_address: Optional[str] = None
+    venue_street: Optional[str] = None
+    venue_city: Optional[str] = None
+    venue_state: Optional[str] = None
+    venue_zip_code: Optional[str] = None
+    venue_country: Optional[str] = None
+    venue_building_name: Optional[str] = None
+    # Virtual event URL
+    virtual_event_url: Optional[str] = None
+    # Status
+    status: Optional[Literal["draft", "published"]] = None
+    # Language
+    language: Optional[str] = None
 
 
 class EventResponse(EventBase, EventAttributes):
