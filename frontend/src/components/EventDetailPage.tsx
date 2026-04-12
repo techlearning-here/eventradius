@@ -136,7 +136,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
       onClick={onClose}
     >
       <div 
-        className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[94vw] h-[97vh] md:w-[89vw] md:h-[94vh] lg:w-[84vw] lg:h-[91vh] xl:w-[79vw] xl:h-[89vh] 2xl:w-[74vw] 2xl:h-[87vh] bg-background rounded-2xl shadow-2xl relative flex flex-col ring-2 ring-primary/30 border-[3px] border-primary/50 m-2 overflow-hidden"
+        className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[98vw] h-[98vh] md:w-[96vw] md:h-[96vh] lg:w-[94vw] lg:h-[94vh] xl:w-[92vw] xl:h-[92vh] 2xl:w-[90vw] 2xl:h-[90vh] bg-background rounded-2xl shadow-2xl relative flex flex-col ring-2 ring-primary/30 border-[3px] border-primary/50 m-1 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <EventDetailCloseButton onClose={onClose} />
@@ -188,6 +188,11 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
                     />
                     <div className="space-y-4">
                       {/* Organizer Contact Section */}
+                      {console.log('[EventDetail2] Contact fields:', { 
+                        event_contact_phone: event.event_contact_phone, 
+                        event_contact_email: event.event_contact_email,
+                        event_contact_phone_country_code: event.event_contact_phone_country_code
+                      })}
                       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
                         <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                           <div className="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center">

@@ -138,21 +138,21 @@ export const EventTypeSection = ({
       title: 'In-Person',
       description: 'Physical venue with face-to-face interaction',
       icon: Users,
-      color: 'bg-blue-500 border-blue-600 text-white',
+      color: 'bg-blue-500 border-blue-600 text-gray-900',
     },
     {
       id: 'online',
       title: 'Online',
       description: 'Virtual event accessible from anywhere',
       icon: Monitor,
-      color: 'bg-purple-500 border-purple-600 text-white',
+      color: 'bg-purple-500 border-purple-600 text-gray-900',
     },
     {
       id: 'hybrid',
       title: 'Hybrid',
       description: 'Combination of in-person and online',
       icon: Wifi,
-      color: 'bg-green-500 border-green-600 text-white',
+      color: 'bg-green-500 border-green-600 text-gray-900',
     },
   ];
 
@@ -162,21 +162,21 @@ export const EventTypeSection = ({
       title: 'Single Event',
       description: 'One-time event on a specific date',
       icon: Calendar,
-      color: 'bg-orange-500 border-orange-600 text-white',
+      color: 'bg-orange-500 border-orange-600 text-gray-900',
     },
     {
       id: 'recurring',
       title: 'Recurring',
       description: 'Regular event that repeats (weekly, monthly)',
       icon: Repeat,
-      color: 'bg-indigo-500 border-indigo-600 text-white',
+      color: 'bg-indigo-500 border-indigo-600 text-gray-900',
     },
     {
       id: 'multi_date',
       title: 'Multi-Date',
       description: 'Event spanning multiple days',
       icon: Grid3X3,
-      color: 'bg-pink-500 border-pink-600 text-white',
+      color: 'bg-pink-500 border-pink-600 text-gray-900',
     },
   ];
 
@@ -185,19 +185,19 @@ export const EventTypeSection = ({
       id: 'daily',
       title: 'Daily',
       description: 'Every day',
-      color: 'bg-green-500 border-green-600 text-white',
+      color: 'bg-green-500 border-green-600 text-gray-900',
     },
     {
       id: 'weekly',
       title: 'Weekly',
       description: 'Every week',
-      color: 'bg-indigo-500 border-indigo-600 text-white',
+      color: 'bg-indigo-500 border-indigo-600 text-gray-900',
     },
     {
       id: 'monthly',
       title: 'Monthly',
       description: 'Every month',
-      color: 'bg-purple-500 border-purple-600 text-white',
+      color: 'bg-purple-500 border-purple-600 text-gray-900',
     },
   ];
 
@@ -206,13 +206,13 @@ export const EventTypeSection = ({
       id: 'all_days',
       title: 'All 7 Days',
       description: 'Event repeats every day including weekends',
-      color: 'bg-cyan-500 border-cyan-600 text-white',
+      color: 'bg-cyan-500 border-cyan-600 text-gray-900',
     },
     {
       id: 'exclude_days',
       title: 'Exclude Specific Days',
       description: 'Event repeats on selected days only',
-      color: 'bg-rose-500 border-rose-600 text-white',
+      color: 'bg-rose-500 border-rose-600 text-gray-900',
     },
   ];
 
@@ -221,24 +221,24 @@ export const EventTypeSection = ({
       id: 'indefinite',
       title: 'Indefinite',
       description: 'Event repeats until manually stopped',
-      color: 'bg-teal-500 border-teal-600 text-white',
+      color: 'bg-teal-500 border-teal-600 text-gray-900',
     },
     {
       id: 'specific_date',
       title: 'End on Specific Date',
       description: 'Event repeats until a specific date',
-      color: 'bg-orange-500 border-orange-600 text-white',
+      color: 'bg-orange-500 border-orange-600 text-gray-900',
     },
   ];
 
   const weekDays = [
-    { id: 'monday', label: 'Monday', color: 'bg-blue-500 border-blue-600 text-white' },
-    { id: 'tuesday', label: 'Tuesday', color: 'bg-green-500 border-green-600 text-white' },
-    { id: 'wednesday', label: 'Wednesday', color: 'bg-yellow-500 border-yellow-600 text-white' },
-    { id: 'thursday', label: 'Thursday', color: 'bg-purple-500 border-purple-600 text-white' },
-    { id: 'friday', label: 'Friday', color: 'bg-pink-500 border-pink-600 text-white' },
-    { id: 'saturday', label: 'Saturday', color: 'bg-orange-500 border-orange-600 text-white' },
-    { id: 'sunday', label: 'Sunday', color: 'bg-red-500 border-red-600 text-white' },
+    { id: 'monday', label: 'Monday', color: 'bg-blue-500 border-blue-600 text-gray-900' },
+    { id: 'tuesday', label: 'Tuesday', color: 'bg-green-500 border-green-600 text-gray-900' },
+    { id: 'wednesday', label: 'Wednesday', color: 'bg-yellow-500 border-yellow-600 text-gray-900' },
+    { id: 'thursday', label: 'Thursday', color: 'bg-purple-500 border-purple-600 text-gray-900' },
+    { id: 'friday', label: 'Friday', color: 'bg-pink-500 border-pink-600 text-gray-900' },
+    { id: 'saturday', label: 'Saturday', color: 'bg-orange-500 border-orange-600 text-gray-900' },
+    { id: 'sunday', label: 'Sunday', color: 'bg-red-500 border-red-600 text-gray-900' },
   ];
 
   return (
@@ -246,7 +246,7 @@ export const EventTypeSection = ({
       {/* Step 1: Event Type Selection */}
       <div>
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+          <div className="w-8 h-8 bg-blue-500 text-gray-900 rounded-full flex items-center justify-center font-semibold">
             1
           </div>
           <h3 className="text-lg font-semibold">Event Type <span className="text-red-500">*</span></h3>
@@ -293,12 +293,12 @@ export const EventTypeSection = ({
         {(eventType === 'in_person' || eventType === 'hybrid') && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+              <div className="w-8 h-8 bg-blue-500 text-gray-900 rounded-full flex items-center justify-center font-semibold">
                 1a
               </div>
               <h3 className="text-lg font-semibold">Venue Address <span className="text-red-500">*</span></h3>
             </div>
-            <p className="text-white mb-4">
+            <p className="text-gray-900 mb-4">
               {eventType === 'hybrid' 
                 ? 'Provide the physical venue address for in-person attendees'
                 : 'Provide the complete address where your event will take place'
@@ -307,7 +307,7 @@ export const EventTypeSection = ({
             <div className="space-y-3">
               {/* Building Name (Optional) */}
               <div>
-                <label className="block text-sm font-medium text-white mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   Building Name <span className="text-gray-400">(Optional)</span>
                 </label>
                 <input
@@ -321,7 +321,7 @@ export const EventTypeSection = ({
 
               {/* Street Address */}
               <div>
-                <label className="block text-sm font-medium text-white mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   Street Address <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -336,7 +336,7 @@ export const EventTypeSection = ({
               {/* City and State */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     City <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -348,7 +348,7 @@ export const EventTypeSection = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     State/Province <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -364,7 +364,7 @@ export const EventTypeSection = ({
               {/* ZIP Code and Country */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     ZIP/Postal Code <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -376,7 +376,7 @@ export const EventTypeSection = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Country <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -389,7 +389,7 @@ export const EventTypeSection = ({
                 </div>
               </div>
               
-              <p className="text-xs text-white">
+              <p className="text-xs text-gray-900">
                 This address will be displayed to attendees to help them find your event location.
               </p>
             </div>
@@ -400,14 +400,14 @@ export const EventTypeSection = ({
         {(eventType === 'online' || eventType === 'hybrid') && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+              <div className="w-8 h-8 bg-blue-500 text-gray-900 rounded-full flex items-center justify-center font-semibold">
                 {eventType === 'hybrid' ? '1b' : '1a'}
               </div>
               <h3 className="text-lg font-semibold">
                 Online Meeting Link {eventType === 'online' && <span className="text-red-500">*</span>}
               </h3>
             </div>
-            <p className="text-white mb-4">
+            <p className="text-gray-900 mb-4">
               {eventType === 'hybrid' 
                 ? 'Provide the virtual meeting link for online attendees'
                 : 'Provide the meeting link where attendees can join your virtual event'
@@ -421,7 +421,7 @@ export const EventTypeSection = ({
                 value={onlineMeetingLink}
                 onChange={(e) => onOnlineMeetingLinkChange(e.target.value)}
               />
-              <p className="text-xs text-white">
+              <p className="text-xs text-gray-900">
                 {eventType === 'hybrid' 
                   ? 'This link will be shared with virtual attendees. Make sure it\'s accessible and tested.'
                   : 'This link will be shared with all attendees. Test it beforehand to ensure it works properly.'
@@ -435,12 +435,12 @@ export const EventTypeSection = ({
       {/* Step 2: Event Format Selection */}
       <div>
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+          <div className="w-8 h-8 bg-blue-500 text-gray-900 rounded-full flex items-center justify-center font-semibold">
             2
           </div>
           <h3 className="text-lg font-semibold">Event Format <span className="text-red-500">*</span></h3>
         </div>
-        <p className="text-white mb-6">
+        <p className="text-gray-900 mb-6">
           Define schedule structure of your event
         </p>
         
@@ -485,15 +485,15 @@ export const EventTypeSection = ({
         {eventFormat === 'single' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+              <div className="w-8 h-8 bg-blue-500 text-gray-900 rounded-full flex items-center justify-center font-semibold">
                 2a
               </div>
               <h3 className="text-lg font-semibold">Event Date & Time <span className="text-red-500">*</span></h3>
             </div>
-            <p className="text-white mb-4">Set the specific date and time for your single event</p>
+            <p className="text-gray-900 mb-4">Set the specific date and time for your single event</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Event Date <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-900 mb-2">Event Date <span className="text-red-500">*</span></label>
                 <input
                   type="date"
                   value={singleEventDate}
@@ -502,7 +502,7 @@ export const EventTypeSection = ({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Start Time <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-900 mb-2">Start Time <span className="text-red-500">*</span></label>
                 <input
                   type="time"
                   value={singleEventStartTime}
@@ -511,7 +511,7 @@ export const EventTypeSection = ({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-white mb-2">End Time <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-900 mb-2">End Time <span className="text-red-500">*</span></label>
                 <input
                   type="time"
                   value={singleEventEndTime}
@@ -527,16 +527,16 @@ export const EventTypeSection = ({
         {eventFormat === 'recurring' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+              <div className="w-8 h-8 bg-blue-500 text-gray-900 rounded-full flex items-center justify-center font-semibold">
                 2a
               </div>
               <h3 className="text-lg font-semibold">Recurring Schedule <span className="text-red-500">*</span></h3>
             </div>
-            <p className="text-white mb-4">Set the day, time, and frequency for your recurring event</p>
+            <p className="text-gray-900 mb-4">Set the day, time, and frequency for your recurring event</p>
             
             {/* Frequency Selection */}
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-white mb-2">Repeats <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-900 mb-2">Repeats <span className="text-red-500">*</span></label>
               <div className="grid grid-cols-3 gap-4">
           {recurringFrequencies.map((frequency) => (
             <label key={frequency.id} className="relative cursor-pointer">
@@ -571,7 +571,7 @@ export const EventTypeSection = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {recurringFrequency !== 'daily' && (
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
                     Day of {recurringFrequency === 'weekly' ? 'Week' : 'Month'} <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -602,7 +602,7 @@ export const EventTypeSection = ({
                 </div>
               )}
               <div className={recurringFrequency === 'daily' ? 'md:col-span-1' : ''}>
-                <label className="block text-sm font-medium text-white mb-2">Start Time <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-900 mb-2">Start Time <span className="text-red-500">*</span></label>
                 <input
                   type="time"
                   value={recurringEventStartTime}
@@ -611,7 +611,7 @@ export const EventTypeSection = ({
                 />
               </div>
               <div className={recurringFrequency === 'daily' ? 'md:col-span-1' : ''}>
-                <label className="block text-sm font-medium text-white mb-2">End Time <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-900 mb-2">End Time <span className="text-red-500">*</span></label>
                 <input
                   type="time"
                   value={recurringEventEndTime}
@@ -624,7 +624,7 @@ export const EventTypeSection = ({
             {/* Daily Recurrence Options */}
             {recurringFrequency === 'daily' && (
               <div className="mt-6 space-y-4">
-                <label className="block text-sm font-medium text-white mb-2">Daily Recurrence Pattern <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-900 mb-2">Daily Recurrence Pattern <span className="text-red-500">*</span></label>
                 <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {dailyRecurrencePatterns.map((pattern) => (
@@ -658,7 +658,7 @@ export const EventTypeSection = ({
 
                 {recurringDailyType === 'exclude_days' && (
                   <div className="mt-4">
-                    <label className="block text-sm font-medium text-white mb-2">Select Days to Exclude <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-medium text-gray-900 mb-2">Select Days to Exclude <span className="text-red-500">*</span></label>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {weekDays.map((day) => (
                         <label key={day.id} className="relative cursor-pointer">
@@ -688,7 +688,7 @@ export const EventTypeSection = ({
                         </label>
                       ))}
                     </div>
-                    <p className="text-xs text-white mt-2">
+                    <p className="text-xs text-gray-900 mt-2">
                       Select the days you want to exclude from the daily recurrence.
                     </p>
                   </div>
@@ -698,7 +698,7 @@ export const EventTypeSection = ({
 
             {/* End Date Options */}
             <div className="space-y-4">
-              <label className="block text-sm font-medium text-white mb-2">Recurrence Duration <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-900 mb-2">Recurrence Duration <span className="text-red-500">*</span></label>
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {recurrenceDurations.map((duration) => (
@@ -732,14 +732,14 @@ export const EventTypeSection = ({
 
               {recurringHasEndDate && (
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-white mb-2">End Date <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">End Date <span className="text-red-500">*</span></label>
                   <input
                     type="date"
                     value={recurringEndDate}
                     onChange={(e) => onRecurringEndDateChange(e.target.value)}
                     className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
                   />
-                  <p className="text-xs text-white mt-2">
+                  <p className="text-xs text-gray-900 mt-2">
                     The last occurrence of this recurring event will be on this date.
                   </p>
                 </div>
@@ -752,12 +752,12 @@ export const EventTypeSection = ({
         {eventFormat === 'multi_date' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+              <div className="w-8 h-8 bg-blue-500 text-gray-900 rounded-full flex items-center justify-center font-semibold">
                 2a
               </div>
               <h3 className="text-lg font-semibold">Multiple Event Dates <span className="text-red-500">*</span></h3>
             </div>
-            <p className="text-white mb-4">Add up to 7 different event dates and times</p>
+            <p className="text-gray-900 mb-4">Add up to 7 different event dates and times</p>
             
             <div className="space-y-4">
               {multiDateEvents.map((event, index) => (
@@ -846,7 +846,7 @@ export const EventTypeSection = ({
         )}
       </div>
 
-      {/* Step 3: Event Type Tips */}
+      {/* Event Type Tips */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h4 className="font-semibold text-gray-900 mb-2">💡 Pro Tips</h4>
         <ul className="text-sm text-gray-800 space-y-1">

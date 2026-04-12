@@ -162,6 +162,8 @@ CREATE TABLE IF NOT EXISTS public.events (
   virtual_event_platform TEXT,
   event_website TEXT,
   event_contact_email TEXT,
+  event_contact_phone TEXT,
+  event_contact_phone_country_code TEXT,
   ticketing_website TEXT,
   primary_venue_id UUID REFERENCES public.venues(id) ON DELETE SET NULL,
   

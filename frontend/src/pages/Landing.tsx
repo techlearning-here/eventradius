@@ -37,7 +37,7 @@ const Landing = () => {
       void setActiveRole('user');
       navigate('/discover');
     } else {
-      setIsAuthOpen(true);
+      navigate('/discover-nosignup');
     }
   };
 
@@ -479,7 +479,7 @@ const Landing = () => {
           <div className="relative overflow-hidden rounded-2xl group">
             {/* Main image with rounded edges and strong shadow for depth */}
             <img
-              src="/your-image.jpg"
+              src="/your-image_no_brand.jpeg"
               alt="Event Radius"
               className="w-full h-auto object-cover rounded-2xl transition-transform duration-500 group-hover:scale-[1.01]"
               style={{

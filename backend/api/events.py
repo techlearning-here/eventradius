@@ -36,6 +36,27 @@ class EventBase(BaseModel):
     is_public: bool = True
     is_paid_event: bool = False
     ticketing_website: Optional[str] = None
+    # Event contact info from ContactInfo step
+    event_contact_phone: Optional[str] = None
+    event_contact_phone_country_code: Optional[str] = None
+    event_contact_email: Optional[str] = None
+    # Additional fields from EventWizard
+    subtitle: Optional[str] = None
+    summary: Optional[str] = None
+    timezone: Optional[str] = None
+    doors_open_time: Optional[str] = None
+    registration_start_time: Optional[str] = None
+    registration_end_time: Optional[str] = None
+    event_website: Optional[str] = None
+    tags: Optional[List[str]] = None
+    event_format: Optional[str] = None
+    event_privacy: Optional[str] = None
+    virtual_event_platform: Optional[str] = None
+    event_password: Optional[str] = None
+    age_restriction: Optional[str] = None
+    accessibility_options: Optional[str] = None
+    custom_refund_policy: Optional[str] = None
+    ticket_pricing_description: Optional[str] = None
 
 
 class EventAttributes(BaseModel):
@@ -117,6 +138,27 @@ class EventUpdate(BaseModel):
     is_public: Optional[bool] = None
     is_paid_event: Optional[bool] = None
     ticketing_website: Optional[str] = None
+    # Event contact info from ContactInfo step
+    event_contact_phone: Optional[str] = None
+    event_contact_phone_country_code: Optional[str] = None
+    event_contact_email: Optional[str] = None
+    # Additional fields from EventWizard
+    subtitle: Optional[str] = None
+    summary: Optional[str] = None
+    timezone: Optional[str] = None
+    doors_open_time: Optional[str] = None
+    registration_start_time: Optional[str] = None
+    registration_end_time: Optional[str] = None
+    event_website: Optional[str] = None
+    tags: Optional[List[str]] = None
+    event_format: Optional[str] = None
+    event_privacy: Optional[str] = None
+    virtual_event_platform: Optional[str] = None
+    event_password: Optional[str] = None
+    age_restriction: Optional[str] = None
+    accessibility_options: Optional[str] = None
+    custom_refund_policy: Optional[str] = None
+    ticket_pricing_description: Optional[str] = None
 
     # New attributes
     age_categories: Optional[List[str]] = None

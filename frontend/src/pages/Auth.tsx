@@ -16,7 +16,7 @@ const Auth = () => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate('/');
+        navigate('/discover');
       }
     });
   }, [navigate]);
@@ -27,7 +27,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: `${window.location.origin}/discover`,
         },
       });
 
@@ -38,8 +38,8 @@ const Auth = () => {
         description: 'Signed in with Google successfully!',
       });
 
-      // Redirect to home page after successful sign in
-      navigate('/');
+      // Redirect to discover page after successful sign in
+      navigate('/discover');
     } catch (error: unknown) {
       toast({
         title: 'Error',

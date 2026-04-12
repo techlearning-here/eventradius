@@ -123,7 +123,7 @@ export const EventRegistration: React.FC<EventRegistrationProps> = ({
         className={`flex h-[50px] justify-center items-center gap-2.5 border relative px-2.5 py-3.5 border-solid transition-all duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed w-[calc(100%-50px)] z-10 ${
           isPastEvent
             ? 'bg-gray-400 border-gray-400 cursor-not-allowed'
-            : 'bg-[#1A1A1A] border-[#1A1A1A] group-hover:w-full group-hover:bg-[#FA76FF] group-hover:border-[#FA76FF]'
+            : 'bg-[#FA76FF] border-[#FA76FF] group-hover:w-full group-hover:bg-[#ff94ff] group-hover:border-[#ff94ff]'
         }`}
         aria-label={isPastEvent ? "Event has ended" : isRegistered ? "Unregister from event" : "Register for event"}
       >
@@ -144,7 +144,7 @@ export const EventRegistration: React.FC<EventRegistrationProps> = ({
         </svg>
       </button>
       {!isPastEvent && (
-        <div className="flex w-[50px] h-[50px] justify-center items-center border absolute right-0 bg-white rounded-[99px] border-solid border-[#1A1A1A] transition-all duration-300 ease-in-out group-hover:opacity-0 group-hover:scale-50 pointer-events-none z-0">
+        <div className="flex w-[50px] h-[50px] justify-center items-center border absolute right-0 bg-white rounded-[99px] border-solid border-[#FA76FF] transition-all duration-300 ease-in-out group-hover:opacity-0 group-hover:scale-50 pointer-events-none z-0">
         <svg
           width="12"
           height="12"

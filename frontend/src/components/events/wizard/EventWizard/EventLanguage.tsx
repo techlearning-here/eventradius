@@ -26,7 +26,7 @@ export const EventLanguage: React.FC<EventLanguageProps> = ({
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
-          4
+          5
         </div>
         <h3 className="text-lg font-semibold">Event Language</h3>
       </div>

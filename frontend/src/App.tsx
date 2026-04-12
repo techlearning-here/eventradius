@@ -20,6 +20,7 @@ import EditEvent from "./pages/EditEvent";
 import Pricing from './pages/Pricing';
 import OrganizerHub from './pages/OrganizerHub';
 import NotFound from './pages/NotFound';
+import DiscoverNoSignup from './pages/DiscoverNoSignup';
 
 const App = () => (
   <ThemeProvider>
@@ -43,6 +44,7 @@ const App = () => (
           <Route path="/admin" element={<Admin />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/organizer-hub" element={<OrganizerHub />} />
+          <Route path="/discover-nosignup" element={<DiscoverNoSignup />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

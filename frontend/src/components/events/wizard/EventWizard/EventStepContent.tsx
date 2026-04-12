@@ -74,7 +74,6 @@ export const EventStepContent = ({ currentSubStepId, formData, updateFormData, g
           virtualEventDetails={formData.virtual_event_details}
           startTime={formData.start_time}
           endTime={formData.end_time}
-          timezone={formData.timezone}
           singleEventDate={formData.single_event_date}
           singleEventStartTime={formData.single_event_start_time}
           singleEventEndTime={formData.single_event_end_time}
@@ -95,7 +94,6 @@ export const EventStepContent = ({ currentSubStepId, formData, updateFormData, g
           onVirtualEventDetailsChange={(virtual_event_details) => updateFormData({ virtual_event_details })}
           onStartTimeChange={(start_time) => updateFormData({ start_time })}
           onEndTimeChange={(end_time) => updateFormData({ end_time })}
-          onTimezoneChange={(timezone) => updateFormData({ timezone })}
           onSingleEventDateChange={(single_event_date) => updateFormData({ single_event_date })}
           onSingleEventStartTimeChange={(single_event_start_time) => updateFormData({ single_event_start_time })}
           onSingleEventEndTimeChange={(single_event_end_time) => updateFormData({ single_event_end_time })}

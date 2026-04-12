@@ -206,7 +206,7 @@ export const BasicInfo = ({
           </div>
         </div>
 
-        {/* Step 4: Event Language */}
+        {/* Step 5: Event Language */}
         <EventLanguage
           language={language || ''}
           onLanguageChange={onLanguageChange}

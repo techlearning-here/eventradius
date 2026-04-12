@@ -18,10 +18,11 @@ export const Navbar: React.FC = () => {
 
   const navLinks = () => {
     const links: { label: string; to?: string; onClick?: () => void }[] = [];
+    const isOnDiscoverPage = location.pathname === '/discover';
 
     if (user) {
       // Role-based navigation (excluding signout and settings)
-      if (role === 'user' || !role) {
+      if ((role === 'user' || !role) && !isOnDiscoverPage) {
         links.push({ label: 'Discover Events', to: '/discover' });
       }
 
@@ -29,7 +30,9 @@ export const Navbar: React.FC = () => {
         links.push({ label: 'Admin', to: '/admin-dashboard' });
       }
     } else {
-      links.push({ label: 'Discover Events', to: '/discover' });
+      if (!isOnDiscoverPage) {
+        links.push({ label: 'Discover Events', to: '/discover' });
+      }
       links.push({ label: 'Sign In', onClick: () => setIsAuthOpen(true) });
     }
     return links;

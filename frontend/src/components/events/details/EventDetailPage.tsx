@@ -115,6 +115,7 @@ interface Event {
 export const EventDetailOverlay: React.FC<{ eventId: string; isOpen: boolean; onClose: () => void }> = ({ eventId, isOpen, onClose }) => {
   const [isRegistered, setIsRegistered] = useState(false);
   const [event, setEvent] = useState<Event | null>(null);
+  const [organizerProfile, setOrganizerProfile] = useState<{ business_name?: string; full_name?: string; phone?: string; email?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -134,6 +135,12 @@ export const EventDetailOverlay: React.FC<{ eventId: string; isOpen: boolean; on
       if (data) {
         setEvent(data);
         setError(null);
+        // Fetch organizer profile to get business name
+        if (data.organizer_id) {
+          apiClient.getUserProfile(data.organizer_id)
+            .then(profile => setOrganizerProfile(profile as { business_name?: string; full_name?: string; phone?: string; email?: string }))
+            .catch(() => setOrganizerProfile(null));
+        }
       } else {
         setEvent(null);
         setError('Event not found');
@@ -230,7 +237,7 @@ export const EventDetailOverlay: React.FC<{ eventId: string; isOpen: boolean; on
             onClose();
             console.log('onClose called');
           }}
-          className="absolute top-6 right-6 z-50 text-muted-foreground hover:text-foreground transition-all duration-200 p-3 rounded-2xl hover:bg-background/80 backdrop-blur-sm border border-transparent hover:border-border/50 group bg-background/50"
+          className="absolute top-6 right-6 z-50 text-[#FA76FF] hover:text-[#ff94ff] transition-all duration-200 p-3 rounded-2xl hover:bg-background/80 backdrop-blur-sm border border-transparent hover:border-[#FA76FF]/50 group bg-background/50"
           title="Close event details"
         >
           <svg className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -324,7 +331,7 @@ export const EventDetailOverlay: React.FC<{ eventId: string; isOpen: boolean; on
               {event?.title}
             </h1>
             <div className="flex items-center gap-4 text-muted-foreground text-lg">
-              <span className="font-medium">By {event?.creator || event?.organizer_email}</span>
+              <span className="font-medium">By {organizerProfile?.business_name || organizerProfile?.full_name || event?.creator || event?.organizer_email || 'Event Organizer'}</span>
             </div>
           </div>
         </div>
@@ -426,6 +433,13 @@ export const EventDetailOverlay: React.FC<{ eventId: string; isOpen: boolean; on
                   </section>
 
                   {/* Organizer Section */}
+                  {console.log('[EventDetail] Contact fields:', { 
+                    event_contact_phone: event.event_contact_phone, 
+                    event_contact_email: event.event_contact_email,
+                    event_contact_phone_country_code: event.event_contact_phone_country_code,
+                    organizer_email: event.organizer_email,
+                    organizer_website: event.organizer_website
+                  })}
                   <section>
                     <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center gap-2">
                       <div className="w-1 h-6 bg-primary rounded-full"></div>
@@ -437,8 +451,13 @@ export const EventDetailOverlay: React.FC<{ eventId: string; isOpen: boolean; on
                           <Users className="w-8 h-8 text-primary" />
                         </div>
                         <div>
-                          <h3 className="text-xl font-bold text-foreground">{event.creator || 'Event Organizer'}</h3>
+                          <h3 className="text-xl font-bold text-foreground">{organizerProfile?.business_name || organizerProfile?.full_name || event.creator || 'Event Organizer'}</h3>
                           <p className="text-muted-foreground">Event Host</p>
+                          {organizerProfile?.email && (
+                            <a href={`mailto:${organizerProfile.email}`} className="text-sm text-primary hover:underline mt-1 block">
+                              {organizerProfile.email}
+                            </a>
+                          )}
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
