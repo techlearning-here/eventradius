@@ -101,7 +101,8 @@ const Discover = () => {
   };
 
   useEffect(() => {
-    if (user && role === 'user' && onboardingCompleted === false) {
+    // Redirect to onboarding if not completed (null for new users, false for incomplete)
+    if (user && role === 'user' && onboardingCompleted !== true) {
       navigate('/onboarding');
     }
   }, [user, role, onboardingCompleted, navigate]);

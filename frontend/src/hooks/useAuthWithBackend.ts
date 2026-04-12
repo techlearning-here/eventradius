@@ -25,7 +25,7 @@ function pickEffectiveRole(
 
 // Module-level cache to persist across React StrictMode remounts
 const globalRequestPromises = new Map<string, Promise<unknown>>();
-const globalRequestResults = new Map<string, { data: unknown; timestamp: number }>();
+export const globalRequestResults = new Map<string, { data: unknown; timestamp: number }>();
 const CACHE_TTL = 5000; // 5 second cache
 
 // Helper to get initial user settings from localStorage
@@ -103,6 +103,14 @@ export const useAuthWithBackend = () => {
         const isOrganizer = (preferences?.is_organizer as boolean | null) ?? null;
         setOnboardingCompleted(completed);
         globalRequestResults.set(cacheKey, { data: preferences, timestamp: Date.now() });
+
+        // Update localStorage so other components (like Discover) get fresh data
+        const currentSettings = getStoredUserSettings();
+        saveUserSettings({
+          roles: currentSettings?.roles ?? roles,
+          onboardingCompleted: completed,
+          userProfile: currentSettings?.userProfile ?? userProfile
+        });
 
         // If organizer preference is set, update roles accordingly
         if (isOrganizer === true && !roles.includes('organizer')) {
