@@ -18,10 +18,10 @@ const Landing = () => {
       setTheme(savedTheme);
       document.documentElement.classList.toggle('dark', savedTheme === 'dark');
     } else {
-      // Default to dark theme
-      setTheme('dark');
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
+      // Default to light theme
+      setTheme('light');
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
     }
   }, []);
 
@@ -68,7 +68,7 @@ const Landing = () => {
               <Zap className="w-5 h-5 text-white" />
             </div>
             <div>
-              <span className="text-xl font-bold tracking-tight text-foreground">Event Radius</span>
+              <span className="text-xl font-bold tracking-tight text-foreground">Events Radius</span>
               <div className="text-xs text-muted-foreground">Discover Events Intelligently</div>
             </div>
           </div>
@@ -569,7 +569,7 @@ const Landing = () => {
                   <Zap className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <div className="text-xl font-bold text-foreground">Event Radius</div>
+                  <div className="text-xl font-bold text-foreground">Events Radius</div>
                   <div className="text-sm text-muted-foreground">Discover Events Intelligently</div>
                 </div>
               </div>
@@ -612,7 +612,7 @@ const Landing = () => {
           {/* Bottom footer */}
           <div className="pt-8 border-t border-border/20 flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Event Radius. All rights reserved.
+              © {new Date().getFullYear()} Events Radius. All rights reserved.
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <button className="hover:text-primary transition-colors">Terms</button>

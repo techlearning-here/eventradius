@@ -4,7 +4,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useEvents } from '@/hooks/useEvents';
 import { apiClient } from '@/integrations/backend/api';
-import { CalendarIcon, MapPin, ArrowRight, Sparkles, UserPlus, Search, Navigation, Crosshair } from 'lucide-react';
+import { CalendarIcon, MapPin, ArrowRight, Sparkles, UserPlus, Search, Navigation, Crosshair, LayoutGrid, List, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CATEGORIES } from '@/data/cities';
@@ -35,6 +35,7 @@ const DiscoverNoSignup = () => {
   const { events, loading, error, refetch } = useEvents({ is_public: true });
   
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('list');
   
   // Geolocation state
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -176,7 +177,7 @@ const DiscoverNoSignup = () => {
     <>
       <div className="min-h-screen bg-background overflow-y-auto">
         <SEOHead 
-          title="Discover Events - EventRadius" 
+          title="Discover Events - EventsRadius" 
           description="Explore public events near you. Find events that match your interests and connect with your community." 
         />
         
@@ -190,7 +191,7 @@ const DiscoverNoSignup = () => {
                   <Zap className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <span className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  EventRadius
+                  EventsRadius
                 </span>
               </Link>
 
@@ -296,7 +297,7 @@ const DiscoverNoSignup = () => {
                       <button className={cn(
                         "inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border transition-all duration-200 hover:scale-105 active:scale-95",
                         date 
-                          ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/25" 
+                          ? "bg-teal-100 text-teal-700 border-teal-300 shadow-sm" 
                           : "bg-background border-border hover:border-primary/50 hover:bg-primary/5"
                       )}>
                         <CalendarIcon className="w-4 h-4" />
@@ -326,7 +327,7 @@ const DiscoverNoSignup = () => {
                       className={cn(
                         "inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border transition-all duration-200 hover:scale-105 active:scale-95",
                         selectedCategories.includes(cat.id)
-                          ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/25" 
+                          ? "bg-teal-100 text-teal-700 border-teal-300 shadow-sm" 
                           : "bg-background border-border hover:border-primary/50 hover:bg-primary/5"
                       )}
                     >
@@ -465,24 +466,114 @@ const DiscoverNoSignup = () => {
                       {date && ` • Filtered by date`}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center bg-muted/50 rounded-lg p-1 border border-border">
+                      <button
+                        onClick={() => setViewMode('card')}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all",
+                          viewMode === 'card'
+                            ? "bg-teal-100 text-teal-700 shadow-sm"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        )}
+                      >
+                        <LayoutGrid className="w-4 h-4" />
+                        Card
+                      </button>
+                      <button
+                        onClick={() => setViewMode('list')}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all",
+                          viewMode === 'list'
+                            ? "bg-teal-100 text-teal-700 shadow-sm"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        )}
+                      >
+                        <List className="w-4 h-4" />
+                        List
+                      </button>
+                    </div>
+                    <div className="w-px h-6 bg-border" />
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                     <span className="text-sm text-muted-foreground">Live updates</span>
                   </div>
                 </div>
                 
-                {/* Events Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {filteredEvents.map((event, i) => (
-                    <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${i * 0.05}s`, animationFillMode: 'both' }}>
-                      <EventCard 
-                        event={event} 
-                        onPreview={handlePreviewEvent}
-                        participantCounts={participantCounts.get(event.id)}
-                      />
-                    </div>
-                  ))}
-                </div>
+                {/* Events Display */}
+                {viewMode === 'card' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {filteredEvents.map((event, i) => (
+                      <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${i * 0.05}s`, animationFillMode: 'both' }}>
+                        <EventCard 
+                          event={event} 
+                          onPreview={handlePreviewEvent}
+                          participantCounts={participantCounts.get(event.id)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredEvents.map((event, i) => (
+                      <div 
+                        key={event.id} 
+                        className="animate-fade-in bg-card border border-border rounded-xl p-4 hover:shadow-md transition-all cursor-pointer"
+                        style={{ animationDelay: `${i * 0.03}s`, animationFillMode: 'both' }}
+                        onClick={() => handlePreviewEvent(event)}
+                      >
+                        <div className="flex gap-4">
+                          {/* Event Image */}
+                          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-muted rounded-lg overflow-hidden shrink-0">
+                            {event.image_url ? (
+                              <img 
+                                src={event.image_url} 
+                                alt={event.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/40">
+                                <CalendarIcon className="w-8 h-8 text-primary/60" />
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Event Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <h3 className="font-semibold text-foreground text-lg line-clamp-1">{event.title}</h3>
+                                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{event.description}</p>
+                              </div>
+                              <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full shrink-0">
+                                {event.category}
+                              </span>
+                            </div>
+                            
+                            <div className="flex flex-wrap items-center gap-3 mt-3 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <CalendarIcon className="w-4 h-4" />
+                                {event.start_time ? format(new Date(event.start_time), 'MMM d, h:mm a') : 'Date TBD'}
+                              </span>
+                              {event.location && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-4 h-4" />
+                                  <span className="line-clamp-1">{event.location}</span>
+                                </span>
+                              )}
+                              {participantCounts.get(event.id) && (
+                                <span className="flex items-center gap-1">
+                                  <Users className="w-4 h-4" />
+                                  {participantCounts.get(event.id)?.going || 0} going
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 
                 {/* Event Preview Overlay */}
                 {previewEventId && previewEvent && (
@@ -554,7 +645,7 @@ const DiscoverNoSignup = () => {
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-primary" />
-                <span className="font-semibold text-foreground">EventRadius</span>
+                <span className="font-semibold text-foreground">EventsRadius</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 Discover and connect with events that matter to you.

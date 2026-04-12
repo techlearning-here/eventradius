@@ -25,10 +25,10 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ 
   children, 
-  defaultTheme = 'dark' 
+  defaultTheme = 'light' 
 }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Check for saved theme preference or default to dark
+    // Check for saved theme preference or default to light
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('eventradius-theme');
       if (saved && (saved === 'light' || saved === 'dark' || saved === 'system')) {

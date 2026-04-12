@@ -98,7 +98,7 @@ describe('ReviewSection', () => {
         />
       );
 
-      const checkbox = screen.getByLabelText(/I agree to the EventRadius Terms of Service/i);
+      const checkbox = screen.getByLabelText(/I agree to the EventsRadius Terms of Service/i);
       expect(checkbox).toBeInTheDocument();
       expect(checkbox).not.toBeChecked();
     });
@@ -114,7 +114,7 @@ describe('ReviewSection', () => {
         />
       );
 
-      const checkbox = screen.getByLabelText(/I agree to the EventRadius Terms of Service/i);
+      const checkbox = screen.getByLabelText(/I agree to the EventsRadius Terms of Service/i);
       
       fireEvent.click(checkbox);
       
@@ -132,7 +132,7 @@ describe('ReviewSection', () => {
         />
       );
 
-      const checkbox = screen.getByLabelText(/I agree to the EventRadius Terms of Service/i);
+      const checkbox = screen.getByLabelText(/I agree to the EventsRadius Terms of Service/i);
       
       // Check first
       fireEvent.click(checkbox);

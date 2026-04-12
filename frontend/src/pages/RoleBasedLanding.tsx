@@ -201,7 +201,7 @@ const RoleBasedLanding = () => {
                     Get Started
                   </h3>
                     <p className="text-muted-foreground mb-4">
-                      Choose how you'd like to use EventRadius.
+                      Choose how you'd like to use EventsRadius.
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       <button

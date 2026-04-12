@@ -80,7 +80,7 @@ export const Navbar: React.FC = () => {
       {/* Site Name - with safe area for iPhone notch */}
       <div className="fixed top-[max(1rem,env(safe-area-inset-top))] left-4 md:left-8 z-[2000]">
         <Link to="/" className="text-2xl font-bold text-foreground hover:shadow-lg transition-all">
-          EventRadius
+          EventsRadius
         </Link>
       </div>
 
