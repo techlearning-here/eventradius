@@ -2,8 +2,9 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 # Load environment variables
 load_dotenv()
@@ -17,16 +18,33 @@ app = FastAPI(
     title="EventPinger Backend API",
     description="Backend API for EventPinger event management platform",
     version="1.0.0",
+    redirect_slashes=True,  # Redirect /api/events to /api/events/
 )
 
-# CORS configuration
-origins = [
+# CORS configuration - support env variable for flexibility
+# Default origins that are always allowed
+default_origins = [
     "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:4173",
+    "http://localhost:4174",
     "http://localhost:3000",
     "http://localhost:8080",
     "https://eventpinger.vercel.app",
     "https://eventradius.vercel.app",
 ]
+
+cors_origins_env = os.getenv("BACKEND_CORS_ORIGINS", "")
+if cors_origins_env == "*":
+    origins = ["*"]
+elif cors_origins_env:
+    # Merge env var origins with defaults
+    env_origins = [origin.strip() for origin in cors_origins_env.split(",")]
+    origins = list(set(default_origins + env_origins))  # Remove duplicates
+else:
+    origins = default_origins
+
+logger.info(f"CORS allowed origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,7 +52,17 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
+
+# Debug middleware to log all requests
+@app.middleware("http")
+async def log_requests(request, call_next):
+    logger.info(f"[{request.method}] {request.url.path} - Origin: {request.headers.get('origin', 'none')}")
+    response = await call_next(request)
+    logger.info(f"[{request.method}] {request.url.path} - Status: {response.status_code}")
+    return response
 
 from api.auth import router as auth_router
 
@@ -44,13 +72,59 @@ from api.users import router as users_router
 from api.verification import router as verification_router
 from api.organizers import router as organizers_router
 
-# Include routers
+
+# Include routers first
 app.include_router(events_router)
 app.include_router(users_router)
 app.include_router(verification_router)
 app.include_router(organizers_router)
 app.include_router(auth_router)
 
+
+# NOTE: Custom OPTIONS handler removed - FastAPI's CORS middleware handles preflight automatically
+
+
+# Direct route test - add POST handler directly to app
+@app.post("/api/events")
+async def direct_create_event(request: Request):
+    """Direct POST handler for /api/events"""
+    logger.info("DIRECT POST /api/events called!")
+    from fastapi import HTTPException
+    from api.events import EventCreate, _create_event_logic, get_current_user
+    
+    try:
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        import json
+        body = await request.body()
+        event_data = json.loads(body)
+        event = EventCreate(**event_data)
+        
+        return await _create_event_logic(event, user)
+    except Exception as e:
+        logger.error(f"Error in direct handler: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Test route at different path
+@app.post("/test-post")
+async def test_post(request: Request):
+    """Test POST endpoint"""
+    logger.info("POST /test-post called!")
+    return {"message": "POST works!"}
+
+
+# Exception handler for debugging
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Exception on {request.method} {request.url.path}: {exc}")
+    logger.error(f"Request headers: {dict(request.headers)}")
+    return JSONResponse(
+        status_code=400,
+        content={"detail": str(exc)}
+    )
 
 # Health check endpoint
 @app.get("/")

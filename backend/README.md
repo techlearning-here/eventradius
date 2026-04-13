@@ -5,6 +5,7 @@ This is a FastAPI-based backend that serves as the API layer between the React f
 ## 🚀 Features
 
 - **FastAPI Framework**: Modern Python web framework with automatic OpenAPI documentation
+- **UV Package Manager**: Ultra-fast Python package management and virtual environments
 - **Supabase Integration**: PostgreSQL database with real-time capabilities
 - **JWT Authentication**: Secure token-based authentication with optional auth support
 - **CORS Configuration**: Cross-origin resource sharing for frontend-backend communication
@@ -17,9 +18,11 @@ This is a FastAPI-based backend that serves as the API layer between the React f
 ```
 backend/
 ├── main.py                 # FastAPI application entry point
-├── requirements.txt        # Python dependencies
-├── .env                   # Environment variables (not in version control)
-├── .env.example           # Example environment configuration
+├── pyproject.toml          # Project configuration and dependencies (UV)
+├── uv.lock                 # Lock file for reproducible builds (generated)
+├── .env                    # Environment variables (not in version control)
+├── .env.example            # Example environment configuration
+├── .venv/                  # UV virtual environment (generated)
 ├── api/
 │   ├── events.py          # Event-related endpoints
 │   └── users.py           # User profile endpoints
@@ -33,20 +36,44 @@ backend/
 ## 🔧 Setup Instructions
 
 ### 1. Prerequisites
-- Python 3.12
-- pip package manager
+- Python 3.10+
+- [UV](https://github.com/astral-sh/uv) package manager
 - Supabase account with database
+
+**Install UV:**
+```bash
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# macOS with Homebrew
+brew install uv
+
+# Windows
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
 
 ### 2. Create Virtual Environment
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+uv venv
 ```
 
 ### 3. Install Dependencies
 ```bash
-pip install -r requirements.txt
+# Install production dependencies
+uv pip install -e .
+
+# Or install with development dependencies
+uv pip install -e ".[dev]"
+```
+
+**Alternative: Use uv sync (recommended)**
+```bash
+# If you have a uv.lock file
+uv sync
+
+# For development dependencies
+uv sync --extra dev
 ```
 
 ### 4. Configure Environment Variables
@@ -73,14 +100,19 @@ JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
 
 ### 5. Run the Development Server
-**Important: Always activate virtual environment first**
+**Using uv run (no activation needed):**
 ```bash
-# Windows
-venv\Scripts\activate
-# Mac/Linux
-source venv/bin/activate
+# Run with hot reload
+uv run uvicorn main:app --reload --port 8000
 
-python -m uvicorn main:app --reload --port 8000
+# Or run on different port
+uv run uvicorn main:app --reload --port 8080
+```
+
+**Traditional way (with activation):**
+```bash
+source .venv/bin/activate
+uvicorn main:app --reload --port 8000
 ```
 
 The server will start at `http://localhost:8000`
@@ -171,7 +203,57 @@ Test the events endpoint:
 curl http://localhost:8000/api/events/
 ```
 
+## 🛠️ Common UV Commands
+
+```bash
+# Run development server
+uv run uvicorn main:app --reload
+
+# Run tests
+uv run pytest
+
+# Run specific test file
+uv run pytest tests/test_auth.py -v
+
+# Run with coverage
+uv run pytest --cov=api --cov=config --cov-report=html
+
+# Format code
+uv run black api/ config/ tests/
+
+# Check formatting
+uv run black --check api/ config/ tests/
+
+# Sort imports
+uv run isort api/ config/ tests/
+
+# Lint code
+uv run flake8 api/ config/ tests/
+
+# Add new dependency
+uv pip install package-name
+
+# Sync lock file after manual changes
+uv pip compile pyproject.toml -o uv.lock
+
 ## 🚀 Deployment
+
+See detailed deployment guides:
+- **[Render.com Deployment](../docs/Render_Backend_Deployment.md)** - Recommended for backend API
+- **[Vercel Frontend Deployment](../docs/Vercel_Deployment_Guide.md)** - Frontend hosting
+
+### Quick Deploy to Render.com
+
+1. Connect GitHub repo to Render
+2. Set build command:
+   ```bash
+   pip install uv && uv venv && uv pip install -e ".[dev]"
+   ```
+3. Set start command:
+   ```bash
+   uv run gunicorn -w 2 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:$PORT
+   ```
+4. Add environment variables in Render Dashboard
 
 ### Production Considerations
 1. Update `.env` with production values
@@ -182,14 +264,18 @@ curl http://localhost:8000/api/events/
 
 ### Example Production Command
 ```bash
-gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8000
+# With uv (recommended)
+uv run gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8000
 ```
 
 ## 📝 Notes
 
-- The backend is standardized on Python 3.12 for local development and CI compatibility.
+- The backend requires Python 3.10 or higher for compatibility with all dependencies.
+- **UV is the recommended package manager** - it's 10-100x faster than pip
+- Dependencies are defined in `pyproject.toml` under `[project.dependencies]` and `[project.optional-dependencies]`
+- The `uv.lock` file ensures reproducible builds across environments
 - The `is_public` column referenced in the code doesn't exist in the current database schema. You can either add it or modify the code to remove the filter.
-- Email validation requires the `email-validator` package which is included in requirements.txt.
+- Email validation requires the `email-validator` package which is included in dependencies.
 
 ## 🔗 Frontend Integration
 

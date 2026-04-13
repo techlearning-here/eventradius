@@ -20,7 +20,7 @@ from config.database import (
 )
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/events", tags=["events"])
+router = APIRouter(prefix="/api", tags=["events"])
 
 
 # Pydantic models
@@ -68,7 +68,7 @@ class EventBase(BaseModel):
     # Virtual event URL
     virtual_event_url: Optional[str] = None
     # Status
-    status: Optional[Literal["draft", "published"]] = None
+    status: Optional[Literal["draft", "published", "upcoming", "completed", "cancelled"]] = None
     # Language
     language: Optional[str] = None
 
@@ -249,7 +249,7 @@ class EventUpdate(BaseModel):
     # Virtual event URL
     virtual_event_url: Optional[str] = None
     # Status
-    status: Optional[Literal["draft", "published"]] = None
+    status: Optional[Literal["draft", "published", "upcoming", "completed", "cancelled"]] = None
     # Language
     language: Optional[str] = None
 
@@ -265,12 +265,13 @@ class EventResponse(EventBase, EventAttributes):
 
 
 # Event endpoints
-@router.get("/", response_model=List[EventResponse])
+@router.get("/events/", response_model=List[EventResponse])
 async def get_events(
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     category: Optional[str] = None,
     is_public: Optional[bool] = None,
+    status: Optional[str] = Query(None, description="Filter by status: draft, published"),
     user: Optional[dict] = Depends(optional_auth),
 ):
     """
@@ -284,14 +285,27 @@ async def get_events(
         # Apply filters
         if category:
             query = query.eq("category", category)
+            logger.info(f"Filtering by category: {category}")
 
         if is_public is not None:
             query = query.eq("is_public", is_public)
+            logger.info(f"Filtering by is_public: {is_public}")
 
         # Exclude soft-deleted events
         query = query.is_("deleted_at", "null")
 
+        # Filter by status - default to published/upcoming only for discover view
+        if status:
+            query = query.eq("status", status)
+            logger.info(f"Filtering by status: {status}")
+        else:
+            # Default: show published, upcoming OR events with no status (backward compat)
+            query = query.or_("status.eq.published,status.eq.upcoming,status.is.null")
+            logger.info("Default filter: status=published/upcoming OR status is null")
+
         response = query.limit(limit).offset(offset).execute()
+
+        logger.info(f"[get_events] Query returned {len(response.data)} events")
 
         # Transform data
         events = []
@@ -310,7 +324,7 @@ async def get_events(
         )
 
 
-@router.get("/{event_id}", response_model=EventResponse)
+@router.get("/events/{event_id}", response_model=EventResponse)
 async def get_event(event_id: str, user: Optional[dict] = Depends(optional_auth)):
     """
     Get a specific event by ID.
@@ -370,18 +384,15 @@ async def get_event(event_id: str, user: Optional[dict] = Depends(optional_auth)
         )
 
 
-@router.post("/", response_model=EventResponse)
-async def create_event(event: EventCreate, user: dict = Depends(get_current_user)):
-    """
-    Create a new event.
-    Requires authentication.
-    """
+async def _create_event_logic(event: EventCreate, user: dict) -> EventResponse:
+    """Shared logic for creating an event."""
     try:
         event_data = event.model_dump()
         event_data["organizer_id"] = user["id"]
 
         logger.info("=== BACKEND DEBUG ===")
         logger.info(f"Received event data keys: {list(event_data.keys())}")
+        logger.info(f"User creating event: {user.get('id', 'unknown')}")
         logger.info("Attribute fields:")
         logger.info(f"  age_categories: {event_data.get('age_categories')}")
         logger.info(f"  gender_preference: {event_data.get('gender_preference')}")
@@ -396,26 +407,48 @@ async def create_event(event: EventCreate, user: dict = Depends(get_current_user
         response = insert_record("events", event_data)
 
         if not response.data:
+            logger.error(f"Insert failed - no data returned. Response: {response}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create event",
+                detail="Failed to create event - database returned no data",
             )
 
         created_event = response.data[0]
         created_event["current_participants"] = 0
+        logger.info(f"Event created successfully: {created_event.get('id')}")
 
         return created_event
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating event: {e}")
+        logger.error(f"Error creating event: {type(e).__name__}: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create event",
+            detail=f"Failed to create event: {str(e)}",
         )
 
 
-@router.post("/seed-dummy-events", response_model=dict)
+@router.post("/events/", response_model=EventResponse)
+async def create_event(event: EventCreate, user: dict = Depends(get_current_user)):
+    """
+    Create a new event (with trailing slash).
+    Requires authentication.
+    """
+    return await _create_event_logic(event, user)
+
+
+@router.post("/events", response_model=EventResponse)
+async def create_event_no_slash(event: EventCreate, user: dict = Depends(get_current_user)):
+    """
+    Create a new event (without trailing slash).
+    Requires authentication.
+    """
+    return await _create_event_logic(event, user)
+
+
+@router.post("/events/seed-dummy-events", response_model=dict)
 async def seed_dummy_events(user: dict = Depends(get_current_user)):
     """Seed dummy events for testing purposes."""
     try:
@@ -523,7 +556,7 @@ async def seed_dummy_events(user: dict = Depends(get_current_user)):
         )
 
 
-@router.put("/{event_id}", response_model=EventResponse)
+@router.put("/events/{event_id}", response_model=EventResponse)
 async def update_event(
     event_id: str, event_update: EventUpdate, user: dict = Depends(get_current_user)
 ):
@@ -587,7 +620,7 @@ async def update_event(
         )
 
 
-@router.delete("/{event_id}")
+@router.delete("/events/{event_id}")
 async def delete_event(event_id: str, user: dict = Depends(get_current_user)):
     """
     Soft delete an event (move to recycle bin).
@@ -821,7 +854,7 @@ async def participate_event(event_id: str, user: dict = Depends(get_current_user
         )
 
 
-@router.delete("/{event_id}/participate")
+@router.delete("/events/{event_id}/participate")
 async def leave_event(event_id: str, user: dict = Depends(get_current_user)):
     """
     Leave an event.
@@ -841,7 +874,7 @@ async def leave_event(event_id: str, user: dict = Depends(get_current_user)):
         )
 
 
-@router.get("/{event_id}/is-registered")
+@router.get("/events/{event_id}/is-registered")
 async def check_registration(
     event_id: str, request: Request, user: dict = Depends(get_current_user)
 ):
@@ -873,7 +906,7 @@ async def check_registration(
         return {"is_registered": False}
 
 
-@router.get("/{event_id}/participants")
+@router.get("/events/{event_id}/participants")
 async def get_event_participants(
     event_id: str, request: Request, user: dict = Depends(get_current_user)
 ):
@@ -986,7 +1019,7 @@ async def get_bulk_event_participants(
         }
 
 
-@router.get("/{event_id}")
+@router.get("/events/{event_id}")
 async def get_event_by_id(event_id: str, request: Request):
     """
     Get a single event by ID.
@@ -1095,7 +1128,7 @@ async def send_event_message(
         )
 
 
-@router.get("/{event_id}/messages")
+@router.get("/events/{event_id}/messages")
 async def get_event_messages(event_id: str):
     """
     Get all messages for an event.
@@ -1119,7 +1152,7 @@ async def get_event_messages(event_id: str):
 
 
 # Admin endpoints
-@router.put("/{event_id}/status")
+@router.put("/events/{event_id}/status")
 async def update_event_status(
     event_id: str,
     status: str,
