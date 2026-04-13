@@ -5,6 +5,19 @@ echo "Running All Backend and Frontend Checks"
 echo "========================================"
 echo
 
+# Check if uv is installed
+if ! command -v uv &> /dev/null; then
+    echo "❌ uv is not installed!"
+    echo "Install with: brew install uv or curl -LsSf https://astral.sh/uv/install.sh | sh"
+    exit 1
+fi
+
+# Check if .venv exists
+if [ ! -d ".venv" ]; then
+    echo "❌ uv environment not found! Run: uv venv"
+    exit 1
+fi
+
 # Function to print status
 print_status() {
     local step=$1
@@ -27,8 +40,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_ROOT/backend"
 
 echo "[1/6] Backend Black Formatting Check..."
-source venv/bin/activate
-black --check --diff api/ config/ tests/
+uv run black --check --diff api/ config/ tests/
 BLACK_STATUS=$?
 print_status "1/6" "Backend Black formatting" $BLACK_STATUS
 if [ $BLACK_STATUS -ne 0 ]; then
@@ -41,8 +53,7 @@ fi
 echo
 
 echo "[2/6] Backend Tests with Coverage..."
-source venv/bin/activate
-python run-ci-tests.py
+uv run python run-ci-tests.py
 TESTS_STATUS=$?
 print_status "2/6" "Backend tests" $TESTS_STATUS
 if [ $TESTS_STATUS -ne 0 ]; then
@@ -55,8 +66,7 @@ fi
 echo
 
 echo "[3/6] Backend Isort Check..."
-source venv/bin/activate
-isort --check-only --diff api/ config/ tests/
+uv run isort --check-only --diff api/ config/ tests/
 ISORT_STATUS=$?
 print_status "3/6" "Backend Isort formatting" $ISORT_STATUS
 if [ $ISORT_STATUS -ne 0 ]; then
@@ -69,8 +79,7 @@ fi
 echo
 
 echo "[4/6] Backend Flake8 Check..."
-source venv/bin/activate
-flake8 api/ config/ tests/ --max-line-length=88 --extend-ignore=E203,W503,E402,F401,F541,F811,E712,E501
+uv run flake8 api/ config/ tests/ --max-line-length=88 --extend-ignore=E203,W503,E402,F401,F541,F811,E712,E501
 FLAKE8_STATUS=$?
 print_status "4/6" "Backend Flake8 linting" $FLAKE8_STATUS
 if [ $FLAKE8_STATUS -ne 0 ]; then

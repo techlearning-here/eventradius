@@ -36,7 +36,6 @@ const CreateEvent = () => {
         event_contact_email: data.event_contact_email,
         event_contact_phone: data.event_contact_phone,
         ticketing_website: data.ticketing_website,
-        venue_address: data.venue_address,
         // Structured venue fields
         venue_street: data.venue_street,
         venue_city: data.venue_city,
@@ -137,7 +136,6 @@ const CreateEvent = () => {
         event_contact_email: data.event_contact_email,
         event_contact_phone: data.event_contact_phone,
         ticketing_website: data.ticketing_website,
-        venue_address: data.venue_address,
         // Structured venue fields
         venue_street: data.venue_street,
         venue_city: data.venue_city,

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Tag, X } from 'lucide-react';
 import { EventLanguage } from './EventLanguage';
 
 const EVENT_CATEGORIES = [
@@ -12,33 +13,57 @@ const EVENT_CATEGORIES = [
 
 interface BasicInfoProps {
   eventName: string;
+  subtitle?: string;
+  summary?: string;
   description: string;
   isPaidEvent: boolean;
   ticketingUrl?: string;
   language?: string;
   category?: string;
+  tags?: string[];
   onEventNameChange: (value: string) => void;
+  onSubtitleChange: (value: string) => void;
+  onSummaryChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onIsPaidEventChange: (value: boolean) => void;
   onTicketingUrlChange: (value: string) => void;
   onLanguageChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
+  onTagsChange: (value: string[]) => void;
 }
 
 export const BasicInfo = ({ 
   eventName, 
+  subtitle = '',
+  summary = '',
   description,
   isPaidEvent,
   ticketingUrl = '',
   language = '',
   category = '',
+  tags = [],
   onEventNameChange, 
+  onSubtitleChange,
+  onSummaryChange,
   onDescriptionChange,
   onIsPaidEventChange,
   onTicketingUrlChange,
   onLanguageChange,
-  onCategoryChange
+  onCategoryChange,
+  onTagsChange
 }: BasicInfoProps) => {
+  const [tagInput, setTagInput] = useState('');
+  
+  const addTag = () => {
+    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+      onTagsChange([...tags, tagInput.trim()]);
+      setTagInput('');
+    }
+  };
+  
+  const removeTag = (tagToRemove: string) => {
+    onTagsChange(tags.filter(tag => tag !== tagToRemove));
+  };
   const MAX_DESCRIPTION_LENGTH = 2000; // Reasonable limit for event descriptions
   
   // URL validation helper
@@ -81,11 +106,105 @@ export const BasicInfo = ({
           </div>
         </div>
 
-        {/* Step 2: Event Category */}
+        {/* Step 2: Event Subtitle (Optional) */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 text-white rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-200">
+              2
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">Event Subtitle <span className="text-gray-400 font-normal text-base">(Optional)</span></h3>
+          </div>
+          <p className="text-gray-600 mb-4 font-medium">Add a short, catchy phrase to complement your event title</p>
+          <div className="relative group">
+            <input
+              type="text"
+              placeholder="e.g., 'An evening of networking and inspiration'"
+              className="w-full text-gray-900 text-base font-medium leading-tight focus:outline-none bg-white border-2 border-gray-200 rounded-xl p-4 placeholder:text-gray-400 group-hover:border-blue-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300 shadow-sm"
+              value={subtitle}
+              onChange={(e) => onSubtitleChange(e.target.value)}
+            />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+              {subtitle.length > 0 && <span className="text-sm font-medium text-green-500">✓</span>}
+            </div>
+          </div>
+        </div>
+
+        {/* Step 3: Event Summary (Optional) */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 text-white rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-200">
+              3
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">Event Summary <span className="text-gray-400 font-normal text-base">(Optional)</span></h3>
+          </div>
+          <p className="text-gray-600 mb-4 font-medium">Provide a brief one-line summary of what attendees can expect</p>
+          <div className="relative group">
+            <input
+              type="text"
+              placeholder="e.g., 'Join us for an interactive workshop on modern web development'"
+              className="w-full text-gray-900 text-base font-medium leading-tight focus:outline-none bg-white border-2 border-gray-200 rounded-xl p-4 placeholder:text-gray-400 group-hover:border-blue-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300 shadow-sm"
+              value={summary}
+              onChange={(e) => onSummaryChange(e.target.value)}
+            />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+              {summary.length > 0 && <span className="text-sm font-medium text-green-500">✓</span>}
+            </div>
+          </div>
+        </div>
+
+        {/* Step 4: Event Tags (Optional) */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 text-white rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-200">
+              4
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">Event Tags <span className="text-gray-400 font-normal text-base">(Optional)</span></h3>
+          </div>
+          <p className="text-gray-600 mb-4 font-medium">Add keywords to help people discover your event</p>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Enter a tag and press Add..."
+                className="flex-1 text-gray-900 text-base font-medium leading-tight focus:outline-none bg-white border-2 border-gray-200 rounded-xl p-3 placeholder:text-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300 shadow-sm"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+              />
+              <button
+                onClick={addTag}
+                className="px-4 py-2 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium"
+                  >
+                    <Tag className="w-3 h-3" />
+                    {tag}
+                    <button
+                      onClick={() => removeTag(tag)}
+                      className="ml-1 p-0.5 hover:bg-blue-200 rounded-full transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Step 5: Event Category */}
         <div className="space-y-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-200">
-              2
+              5
             </div>
             <h3 className="text-xl font-bold text-gray-900">Event Category <span className="text-red-500">*</span></h3>
           </div>
@@ -118,11 +237,11 @@ export const BasicInfo = ({
           </div>
         </div>
 
-        {/* Step 3: Event Cost (Free or Paid) */}
+        {/* Step 6: Event Cost (Free or Paid) */}
         <div className="space-y-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-200">
-              3
+              6
             </div>
             <h3 className="text-xl font-bold text-gray-900">Event Cost</h3>
           </div>
@@ -194,7 +313,7 @@ export const BasicInfo = ({
           <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 text-white rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-200">
-                3a
+                6a
               </div>
               <h3 className="text-xl font-bold text-gray-900">External Ticketing System</h3>
             </div>
@@ -238,11 +357,11 @@ export const BasicInfo = ({
           </div>
         )}
 
-        {/* Step 4: Event Description */}
+        {/* Step 7: Event Description */}
         <div className="space-y-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-200">
-              4
+              7
             </div>
             <h3 className="text-xl font-bold text-gray-900">Event Description <span className="text-red-500">*</span></h3>
           </div>
@@ -269,17 +388,17 @@ export const BasicInfo = ({
           </div>
         </div>
 
-        {/* Step 5: Event Language */}
+        {/* Step 8: Event Language */}
         <EventLanguage
           language={language || ''}
           onLanguageChange={onLanguageChange}
         />
 
-        {/* Step 6: Event Image */}
+        {/* Step 9: Event Image */}
         <div className="space-y-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-200">
-              6
+              9
             </div>
             <h3 className="text-xl font-bold text-gray-900">Event Image</h3>
           </div>

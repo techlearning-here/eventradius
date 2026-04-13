@@ -1,28 +1,30 @@
 """
+MANUAL INTEGRATION TEST - NOT RUN IN CI (uses mocks, kept with manual tests)
+
 Integration test for Event Wizard to Event Details round-trip.
 
 This test verifies that all event data collected in the EventWizard
 is properly passed to the backend, stored in the database, and
 retrieved correctly on the Event Details page without data loss.
 
-IMPORTANT: This test file mocks all Supabase/database interactions.
-No actual calls are made to the Supabase instance. The mocks are set up at:
-- config.auth.AuthService.require_auth - for authentication
-- api.events.insert_record - for event creation
-- api.events.get_table - for event retrieval
-- conftest.py fixtures - for auto-mocking SupabaseClient
+This test MOCKS all Supabase/database interactions - no actual DB calls.
+Moved to manual_IT folder for organization with other integration tests.
 
-To run: pytest tests/integration/test_event_wizard_roundtrip.py -v
+To run: pytest tests/manual_IT/test_event_wizard_roundtrip.py -v
+
+pytest marker: manual
 """
 
 import json
 import os
 import sys
+import pytest
 from datetime import datetime, timedelta
 from unittest.mock import ANY, MagicMock, patch
-
-import pytest
 from fastapi.testclient import TestClient
+
+# Mark all tests in this file as manual
+pytestmark = pytest.mark.manual
 
 # Add the backend directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
@@ -73,6 +75,9 @@ class TestEventWizardRoundTrip:
             "start_time": (datetime.now() + timedelta(days=7)).isoformat(),
             "end_time": (datetime.now() + timedelta(days=7, hours=1)).isoformat(),
             "timezone": "America/Los_Angeles",
+            "doors_open_time": (datetime.now() + timedelta(days=7, minutes=-30)).isoformat(),
+            "registration_start_time": datetime.now().isoformat(),
+            "registration_end_time": (datetime.now() + timedelta(days=6)).isoformat(),
             # Location & Venue
             "location": "Community Center, 123 Main St, San Francisco, CA 94102, USA",
             "venue_address": "123 Main St",
@@ -371,6 +376,10 @@ class TestEventWizardRoundTrip:
                 "venue_state",
                 "venue_zip_code",
                 "venue_country",
+                # Timing & Registration
+                "doors_open_time",
+                "registration_start_time",
+                "registration_end_time",
             ]
 
             for field in attribute_fields:

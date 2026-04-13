@@ -84,38 +84,6 @@ app.include_router(auth_router)
 # NOTE: Custom OPTIONS handler removed - FastAPI's CORS middleware handles preflight automatically
 
 
-# Direct route test - add POST handler directly to app
-@app.post("/api/events")
-async def direct_create_event(request: Request):
-    """Direct POST handler for /api/events"""
-    logger.info("DIRECT POST /api/events called!")
-    from fastapi import HTTPException
-    from api.events import EventCreate, _create_event_logic, get_current_user
-    
-    try:
-        user = await get_current_user(request)
-        if not user:
-            raise HTTPException(status_code=401, detail="Not authenticated")
-        
-        import json
-        body = await request.body()
-        event_data = json.loads(body)
-        event = EventCreate(**event_data)
-        
-        return await _create_event_logic(event, user)
-    except Exception as e:
-        logger.error(f"Error in direct handler: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Test route at different path
-@app.post("/test-post")
-async def test_post(request: Request):
-    """Test POST endpoint"""
-    logger.info("POST /test-post called!")
-    return {"message": "POST works!"}
-
-
 # Exception handler for debugging
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

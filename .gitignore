@@ -48,3 +48,16 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# UV package manager
+.venv/
+venv/
+venv.backup/
+uv.lock
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover

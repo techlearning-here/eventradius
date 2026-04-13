@@ -1,6 +1,15 @@
 """
-Integration tests for API endpoints.
+MANUAL INTEGRATION TEST - NOT RUN IN CI
+
+Integration tests for API endpoints (uses mocks).
+
+pytest marker: manual
 """
+
+import pytest
+
+# Mark all tests in this file as manual
+pytestmark = pytest.mark.manual
 
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch

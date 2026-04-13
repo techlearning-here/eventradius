@@ -20,7 +20,7 @@ from config.database import (
 )
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api", tags=["events"])
+router = APIRouter(prefix="/api/events", tags=["events"])
 
 
 # Pydantic models
@@ -58,7 +58,6 @@ class EventBase(BaseModel):
     custom_refund_policy: Optional[str] = None
     ticket_pricing_description: Optional[str] = None
     # Venue fields
-    venue_address: Optional[str] = None
     venue_street: Optional[str] = None
     venue_city: Optional[str] = None
     venue_state: Optional[str] = None
@@ -239,7 +238,6 @@ class EventUpdate(BaseModel):
     ] = None
     group_discounts: Optional[bool] = None
     # Venue fields
-    venue_address: Optional[str] = None
     venue_street: Optional[str] = None
     venue_city: Optional[str] = None
     venue_state: Optional[str] = None
@@ -265,7 +263,7 @@ class EventResponse(EventBase, EventAttributes):
 
 
 # Event endpoints
-@router.get("/events/", response_model=List[EventResponse])
+@router.get("/", response_model=List[EventResponse])
 async def get_events(
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
@@ -324,7 +322,7 @@ async def get_events(
         )
 
 
-@router.get("/events/{event_id}", response_model=EventResponse)
+@router.get("/{event_id}", response_model=EventResponse)
 async def get_event(event_id: str, user: Optional[dict] = Depends(optional_auth)):
     """
     Get a specific event by ID.
@@ -402,6 +400,9 @@ async def _create_event_logic(event: EventCreate, user: dict) -> EventResponse:
         )
         logger.info(f"  religious_context: {event_data.get('religious_context')}")
         logger.info(f"  skill_level: {event_data.get('skill_level')}")
+        logger.info(f"  ticketing_website: '{event_data.get('ticketing_website')}'")
+        logger.info(f"  event_website: '{event_data.get('event_website')}'")
+        logger.info(f"  is_paid_event: {event_data.get('is_paid_event')}")
         logger.info("=====================")
 
         response = insert_record("events", event_data)
@@ -430,7 +431,7 @@ async def _create_event_logic(event: EventCreate, user: dict) -> EventResponse:
         )
 
 
-@router.post("/events/", response_model=EventResponse)
+@router.post("/", response_model=EventResponse)
 async def create_event(event: EventCreate, user: dict = Depends(get_current_user)):
     """
     Create a new event (with trailing slash).
@@ -439,7 +440,7 @@ async def create_event(event: EventCreate, user: dict = Depends(get_current_user
     return await _create_event_logic(event, user)
 
 
-@router.post("/events", response_model=EventResponse)
+@router.post("", response_model=EventResponse)
 async def create_event_no_slash(event: EventCreate, user: dict = Depends(get_current_user)):
     """
     Create a new event (without trailing slash).
@@ -448,7 +449,7 @@ async def create_event_no_slash(event: EventCreate, user: dict = Depends(get_cur
     return await _create_event_logic(event, user)
 
 
-@router.post("/events/seed-dummy-events", response_model=dict)
+@router.post("/seed-dummy-events", response_model=dict)
 async def seed_dummy_events(user: dict = Depends(get_current_user)):
     """Seed dummy events for testing purposes."""
     try:
@@ -556,7 +557,7 @@ async def seed_dummy_events(user: dict = Depends(get_current_user)):
         )
 
 
-@router.put("/events/{event_id}", response_model=EventResponse)
+@router.put("/{event_id}", response_model=EventResponse)
 async def update_event(
     event_id: str, event_update: EventUpdate, user: dict = Depends(get_current_user)
 ):
@@ -620,7 +621,7 @@ async def update_event(
         )
 
 
-@router.delete("/events/{event_id}")
+@router.delete("/{event_id}")
 async def delete_event(event_id: str, user: dict = Depends(get_current_user)):
     """
     Soft delete an event (move to recycle bin).
@@ -854,7 +855,7 @@ async def participate_event(event_id: str, user: dict = Depends(get_current_user
         )
 
 
-@router.delete("/events/{event_id}/participate")
+@router.delete("/{event_id}/participate")
 async def leave_event(event_id: str, user: dict = Depends(get_current_user)):
     """
     Leave an event.
@@ -874,7 +875,7 @@ async def leave_event(event_id: str, user: dict = Depends(get_current_user)):
         )
 
 
-@router.get("/events/{event_id}/is-registered")
+@router.get("/{event_id}/is-registered")
 async def check_registration(
     event_id: str, request: Request, user: dict = Depends(get_current_user)
 ):
@@ -906,7 +907,7 @@ async def check_registration(
         return {"is_registered": False}
 
 
-@router.get("/events/{event_id}/participants")
+@router.get("/{event_id}/participants")
 async def get_event_participants(
     event_id: str, request: Request, user: dict = Depends(get_current_user)
 ):
@@ -1019,7 +1020,7 @@ async def get_bulk_event_participants(
         }
 
 
-@router.get("/events/{event_id}")
+@router.get("/{event_id}")
 async def get_event_by_id(event_id: str, request: Request):
     """
     Get a single event by ID.
@@ -1128,7 +1129,7 @@ async def send_event_message(
         )
 
 
-@router.get("/events/{event_id}/messages")
+@router.get("/{event_id}/messages")
 async def get_event_messages(event_id: str):
     """
     Get all messages for an event.
@@ -1152,7 +1153,7 @@ async def get_event_messages(event_id: str):
 
 
 # Admin endpoints
-@router.put("/events/{event_id}/status")
+@router.put("/{event_id}/status")
 async def update_event_status(
     event_id: str,
     status: str,

@@ -13,7 +13,7 @@ import { SectionHeader } from '@/components/OrganizerDashboard/SectionHeader';
 import { EventsList } from '@/components/OrganizerDashboard/EventsList';
 import { OrganizerEventsGrid } from '@/components/OrganizerDashboard/OrganizerEventsGrid';
 import { EventWizardOverlay } from '@/components/OrganizerDashboard/EventWizardOverlay';
-import { EventDetailOverlay } from '@/components/EventDetailPage';
+import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
 import { EventDetailInline } from '@/components/EventDetailInline';
 import { type Event, type RefundPolicy, type EventCreate } from '@/integrations/backend/api';
 import { Trash2, LayoutGrid, List } from 'lucide-react';
@@ -157,14 +157,21 @@ const OrganizerDashboard = () => {
         doors_open_time: data.doors_open_time ? data.doors_open_time.toISOString() : undefined,
         registration_start_time: data.registration_start_time ? data.registration_start_time.toISOString() : undefined,
         registration_end_time: data.registration_end_time ? data.registration_end_time.toISOString() : undefined,
-        virtual_event_url: data.virtual_event_url,
+        virtual_event_url: data.virtual_event_url || null,
         virtual_event_platform: data.virtual_event_platform,
+        // Venue fields
+        venue_street: data.venue_street,
+        venue_city: data.venue_city,
+        venue_state: data.venue_state,
+        venue_zip_code: data.venue_zip_code,
+        venue_country: data.venue_country,
+        venue_building_name: data.venue_building_name,
         event_password: data.event_password,
         age_restriction: data.age_restriction,
         accessibility_options: data.accessibility_options,
-        event_website: data.event_website,
-        event_contact_email: data.event_contact_email,
-        ticketing_website: data.ticketing_website,
+        event_website: data.event_website || null,
+        event_contact_email: data.event_contact_email || null,
+        ticketing_website: data.ticketing_website || null,
         refund_policy: data.refund_policy,
         custom_refund_policy: data.custom_refund_policy,
         ticket_pricing_description: data.ticket_pricing_description,
@@ -291,14 +298,21 @@ const OrganizerDashboard = () => {
         doors_open_time: data.doors_open_time ? data.doors_open_time.toISOString() : undefined,
         registration_start_time: data.registration_start_time ? data.registration_start_time.toISOString() : undefined,
         registration_end_time: data.registration_end_time ? data.registration_end_time.toISOString() : undefined,
-        virtual_event_url: data.virtual_event_url,
+        virtual_event_url: data.virtual_event_url || null,
         virtual_event_platform: data.virtual_event_platform,
+        // Venue fields
+        venue_street: data.venue_street,
+        venue_city: data.venue_city,
+        venue_state: data.venue_state,
+        venue_zip_code: data.venue_zip_code,
+        venue_country: data.venue_country,
+        venue_building_name: data.venue_building_name,
         event_password: data.event_password,
         age_restriction: data.age_restriction,
         accessibility_options: data.accessibility_options,
-        event_website: data.event_website,
-        event_contact_email: data.event_contact_email,
-        ticketing_website: data.ticketing_website,
+        event_website: data.event_website || null,
+        event_contact_email: data.event_contact_email || null,
+        ticketing_website: data.ticketing_website || null,
         refund_policy: data.refund_policy,
         custom_refund_policy: data.custom_refund_policy,
         ticket_pricing_description: data.ticket_pricing_description,
@@ -367,9 +381,11 @@ const OrganizerDashboard = () => {
       }, null, 2));
       console.log('==================================');
 
+      console.log('=== CALLING CREATE EVENT ===');
       const result = await createEvent(eventData);
+      console.log('=== CREATE EVENT RESULT ===', result);
       if (!result) {
-        throw new Error('Failed to publish event');
+        throw new Error('Event creation returned null');
       }
       
       toast.success('Event created and published successfully!');
@@ -469,9 +485,231 @@ const OrganizerDashboard = () => {
     }
   };
 
+  // Handle creating a single round-trip test event with ALL new fields
+  const handleTestOneRoundTrip = async () => {
+    const roundTripTestEvent: EventCreate = {
+      // Core fields
+      title: `Round Trip Test - ${new Date().toLocaleString()}`,
+      subtitle: 'Testing ALL new Event Wizard fields',
+      summary: 'This single event tests the complete round-trip: Frontend → API → Database → API → Frontend',
+      description: 'Comprehensive test of ALL Event Wizard fields including subtitle, summary, tags, timezone, venue details, virtual event info, timing fields, age_restriction, custom_refund_policy, and more.',
+      category: 'technology',
+      location: 'Tech Hub Conference Center, 456 Innovation Drive, San Francisco, CA 94102, USA',
+      start_time: new Date(Date.now() + 7 * 86400000).toISOString(),
+      end_time: new Date(Date.now() + 7 * 86400000 + 10800000).toISOString(),
+      timezone: 'America/Los_Angeles',
+      max_participants: 50,
+      is_public: true,
+      is_paid_event: true,
+      ticketing_website: 'https://tickets.example.com/round-trip-test',
+      ticket_pricing_description: '$50 per person, includes lunch and materials',
+      image_url: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800&h=400&fit=crop',
+      status: 'published',
+      // Event Wizard - Basic Info
+      tags: ['round-trip', 'test', 'all-fields', 'integration'],
+      language: 'en',
+      event_type: 'hybrid',
+      event_format: 'single',
+      event_privacy: 'public',
+      // Event Wizard - Venue Details
+      venue_building_name: 'Tech Hub Conference Center',
+      venue_street: '456 Innovation Drive',
+      venue_city: 'San Francisco',
+      venue_state: 'CA',
+      venue_zip_code: '94102',
+      venue_country: 'USA',
+      // Event Wizard - Virtual Event
+      virtual_event_url: 'https://zoom.us/j/round-trip-test-123',
+      virtual_event_platform: 'Zoom',
+      event_password: 'RoundTrip2026!',
+      // Event Wizard - Timing & Registration
+      doors_open_time: new Date(Date.now() + 7 * 86400000 - 30 * 60000).toISOString(),
+      registration_start_time: new Date(Date.now()).toISOString(),
+      registration_end_time: new Date(Date.now() + 6 * 86400000).toISOString(),
+      // Event Wizard - Contact Info
+      event_contact_email: 'test@roundtrip.example.com',
+      event_contact_phone: '4155559999',
+      event_contact_phone_country_code: '+1',
+      // Event Wizard - Additional
+      age_restriction: 'all_ages',
+      accessibility_options: 'Wheelchair accessible, ASL interpreter available, service animals welcome',
+      custom_refund_policy: 'Full refund up to 48 hours before event. 50% refund up to 24 hours. No refunds after that.',
+      event_website: 'https://example.com/round-trip-test',
+      // Audience & Demographics
+      age_categories: ['adults', 'young_adults'],
+      gender_preference: 'all',
+      family_friendly: false,
+      senior_friendly: true,
+      singles_friendly: true,
+      couples_oriented: false,
+      // Accessibility
+      wheelchair_accessible: true,
+      mobility_friendly: true,
+      hearing_accessible: true,
+      vision_accessible: true,
+      sensory_friendly: false,
+      service_animals_allowed: true,
+      accessibility_notes: 'Fully accessible venue with ramps, elevators, accessible restrooms, and designated seating areas.',
+      // Cultural Context
+      religious_context: ['secular', 'interfaith'],
+      dietary_context: ['vegetarian', 'vegan', 'gluten_free', 'halal', 'kosher'],
+      traditional_attire: 'not_applicable',
+      // Prerequisites
+      skill_level: 'all_levels',
+      prior_experience: 'none_required',
+      physical_fitness: 'sedentary',
+      equipment_required: ['laptop', 'notebook', 'pen'],
+      dress_code: 'business_casual',
+      prerequisites_notes: 'Bring a laptop for hands-on exercises. All other materials provided.',
+      // Content & Intensity
+      content_rating: 'all_ages',
+      alcohol_served: 'no_alcohol',
+      smoking_policy: 'non_smoking',
+      noise_level: 'moderate',
+      physical_intensity: 'none',
+      // Social Features
+      networking_focus: true,
+      social_mixer: true,
+      ice_breakers: true,
+      group_activities: true,
+      team_building: false,
+      // Language
+      primary_language: 'english',
+      secondary_languages: ['spanish', 'chinese_mandarin'],
+      interpretation_available: true,
+      sign_language_interpreter: true,
+      // Type & Format
+      format: 'interactive_workshop',
+      sub_category: 'tech_demo',
+      // Pricing
+      refund_policy: 'refund_up_to_24_hours',
+      group_discounts: true,
+    };
+
+    try {
+      console.log('🧪 Creating 1 round-trip test event with ALL new fields...');
+      const result = await createEvent(roundTripTestEvent);
+      
+      if (result) {
+        console.log('✅ Round-trip test event created:', result);
+        toast.success('✅ Round-trip test event created! Click it to view all fields.');
+        
+        // Automatically open the event details for the created event
+        if (result.id) {
+          handlePreviewEvent(result.id);
+        }
+        
+        fetchEvents(); // Refresh the list
+      } else {
+        toast.error('Failed to create round-trip test event');
+      }
+    } catch (error) {
+      console.error('❌ Failed to create round-trip test event:', error);
+      toast.error(`Error: ${error.message}`);
+    }
+  };
+
   // Handle seeding dummy events for testing using existing createEvent API
   const handleSeedDummyEvents = async () => {
     const dummyEvents: EventCreate[] = [
+      // === COMPREHENSIVE TEST EVENT WITH ALL NEW FIELDS ===
+      {
+        title: 'Complete Test Event - All Fields',
+        subtitle: 'Testing all new Event Wizard fields',
+        summary: 'This event tests all the newly added fields from the Event Wizard including subtitle, summary, tags, timezone, venue details, virtual event info, timing, and more.',
+        description: 'Join us for a comprehensive demonstration of all Event Wizard features! This event includes every field available in the wizard to ensure complete data flow from creation to display.',
+        category: 'education',
+        location: 'Tech Hub Conference Center, 456 Innovation Drive, San Francisco, CA 94102, USA',
+        start_time: new Date(Date.now() + 7 * 86400000).toISOString(),
+        end_time: new Date(Date.now() + 7 * 86400000 + 10800000).toISOString(),
+        timezone: 'America/Los_Angeles',
+        max_participants: 50,
+        is_public: true,
+        is_paid_event: true,
+        ticketing_website: 'https://tickets.example.com/complete-test-event',
+        ticket_pricing_description: '$50 per person, includes lunch and materials',
+        image_url: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800&h=400&fit=crop',
+        // Event Wizard - Basic Info
+        tags: ['test', 'demo', 'all-fields', 'wizard', 'comprehensive'],
+        language: 'en',
+        event_type: 'hybrid',
+        event_format: 'single',
+        event_privacy: 'public',
+        status: 'published',
+        // Event Wizard - Venue Details
+        venue_building_name: 'Tech Hub Conference Center',
+        venue_street: '456 Innovation Drive',
+        venue_city: 'San Francisco',
+        venue_state: 'CA',
+        venue_zip_code: '94102',
+        venue_country: 'USA',
+        // Event Wizard - Virtual Event
+        virtual_event_url: 'https://zoom.us/j/complete-test-123',
+        virtual_event_platform: 'Zoom',
+        event_password: 'TestEvent2026!',
+        // Event Wizard - Timing & Registration
+        doors_open_time: new Date(Date.now() + 7 * 86400000 - 30 * 60000).toISOString(), // 30 min before
+        registration_start_time: new Date(Date.now()).toISOString(), // Now
+        registration_end_time: new Date(Date.now() + 6 * 86400000).toISOString(), // 1 day before
+        // Event Wizard - Contact Info
+        event_contact_email: 'test@example.com',
+        event_contact_phone: '4155551234',
+        event_contact_phone_country_code: '+1',
+        // Event Wizard - Additional
+        age_restriction: 'all_ages',
+        accessibility_options: 'Wheelchair accessible, ASL interpreter available',
+        custom_refund_policy: 'Full refund up to 48 hours before event. 50% refund up to 24 hours.',
+        event_website: 'https://example.com/complete-test-event',
+        // Audience & Demographics
+        age_categories: ['adults', 'young_adults'],
+        gender_preference: 'all',
+        family_friendly: false,
+        senior_friendly: true,
+        singles_friendly: true,
+        couples_oriented: false,
+        // Accessibility
+        wheelchair_accessible: true,
+        mobility_friendly: true,
+        hearing_accessible: true,
+        vision_accessible: true,
+        sensory_friendly: false,
+        service_animals_allowed: true,
+        accessibility_notes: 'Fully accessible venue with ramps, elevators, accessible restrooms, and designated seating areas.',
+        // Cultural Context
+        religious_context: ['secular', 'interfaith'],
+        dietary_context: ['vegetarian', 'vegan', 'gluten_free', 'halal', 'kosher'],
+        traditional_attire: 'not_applicable',
+        // Prerequisites
+        skill_level: 'all_levels',
+        prior_experience: 'none_required',
+        physical_fitness: 'sedentary',
+        equipment_required: ['laptop', 'notebook'],
+        dress_code: 'business_casual',
+        prerequisites_notes: 'Bring a laptop for hands-on exercises. All other materials provided.',
+        // Content & Intensity
+        content_rating: 'all_ages',
+        alcohol_served: 'no_alcohol',
+        smoking_policy: 'non_smoking',
+        noise_level: 'moderate',
+        physical_intensity: 'none',
+        // Social Features
+        networking_focus: true,
+        social_mixer: true,
+        ice_breakers: true,
+        group_activities: true,
+        team_building: false,
+        // Language
+        primary_language: 'english',
+        secondary_languages: ['spanish', 'chinese_mandarin'],
+        interpretation_available: true,
+        sign_language_interpreter: true,
+        // Type & Format
+        format: 'interactive_workshop',
+        sub_category: 'tech_demo',
+        // Pricing
+        refund_policy: 'refund_up_to_24_hours',
+        group_discounts: true,
+      },
       // === SOCIAL (Free & Paid) ===
       { title: 'Seniors Tea & Conversation', description: 'Relaxing afternoon tea with stimulating conversation.', category: 'social', location: 'Golden Years Center, 45 Park Ave', start_time: new Date(Date.now() + 5 * 86400000).toISOString(), end_time: new Date(Date.now() + 5 * 86400000 + 7200000).toISOString(), max_participants: 25, is_public: true, is_paid_event: true, ticketing_website: 'https://eventbrite.com/seniors-tea-123', image_url: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop', age_categories: ['seniors', 'adults'], gender_preference: 'all', family_friendly: false, senior_friendly: true, singles_friendly: true, couples_oriented: false, wheelchair_accessible: true, mobility_friendly: true, hearing_accessible: true, vision_accessible: true, sensory_friendly: false, service_animals_allowed: true, accessibility_notes: 'Wheelchair accessible venue with ramps and accessible restrooms.', religious_context: [], dietary_context: ['vegetarian', 'vegan'], traditional_attire: 'not_applicable', skill_level: 'all_levels', prior_experience: 'none_required', physical_fitness: 'sedentary', equipment_required: [], dress_code: 'smart_casual', prerequisites_notes: 'No prior experience needed.', content_rating: 'all_ages', alcohol_served: 'no_alcohol', smoking_policy: 'non_smoking', noise_level: 'quiet', physical_intensity: 'none', networking_focus: true, social_mixer: true, ice_breakers: true, group_activities: true, team_building: false, primary_language: 'english', secondary_languages: [], interpretation_available: false, sign_language_interpreter: false, event_type: 'in_person', format: 'social_meetup', sub_category: 'tea_social', refund_policy: 'refund_up_to_24_hours', group_discounts: false },
       { title: 'Free Community Potluck', description: 'Bring a dish to share. Everyone welcome!', category: 'social', location: 'Community Hall, 123 Main St', start_time: new Date(Date.now() + 6 * 86400000).toISOString(), end_time: new Date(Date.now() + 6 * 86400000 + 10800000).toISOString(), max_participants: 40, is_public: true, is_paid_event: false, image_url: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800&h=400&fit=crop', age_categories: ['kids', 'teens', 'adults', 'seniors'], gender_preference: 'all', family_friendly: true, senior_friendly: true, singles_friendly: true, couples_oriented: true, wheelchair_accessible: true, mobility_friendly: true, hearing_accessible: true, vision_accessible: true, sensory_friendly: false, service_animals_allowed: true, accessibility_notes: 'Fully accessible venue.', religious_context: [], dietary_context: ['vegetarian', 'vegan', 'gluten_free', 'halal', 'kosher'], traditional_attire: 'not_applicable', skill_level: 'all_levels', prior_experience: 'none_required', physical_fitness: 'sedentary', equipment_required: [], dress_code: 'casual', prerequisites_notes: 'Bring a dish to share!', content_rating: 'all_ages', alcohol_served: 'no_alcohol', smoking_policy: 'non_smoking', noise_level: 'moderate', physical_intensity: 'none', networking_focus: true, social_mixer: true, ice_breakers: false, group_activities: true, team_building: false, primary_language: 'english', secondary_languages: ['spanish'], interpretation_available: false, sign_language_interpreter: false, event_type: 'in_person', format: 'social_meetup', sub_category: 'potluck', refund_policy: 'no_refunds', group_discounts: false },
@@ -591,7 +829,6 @@ const OrganizerDashboard = () => {
       event_privacy: fullEventDetails.event_privacy || 'public',
       is_paid_event: fullEventDetails.is_paid_event || false,
       timezone: fullEventDetails.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-      venue_address: fullEventDetails.venue_address || fullEventDetails.location || '',
       venue_city: fullEventDetails.venue_city || '',
       venue_state: fullEventDetails.venue_state || '',
       venue_zip_code: fullEventDetails.venue_zip_code || '',
@@ -786,15 +1023,28 @@ const OrganizerDashboard = () => {
                   </button>
                 </div>
 
+                {/* Test 1 Round Trip Button - Quick Test */}
+                <button
+                  onClick={handleTestOneRoundTrip}
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 text-sm font-medium shadow-md flex items-center gap-2"
+                  title="Creates 1 event with ALL new fields and opens it immediately"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Test 1 Round Trip
+                </button>
+
                 {/* Seed Dummy Events Button - Test Feature */}
                 <button
                   onClick={handleSeedDummyEvents}
                   className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 text-sm font-medium shadow-md flex items-center gap-2"
+                  title="Creates 45 test events (includes 1 with all new fields)"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  Add Test Events
+                  Add Test Events (45)
                 </button>
 
                 {viewMode === 'grid' ? (

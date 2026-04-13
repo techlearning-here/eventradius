@@ -8,10 +8,13 @@ export const dummyEvents: Record<string, Event> = {
   'demo-family-all-ages': {
     id: 'demo-family-all-ages',
     title: 'Community Arts & Crafts Festival',
+    subtitle: 'A Creative Family Experience',
+    summary: 'Join us for a day of creativity, fun, and artistic expression for the whole family!',
     description: 'A fun-filled family arts and crafts workshop for all ages! Activities include canvas painting, clay sculpture, seasonal crafts, and collaborative family art projects. All materials provided.',
     location: 'Community Arts Center, 123 Main Street, San Francisco, CA 94102',
     start_time: '2026-07-15T10:00:00Z',
     end_time: '2026-07-15T12:00:00Z',
+    timezone: 'America/Los_Angeles',
     image_url: 'https://images.unsplash.com/photo-1564399580075-548fe4334853?w=800&h=400&fit=crop',
     category: 'art',
     max_participants: 25,
@@ -21,6 +24,29 @@ export const dummyEvents: Record<string, Event> = {
     updated_at: '2026-04-07T08:00:00Z',
     current_participants: 18,
     is_paid_event: false,
+    // Event Wizard - Tags
+    tags: ['family', 'arts', 'crafts', 'creative', 'all-ages'],
+    // Event Wizard - Venue Details
+    venue_building_name: 'Community Arts Center',
+    venue_street: '123 Main Street',
+    venue_city: 'San Francisco',
+    venue_state: 'CA',
+    venue_zip_code: '94102',
+    venue_country: 'USA',
+    // Event Wizard - Timing
+    doors_open_time: '2026-07-15T09:30:00Z',
+    registration_start_time: '2026-06-15T00:00:00Z',
+    registration_end_time: '2026-07-14T23:59:00Z',
+    // Event Wizard - Virtual Event (hybrid option)
+    virtual_event_url: 'https://zoom.us/j/example123',
+    virtual_event_platform: 'Zoom',
+    event_password: 'Crafts2026',
+    // Event Wizard - Additional
+    age_restriction: 'all_ages',
+    accessibility_options: 'Wheelchair accessible, hearing assistance available',
+    event_format: 'single',
+    event_privacy: 'public',
+    custom_refund_policy: 'Full refund available up to 24 hours before the event',
     // Audience & Demographics
     age_categories: ['kids', 'teens', 'adults', 'seniors'],
     gender_preference: 'all',

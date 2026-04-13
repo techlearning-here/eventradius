@@ -109,11 +109,11 @@ export const EventDetailAttributes: React.FC<EventDetailAttributesProps> = ({ ev
     { id: 'accessibility', label: 'Accessibility', icon: Accessibility, color: 'bg-gradient-to-r from-teal-500 to-teal-600', hasContent: !!(event.wheelchair_accessible || event.mobility_friendly || event.hearing_accessible) },
     { id: 'cultural', label: 'Cultural', icon: Globe, color: 'bg-gradient-to-r from-indigo-500 to-indigo-600', hasContent: !!(event.religious_context || event.dietary_context) },
     { id: 'prerequisites', label: 'Prerequisites', icon: GraduationCap, color: 'bg-gradient-to-r from-orange-500 to-orange-600', hasContent: !!(event.skill_level || event.prior_experience || event.physical_fitness) },
-    { id: 'content', label: 'Content', icon: AlertCircle, color: 'bg-gradient-to-r from-red-500 to-red-600', hasContent: !!(event.content_rating || event.alcohol_served || event.smoking_policy) },
+    { id: 'content', label: 'Content', icon: AlertCircle, color: 'bg-gradient-to-r from-red-500 to-red-600', hasContent: !!(event.content_rating || event.alcohol_served || event.smoking_policy || event.age_restriction) },
     { id: 'social', label: 'Social', icon: PartyPopper, color: 'bg-gradient-to-r from-pink-500 to-pink-600', hasContent: !!(event.networking_focus || event.social_mixer || event.ice_breakers) },
     { id: 'language', label: 'Language', icon: Languages, color: 'bg-gradient-to-r from-cyan-500 to-cyan-600', hasContent: !!(event.primary_language || event.secondary_languages) },
     { id: 'format', label: 'Format', icon: LayoutGrid, color: 'bg-gradient-to-r from-violet-500 to-violet-600', hasContent: !!(event.event_type || event.format || event.sub_category) },
-    { id: 'pricing', label: 'Pricing', icon: DollarSign, color: 'bg-gradient-to-r from-emerald-500 to-emerald-600', hasContent: !!(event.refund_policy || event.group_discounts) }
+    { id: 'pricing', label: 'Pricing', icon: DollarSign, color: 'bg-gradient-to-r from-emerald-500 to-emerald-600', hasContent: !!(event.refund_policy || event.group_discounts || event.custom_refund_policy) }
   ];
 
   const hasAnyContent = tabs.some(t => t.hasContent);
@@ -245,6 +245,7 @@ export const EventDetailAttributes: React.FC<EventDetailAttributesProps> = ({ ev
             description="What to expect at this event - noise levels, physical activity, and age appropriateness."
           >
             <div className="space-y-4">
+              {event.age_restriction && <InfoRow icon={AlertCircle} label="Age Restriction" value={formatLabel(event.age_restriction)} color="text-red-500" />}
               {event.content_rating && (
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-muted-foreground">Rating:</span>
@@ -319,6 +320,12 @@ export const EventDetailAttributes: React.FC<EventDetailAttributesProps> = ({ ev
           >
             <div className="space-y-4">
               {event.refund_policy && <InfoRow icon={Shield} label="Refund Policy" value={formatLabel(event.refund_policy)} color="text-emerald-500" />}
+              {event.custom_refund_policy && (
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <span className="text-sm text-muted-foreground">Custom Policy:</span>
+                  <p className="text-sm mt-1">{event.custom_refund_policy}</p>
+                </div>
+              )}
               {event.group_discounts && (
                 <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
                   <div className="flex items-center gap-3">

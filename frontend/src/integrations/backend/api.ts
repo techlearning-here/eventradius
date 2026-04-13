@@ -89,25 +89,39 @@ export interface EventCreate {
   is_paid_event?: boolean;
   ticketing_website?: string;
   status?: 'draft' | 'published';
-  // Event Wizard fields
+  // Event Wizard - Basic Info
   subtitle?: string;
   summary?: string;
+  tags?: string[];
   language?: string;
   timezone?: string;
+  event_format?: string;
+  event_privacy?: string;
+  // Event Wizard - Virtual Event
   virtual_event_url?: string;
   virtual_event_platform?: string;
+  event_password?: string;
+  // Event Wizard - Contact Info
   event_contact_email?: string;
   event_contact_phone?: string;
   event_contact_phone_country_code?: string;
-  venue_address?: string;
+  // Event Wizard - Venue
   venue_street?: string;
   venue_city?: string;
   venue_state?: string;
   venue_zip_code?: string;
   venue_country?: string;
   venue_building_name?: string;
+  // Event Wizard - Timing
+  doors_open_time?: string;
+  registration_start_time?: string;
+  registration_end_time?: string;
+  // Event Wizard - Pricing & Additional
   ticket_pricing_description?: string;
   custom_refund_policy?: string;
+  age_restriction?: string;
+  accessibility_options?: string;
+  event_website?: string;
   // New Event Attributes
   age_categories?: string[];
   gender_preference?: string;
@@ -174,7 +188,6 @@ export interface EventUpdate {
   event_contact_email?: string;
   event_contact_phone?: string;
   event_contact_phone_country_code?: string;
-  venue_address?: string;
   venue_street?: string;
   venue_city?: string;
   venue_state?: string;
