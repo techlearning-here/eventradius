@@ -71,7 +71,7 @@ export const OrganizerSection: React.FC<OrganizerSectionProps> = ({ event, organ
               </div>
               <div>
                 <p className="text-xs text-gray-500 uppercase">Event Email</p>
-                <p className="font-semibold text-gray-900 text-sm truncate max-w-[180px]">{event.event_contact_email}</p>
+                <p className="font-semibold text-gray-900 text-sm">{event.event_contact_email}</p>
               </div>
             </a>
           )}
@@ -89,7 +89,7 @@ export const OrganizerSection: React.FC<OrganizerSectionProps> = ({ event, organ
               </div>
               <div>
                 <p className="text-xs text-gray-500 uppercase">Organizer Email</p>
-                <p className="font-semibold text-gray-900 text-sm truncate max-w-[180px]">{event.organizer_email}</p>
+                <p className="font-semibold text-gray-900 text-sm">{event.organizer_email}</p>
               </div>
             </a>
           )}
