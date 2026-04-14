@@ -22,15 +22,14 @@ export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
   const isDemoEvent = eventId && eventId.startsWith('demo-');
 
   const fetchParticipants = useCallback(async () => {
+    if (!user) return; // Skip API call if not logged in
     try {
       const response = await apiClient.getEventParticipants(eventId);
       setCounts({
         interested: response.counts.interested,
         going: response.counts.going,
       });
-      if (user) {
-        setCurrentStatus(response.my_status);
-      }
+      setCurrentStatus(response.my_status);
     } catch (error) {
       console.error('Error fetching participant data:', error);
     }
@@ -126,6 +125,7 @@ export const EventParticipation = ({ eventId, onAuthRequired }: Props) => {
 };
 
 export const EventParticipationCounts = ({ eventId }: { eventId: string }) => {
+  const { user } = useAuthWithBackend();
   const [counts, setCounts] = useState({ interested: 0, going: 0 });
 
   // Check if this is a demo event
@@ -138,7 +138,8 @@ export const EventParticipationCounts = ({ eventId }: { eventId: string }) => {
         interested: Math.floor(Math.random() * 10) + 5,
         going: Math.floor(Math.random() * 20) + 10
       });
-    } else {
+    } else if (user) {
+      // Only fetch if user is logged in
       const fetch = async () => {
         try {
           const response = await apiClient.getEventParticipants(eventId);
@@ -152,7 +153,7 @@ export const EventParticipationCounts = ({ eventId }: { eventId: string }) => {
       };
       fetch();
     }
-  }, [eventId, isDemoEvent]);
+  }, [eventId, isDemoEvent, user]);
 
   if (counts.interested === 0 && counts.going === 0) return null;
 
