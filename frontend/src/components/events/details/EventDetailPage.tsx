@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Users, MessageSquare } from 'lucide-react';
 import { apiClient } from '@/integrations/backend/api';
+import { useAuth } from '@/hooks/useAuth';
 import { dummyEvents, isDummyEvent } from '@/components/EventDetail/data/dummyEvents';
 import { Navbar } from '../../layout/Navbar';
 import { SEOHead } from '../../layout/SEOHead';
@@ -58,6 +59,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({
   eventData: preloadedEventData,
   participantData
 }) => {
+  const { user } = useAuth();
   const [isRegistered, setIsRegistered] = useState(participantData?.is_registered || false);
   const [event, setEvent] = useState<Event | null>(preloadedEventData || null);
   const [organizerProfile, setOrganizerProfile] = useState<OrganizerProfile | null>(null);
@@ -135,7 +137,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({
   }, [eventId]);
 
   const checkRegistration = useCallback(async () => {
-    if (!eventId) return;
+    if (!eventId || !user) return;
     try {
       // Use backend API to check registration
       const registrations = await apiClient.getUserEvents();
@@ -145,7 +147,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({
       console.error('Error checking registration:', error);
       setIsRegistered(false);
     }
-  }, [eventId]);
+  }, [eventId, user]);
 
   useEffect(() => {
     if (isOpen) {
