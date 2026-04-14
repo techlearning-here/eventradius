@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useEvents } from '@/hooks/useEvents';
+import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/integrations/backend/api';
 import { CalendarIcon, MapPin, ArrowRight, Sparkles, UserPlus, Search, Navigation, Crosshair, LayoutGrid, List, Users } from 'lucide-react';
 import { format } from 'date-fns';
@@ -31,6 +32,7 @@ const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 
 const DiscoverNoSignup = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [date, setDate] = useState<Date | undefined>(undefined);
   const { events, loading, error, refetch } = useEvents({ is_public: true });
   
@@ -49,9 +51,9 @@ const DiscoverNoSignup = () => {
   // Bulk participant counts for all events
   const [participantCounts, setParticipantCounts] = useState<Map<string, { interested: number; going: number }>>(new Map());
   
-  // Fetch all participant counts in bulk when events load
+  // Fetch all participant counts in bulk when events load (only for logged-in users)
   useEffect(() => {
-    if (events.length === 0) return;
+    if (events.length === 0 || !user) return;
     
     const fetchBulkParticipants = async () => {
       try {
@@ -68,14 +70,14 @@ const DiscoverNoSignup = () => {
         
         setParticipantCounts(countsMap);
       } catch (err) {
-        // Silently fail for non-authenticated users - participant counts are optional
+        // Silently fail - participant counts are optional
         console.log('Could not fetch participant counts');
       }
     };
     
     const timeout = setTimeout(fetchBulkParticipants, 50);
     return () => clearTimeout(timeout);
-  }, [events]);
+  }, [events, user]);
   
   // Get user location on mount
   useEffect(() => {
