@@ -84,7 +84,7 @@ echo -e "${BLUE}Running: test_soft_delete_restore.py${NC}"
 uv run python -m pytest tests/manual_IT/test_soft_delete_restore.py -v --tb=short || true
 
 echo ""
-echo -e "${BLUE}Running: Frontend Integration Tests${NC}"
+echo -e "${BLUE}Running: Frontend API Integration Tests${NC}"
 echo -e "${YELLOW}Note: Frontend must be running on localhost:5173${NC}"
 cd ../frontend
 npm run test:integration || true
@@ -92,12 +92,22 @@ cd ../backend
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}  All integration tests completed!${NC}"
+echo -e "${GREEN}  Integration tests completed!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 echo -e "${BLUE}Summary:${NC}"
 echo "  ✅ Backend integration tests: tests/manual_IT/"
-echo "  ✅ Frontend integration tests: frontend/src/__tests__/integration/"
+echo "  ✅ Frontend API integration tests: frontend/src/__tests__/integration/"
+echo ""
+echo -e "${YELLOW}Playwright E2E tests NOT run automatically.${NC}"
+echo -e "${YELLOW}To run Playwright browser tests separately:${NC}"
+echo "  ./scripts/FE_Integration_tests/run_FE_Playwright_test.sh"
+echo ""
+echo -e "${BLUE}Playwright options:${NC}"
+echo "  --headed     Run with visible browser"
+echo "  --ui         Run with interactive UI mode"
+echo "  --wizard     Run only Event Wizard tests"
+echo "  --details    Run only Event Details tests"
 echo ""
 echo -e "${YELLOW}All tests require:${NC}"
 echo "  - Backend running on localhost:8000"

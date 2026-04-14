@@ -24,12 +24,28 @@ They are **NOT** run in CI/CD and are excluded from automated test runs.
 | `test_api.py` | Tests API endpoints (uses mocks) |
 | `test_user_journey.py` | Tests complete user journeys (uses mocks) |
 
-### Frontend Tests (`frontend/src/__tests__/integration/`)
+### Frontend API Tests (`frontend/src/__tests__/integration/`)
 
 | Test File | Purpose |
 |-----------|---------|
 | `roundtrip.test.tsx` | Tests frontend API client → backend → database round-trip |
 | `setup.ts` | Test utilities and configuration |
+
+### Playwright E2E Tests (`frontend/playwright/integration-tests/`)
+
+| Test File | Purpose |
+|-----------|---------|
+| `event-wizard.spec.ts` | Tests browser-based Event Wizard form submission |
+| `event-details.spec.ts` | Tests browser-based Event Details page display |
+| `playwright.integration.config.ts` | Playwright configuration |
+
+📖 **Detailed Test Steps:** See [`/docs/Playwright_Test_Steps.md`](/docs/Playwright_Test_Steps.md) for complete step-by-step documentation.
+
+⚠️ **Note:** Playwright tests are **NOT** run by this script. They require a separate runner:
+```bash
+./scripts/FE_Integration_tests/run_FE_Playwright_test.sh
+```
+See [`scripts/FE_Integration_tests/README.md`](scripts/FE_Integration_tests/README.md) for details.
 
 ## Prerequisites
 
@@ -73,9 +89,9 @@ cd backend
 uv run pytest -m manual -v
 ```
 
-### Frontend Tests
+### Frontend API Tests (Jest)
 
-Run all frontend integration tests:
+Run all frontend API integration tests:
 ```bash
 cd frontend
 npm run test:integration
@@ -93,13 +109,88 @@ cd frontend
 npm run test:integration:watch
 ```
 
-## Test Cleanup
+### Playwright E2E Tests
 
-Tests automatically:
-1. **Pre-test:** Delete old test events from previous runs
-2. **Post-test:** Delete events created during current test
+Use the dedicated runner script (recommended):
+```bash
+# Run all tests headless
+./scripts/FE_Integration_tests/run_FE_Playwright_test.sh
 
-This ensures the database stays clean.
+# Run with visible browser
+./scripts/FE_Integration_tests/run_FE_Playwright_test.sh --headed
+
+# Run with interactive UI mode
+./scripts/FE_Integration_tests/run_FE_Playwright_test.sh --ui
+
+# Run only Event Wizard tests
+./scripts/FE_Integration_tests/run_FE_Playwright_test.sh --wizard
+
+# Run only Event Details tests
+./scripts/FE_Integration_tests/run_FE_Playwright_test.sh --details
+```
+
+Or use npm directly (requires services already running):
+```bash
+cd frontend
+
+# Run all tests headless
+npm run test:e2e
+
+# Run with UI mode
+npm run test:e2e:ui
+
+# Run with visible browser
+npm run test:e2e:headed
+```
+
+## Troubleshooting
+
+### Playwright Tests
+
+#### "Error:Executable doesn't exist"
+Browsers not installed. Run:
+```bash
+npx playwright install
+```
+
+#### Tests pause for login
+Playwright tests will pause (`page.pause()`) when login is required. 
+- The browser window will open
+- Login manually through the UI
+- Press "Resume" in the Playwright inspector to continue
+
+#### Tests fail on element not found
+The UI may have changed. Use Playwright CodeGen to update selectors:
+```bash
+npx playwright codegen http://localhost:5173
+```
+
+#### Want to see what's happening
+Run with visible browser:
+```bash
+npm run test:e2e:headed
+```
+
+Or use UI mode for step-by-step debugging:
+```bash
+npm run test:e2e:ui
+```
+
+### General Troubleshooting
+
+#### Test fails with "Cannot connect to backend"
+- Ensure backend is running on localhost:8000
+- Check `npm run dev` is running for frontend tests
+
+#### Test fails with "Unauthorized"
+- Login via frontend UI first
+- Check localStorage has valid JWT token
+- Run tests in same browser context
+
+#### Test data persists in database
+- Tests clean up created events automatically
+- Check `cleanup_test_events` helper function
+- Manual cleanup: Use Supabase dashboard
 
 ## CI/CD Exclusion
 
@@ -117,11 +208,19 @@ These tests are excluded from CI because they require:
 - Separate config file: `jest.integration.config.cjs`
 - Regular `npm test` skips integration tests
 
+### Playwright Tests Exclusion
+- Playwright tests in `playwright/integration-tests/` are separate from unit tests
+- Config file: `playwright.integration.config.ts`
+- Must be run explicitly with `npm run test:e2e`
+
 To run all tests including manual (not recommended in CI):
 ```bash
 # Backend
 pytest -m manual
 
-# Frontend
+# Frontend API
 npm run test:integration
+
+# Frontend E2E (Playwright)
+npm run test:e2e
 ```

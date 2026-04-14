@@ -18,9 +18,10 @@ pytest marker: manual
 import json
 import os
 import sys
-import pytest
 from datetime import datetime, timedelta
 from unittest.mock import ANY, MagicMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 # Mark all tests in this file as manual
@@ -75,7 +76,9 @@ class TestEventWizardRoundTrip:
             "start_time": (datetime.now() + timedelta(days=7)).isoformat(),
             "end_time": (datetime.now() + timedelta(days=7, hours=1)).isoformat(),
             "timezone": "America/Los_Angeles",
-            "doors_open_time": (datetime.now() + timedelta(days=7, minutes=-30)).isoformat(),
+            "doors_open_time": (
+                datetime.now() + timedelta(days=7, minutes=-30)
+            ).isoformat(),
             "registration_start_time": datetime.now().isoformat(),
             "registration_end_time": (datetime.now() + timedelta(days=6)).isoformat(),
             # Location & Venue

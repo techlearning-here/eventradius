@@ -22,11 +22,12 @@ pytest marker: manual
 
 import os
 import sys
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict
+
 import pytest
 import requests
-from datetime import datetime, timedelta
-from typing import Dict, Any
-from pathlib import Path
 
 # Mark all tests in this file as manual integration tests
 pytestmark = pytest.mark.manual
@@ -36,6 +37,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 # Load environment variables from .env file
 from dotenv import load_dotenv
+
 backend_dir = Path(__file__).parent.parent.parent
 env_file = backend_dir / ".env"
 if env_file.exists():
@@ -47,12 +49,14 @@ else:
 # Configuration
 BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY", os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""))
+SUPABASE_KEY = os.getenv(
+    "SUPABASE_SERVICE_KEY", os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+)
 
 # Skip tests if no database connection
 pytestmark = pytest.mark.skipif(
     not SUPABASE_URL or not SUPABASE_KEY,
-    reason="Supabase credentials not configured. Set SUPABASE_URL and SUPABASE_SERVICE_KEY env vars."
+    reason="Supabase credentials not configured. Set SUPABASE_URL and SUPABASE_SERVICE_KEY env vars.",
 )
 
 
@@ -65,17 +69,21 @@ class TestRealDBRoundTrip:
         # For testing, you can manually set a token or use a test user
         token = os.getenv("TEST_AUTH_TOKEN")
         if not token:
-            pytest.skip("TEST_AUTH_TOKEN not set. Cannot run integration tests without auth.")
+            pytest.skip(
+                "TEST_AUTH_TOKEN not set. Cannot run integration tests without auth."
+            )
         return token
 
     @pytest.fixture(scope="class")
     def api_client(self, auth_token):
         """Create authenticated API client session."""
         session = requests.Session()
-        session.headers.update({
-            "Authorization": f"Bearer {auth_token}",
-            "Content-Type": "application/json"
-        })
+        session.headers.update(
+            {
+                "Authorization": f"Bearer {auth_token}",
+                "Content-Type": "application/json",
+            }
+        )
         return session
 
     @pytest.fixture(scope="class", autouse=True)
@@ -95,10 +103,14 @@ class TestRealDBRoundTrip:
                         event_id = event.get("id")
                         if event_id:
                             try:
-                                delete_resp = api_client.delete(f"{BASE_URL}/api/events/{event_id}")
+                                delete_resp = api_client.delete(
+                                    f"{BASE_URL}/api/events/{event_id}"
+                                )
                                 if delete_resp.status_code == 200:
                                     deleted_count += 1
-                                    print(f"  🗑️  Deleted old test event: {title[:50]}...")
+                                    print(
+                                        f"  🗑️  Deleted old test event: {title[:50]}..."
+                                    )
                             except Exception:
                                 pass  # Ignore cleanup errors
                 if deleted_count > 0:
@@ -112,8 +124,7 @@ class TestRealDBRoundTrip:
     def test_create_and_retrieve_event_with_all_fields(self, api_client):
         """Test creating and retrieving an event with all new fields."""
         event_id = None
-        created = False
-        
+
         complete_event_data = {
             # Core fields
             "title": f"Real DB Round-Trip Test - {datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -145,7 +156,9 @@ class TestRealDBRoundTrip:
             "virtual_event_platform": "Zoom",
             "event_password": "TestPass2026!",
             # Timing & Registration
-            "doors_open_time": (datetime.now() + timedelta(days=7, minutes=-30)).isoformat(),
+            "doors_open_time": (
+                datetime.now() + timedelta(days=7, minutes=-30)
+            ).isoformat(),
             "registration_start_time": datetime.now().isoformat(),
             "registration_end_time": (datetime.now() + timedelta(days=6)).isoformat(),
             # Contact Info
@@ -220,11 +233,12 @@ class TestRealDBRoundTrip:
             # Step 1: Create event via API
             print(f"\n🚀 Creating event with title: {complete_event_data['title']}")
             create_response = api_client.post(
-                f"{BASE_URL}/api/events",
-                json=complete_event_data
+                f"{BASE_URL}/api/events", json=complete_event_data
             )
-            
-            assert create_response.status_code == 200, f"Create failed: {create_response.text}"
+
+            assert (
+                create_response.status_code == 200
+            ), f"Create failed: {create_response.text}"
             created_event = create_response.json()
             event_id = created_event["id"]
             print(f"✅ Event created with ID: {event_id}")
@@ -232,14 +246,16 @@ class TestRealDBRoundTrip:
             # Step 2: Retrieve event via API
             print(f"🔍 Retrieving event: {event_id}")
             get_response = api_client.get(f"{BASE_URL}/api/events/{event_id}")
-            
-            assert get_response.status_code == 200, f"Retrieve failed: {get_response.text}"
+
+            assert (
+                get_response.status_code == 200
+            ), f"Retrieve failed: {get_response.text}"
             retrieved_event = get_response.json()
             print(f"✅ Event retrieved successfully")
 
             # Step 3: Verify ALL critical fields
             print("\n🔍 Verifying all fields...")
-            
+
             # Critical new fields from Event Wizard
             critical_fields = [
                 # Basic Info
@@ -269,40 +285,52 @@ class TestRealDBRoundTrip:
 
             verified_count = 0
             failed_fields = []
-            
+
             # Datetime fields that may have timezone suffix differences
-            datetime_fields = ["doors_open_time", "registration_start_time", "registration_end_time"]
+            datetime_fields = [
+                "doors_open_time",
+                "registration_start_time",
+                "registration_end_time",
+            ]
 
             for field, label in critical_fields:
                 if field in retrieved_event:
                     expected = complete_event_data.get(field)
                     actual = retrieved_event.get(field)
-                    
+
                     # For datetime fields, check they exist and are valid (ignore timezone suffix differences)
                     if field in datetime_fields:
-                        if actual and len(str(actual)) > 10:  # Valid datetime string check
+                        if (
+                            actual and len(str(actual)) > 10
+                        ):  # Valid datetime string check
                             print(f"  ✅ {label}: {actual}")
                             verified_count += 1
                         else:
                             print(f"  ⚠️  {label}: Expected datetime, got '{actual}'")
-                            failed_fields.append(f"{label} (expected: {expected}, got: {actual})")
+                            failed_fields.append(
+                                f"{label} (expected: {expected}, got: {actual})"
+                            )
                     elif expected == actual:
                         print(f"  ✅ {label}: {actual}")
                         verified_count += 1
                     else:
                         print(f"  ⚠️  {label}: Expected '{expected}', got '{actual}'")
-                        failed_fields.append(f"{label} (expected: {expected}, got: {actual})")
+                        failed_fields.append(
+                            f"{label} (expected: {expected}, got: {actual})"
+                        )
                 else:
                     print(f"  ❌ {label}: FIELD MISSING from response!")
                     failed_fields.append(f"{label} (MISSING)")
 
-            print(f"\n📊 Field Verification: {verified_count}/{len(critical_fields)} passed")
-            
+            print(
+                f"\n📊 Field Verification: {verified_count}/{len(critical_fields)} passed"
+            )
+
             if failed_fields:
                 print(f"\n❌ Failed fields:")
                 for fail in failed_fields:
                     print(f"  - {fail}")
-                
+
                 # Don't fail the test, just report - some fields might not be stored yet
                 pytest.fail(f"Fields not properly stored: {', '.join(failed_fields)}")
             else:
@@ -311,7 +339,9 @@ class TestRealDBRoundTrip:
             return True
 
         except requests.exceptions.ConnectionError:
-            pytest.fail(f"Could not connect to backend at {BASE_URL}. Is the server running?")
+            pytest.fail(
+                f"Could not connect to backend at {BASE_URL}. Is the server running?"
+            )
         except Exception as e:
             pytest.fail(f"Test failed with error: {str(e)}")
         finally:
@@ -319,11 +349,15 @@ class TestRealDBRoundTrip:
             if event_id:
                 print(f"\n🧹 Cleaning up test event: {event_id}")
                 try:
-                    delete_response = api_client.delete(f"{BASE_URL}/api/events/{event_id}")
+                    delete_response = api_client.delete(
+                        f"{BASE_URL}/api/events/{event_id}"
+                    )
                     if delete_response.status_code == 200:
                         print("✅ Test event deleted successfully")
                     else:
-                        print(f"⚠️  Could not delete test event: {delete_response.text}")
+                        print(
+                            f"⚠️  Could not delete test event: {delete_response.text}"
+                        )
                 except Exception as e:
                     print(f"⚠️  Error during cleanup: {e}")
 
@@ -332,29 +366,31 @@ class TestRealDBRoundTrip:
         try:
             print("\n🔍 Testing event list endpoint...")
             response = api_client.get(f"{BASE_URL}/api/events/?limit=5")
-            
+
             assert response.status_code == 200, f"List failed: {response.text}"
             events = response.json()
-            
+
             print(f"✅ Retrieved {len(events)} events from list")
-            
+
             # Check that new fields are present in list items
             if events:
                 first_event = events[0]
                 new_fields = ["subtitle", "summary", "tags", "timezone"]
-                
+
                 found_fields = []
                 for field in new_fields:
                     if field in first_event:
                         found_fields.append(field)
-                
+
                 print(f"  New fields in list response: {found_fields}")
-                
+
                 # This is informational - list endpoints might not include all fields
                 if len(found_fields) == len(new_fields):
                     print("  ✅ All new fields present in list endpoint")
                 else:
-                    print(f"  ℹ️  {len(found_fields)}/{len(new_fields)} new fields in list (expected)")
+                    print(
+                        f"  ℹ️  {len(found_fields)}/{len(new_fields)} new fields in list (expected)"
+                    )
 
         except requests.exceptions.ConnectionError:
             pytest.fail(f"Could not connect to backend at {BASE_URL}")
@@ -367,7 +403,7 @@ def print_test_instructions():
     REAL DATABASE ROUND-TRIP TEST
     ============================================================================
     Real Database Round-Trip Integration Test
-    
+
     Required .env variables (in backend/.env):
         SUPABASE_URL=your_supabase_url
         SUPABASE_SERVICE_KEY=your_service_key (or SUPABASE_SERVICE_ROLE_KEY)
@@ -376,22 +412,22 @@ def print_test_instructions():
     Run test:
         cd backend
         uv run pytest tests/integration/test_real_db_roundtrip.py -v
-    
+
     Or with pytest directly (after uv sync --dev):
         pytest tests/integration/test_real_db_roundtrip.py -v
-    
+
     ============================================================================
     """)
 
 
 if __name__ == "__main__":
     print_test_instructions()
-    
+
     # Check if we can run
     if not os.getenv("TEST_AUTH_TOKEN"):
         print("❌ TEST_AUTH_TOKEN not set. Cannot run test.")
         print("Please set the environment variable and try again.")
         sys.exit(1)
-    
+
     # Run pytest
     sys.exit(pytest.main([__file__, "-v", "--tb=short"]))

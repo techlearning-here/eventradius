@@ -67,7 +67,9 @@ class EventBase(BaseModel):
     # Virtual event URL
     virtual_event_url: Optional[str] = None
     # Status
-    status: Optional[Literal["draft", "published", "upcoming", "completed", "cancelled"]] = None
+    status: Optional[
+        Literal["draft", "published", "upcoming", "completed", "cancelled"]
+    ] = None
     # Language
     language: Optional[str] = None
 
@@ -247,7 +249,9 @@ class EventUpdate(BaseModel):
     # Virtual event URL
     virtual_event_url: Optional[str] = None
     # Status
-    status: Optional[Literal["draft", "published", "upcoming", "completed", "cancelled"]] = None
+    status: Optional[
+        Literal["draft", "published", "upcoming", "completed", "cancelled"]
+    ] = None
     # Language
     language: Optional[str] = None
 
@@ -269,7 +273,9 @@ async def get_events(
     offset: int = Query(0, ge=0),
     category: Optional[str] = None,
     is_public: Optional[bool] = None,
-    status: Optional[str] = Query(None, description="Filter by status: draft, published"),
+    status: Optional[str] = Query(
+        None, description="Filter by status: draft, published"
+    ),
     user: Optional[dict] = Depends(optional_auth),
 ):
     """
@@ -424,6 +430,7 @@ async def _create_event_logic(event: EventCreate, user: dict) -> EventResponse:
     except Exception as e:
         logger.error(f"Error creating event: {type(e).__name__}: {e}")
         import traceback
+
         logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -441,7 +448,9 @@ async def create_event(event: EventCreate, user: dict = Depends(get_current_user
 
 
 @router.post("", response_model=EventResponse)
-async def create_event_no_slash(event: EventCreate, user: dict = Depends(get_current_user)):
+async def create_event_no_slash(
+    event: EventCreate, user: dict = Depends(get_current_user)
+):
     """
     Create a new event (without trailing slash).
     Requires authentication.
