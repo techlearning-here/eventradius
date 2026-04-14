@@ -971,7 +971,7 @@ async def get_bulk_event_participants(
     event_ids: list[str] = Body(
         ..., description="List of event IDs to fetch participant counts for"
     ),
-    user: dict = Depends(get_current_user),
+    user: Optional[dict] = Depends(optional_auth),
 ):
     """
     Get participant counts for multiple events in a single call.
