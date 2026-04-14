@@ -408,7 +408,6 @@ def print_test_instructions():
         SUPABASE_URL=your_supabase_url
         SUPABASE_SERVICE_KEY=your_service_key (or SUPABASE_SERVICE_ROLE_KEY)
         TEST_AUTH_TOKEN=your_jwt_token
-    
     Run test:
         cd backend
         uv run pytest tests/integration/test_real_db_roundtrip.py -v
