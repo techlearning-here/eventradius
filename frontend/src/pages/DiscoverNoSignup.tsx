@@ -130,6 +130,7 @@ const DiscoverNoSignup = () => {
   };
 
   const handlePreviewEvent = (event: Event) => {
+    console.log('[DiscoverNoSignup] Opening preview for event:', event.id, event.title);
     setPreviewEventId(event.id);
     setPreviewEvent(event);
   };
@@ -578,24 +579,28 @@ const DiscoverNoSignup = () => {
                 )}
                 
                 {/* Event Preview Overlay */}
-                {previewEventId && previewEvent && (
-                  <EventDetailOverlay
-                    eventId={previewEventId}
-                    isOpen={!!previewEventId}
-                    onClose={() => {
-                      setPreviewEventId(null);
-                      setPreviewEvent(null);
-                    }}
-                    eventData={previewEvent}
-                    participantData={(() => {
-                      const counts = participantCounts.get(previewEventId);
-                      return counts ? {
-                        is_registered: false,
-                        counts: counts
-                      } : null;
-                    })()}
-                  />
-                )}
+                {(() => {
+                  console.log('[DiscoverNoSignup] Rendering overlay?', { previewEventId, hasEvent: !!previewEvent });
+                  return previewEventId && previewEvent && (
+                    <EventDetailOverlay
+                      eventId={previewEventId}
+                      isOpen={!!previewEventId}
+                      onClose={() => {
+                        console.log('[DiscoverNoSignup] Closing overlay');
+                        setPreviewEventId(null);
+                        setPreviewEvent(null);
+                      }}
+                      eventData={previewEvent}
+                      participantData={(() => {
+                        const counts = participantCounts.get(previewEventId);
+                        return counts ? {
+                          is_registered: false,
+                          counts: counts
+                        } : null;
+                      })()}
+                    />
+                  );
+                })()}
               </div>
             )}
           </div>
