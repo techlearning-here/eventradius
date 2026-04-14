@@ -49,6 +49,11 @@ interface EventTypeSectionProps {
     startTime: string;
     endTime: string;
   }>;
+  // Timing & Registration fields
+  doorsOpenTime?: string;
+  registrationStartTime?: string;
+  registrationEndTime?: string;
+  timezone?: string;
   onEventTypeChange: (value: 'online' | 'in_person' | 'hybrid') => void;
   onEventFormatChange: (value: 'single' | 'recurring' | 'multi_date') => void;
   onVenueAddressChange: (value: string) => void;
@@ -73,6 +78,11 @@ interface EventTypeSectionProps {
   onRecurringDailyTypeChange: (value: 'all_days' | 'exclude_days') => void;
   onRecurringExcludedDaysChange: (days: string[]) => void;
   onMultiDateEventsChange: (events: Array<{id: string; date: string; startTime: string; endTime: string}>) => void;
+  // Timing & Registration field handlers
+  onDoorsOpenTimeChange: (value: string) => void;
+  onRegistrationStartTimeChange: (value: string) => void;
+  onRegistrationEndTimeChange: (value: string) => void;
+  onTimezoneChange: (value: string) => void;
 }
 
 export const EventTypeSection = ({
@@ -99,6 +109,11 @@ export const EventTypeSection = ({
   recurringDailyType = 'all_days',
   recurringExcludedDays = [],
   multiDateEvents = [],
+  // Timing & Registration fields
+  doorsOpenTime = '',
+  registrationStartTime = '',
+  registrationEndTime = '',
+  timezone = '',
   onEventTypeChange,
   onEventFormatChange,
   onVenueAddressChange,
@@ -122,6 +137,11 @@ export const EventTypeSection = ({
   onRecurringDailyTypeChange,
   onRecurringExcludedDaysChange,
   onMultiDateEventsChange,
+  // Timing & Registration field handlers
+  onDoorsOpenTimeChange,
+  onRegistrationStartTimeChange,
+  onRegistrationEndTimeChange,
+  onTimezoneChange,
 }: EventTypeSectionProps) => {
   // Helper function to get ordinal suffix for numbers
   const getOrdinalSuffix = (num: number) => {
@@ -491,7 +511,7 @@ export const EventTypeSection = ({
               <h3 className="text-xl font-bold text-gray-900">Event Date & Time <span className="text-red-500">*</span></h3>
             </div>
             <p className="text-gray-600 font-medium mb-6">Set the specific date and time for your single event</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">Event Date <span className="text-red-500">*</span></label>
                 <input
@@ -519,7 +539,44 @@ export const EventTypeSection = ({
                   className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Timezone <span className="text-red-500">*</span></label>
+                <select
+                  value={timezone}
+                  onChange={(e) => onTimezoneChange(e.target.value)}
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
+                >
+                  <option value="">-- Select --</option>
+                  <optgroup label="North America">
+                    <option value="America/New_York">ET - New York</option>
+                    <option value="America/Chicago">CT - Chicago</option>
+                    <option value="America/Denver">MT - Denver</option>
+                    <option value="America/Los_Angeles">PT - Los Angeles</option>
+                  </optgroup>
+                  <optgroup label="Europe">
+                    <option value="Europe/London">GMT - London</option>
+                    <option value="Europe/Paris">CET - Paris</option>
+                    <option value="Europe/Berlin">CET - Berlin</option>
+                  </optgroup>
+                  <optgroup label="Asia">
+                    <option value="Asia/Dubai">GST - Dubai</option>
+                    <option value="Asia/Mumbai">IST - Mumbai</option>
+                    <option value="Asia/Singapore">SGT - Singapore</option>
+                    <option value="Asia/Tokyo">JST - Tokyo</option>
+                  </optgroup>
+                  <optgroup label="Other">
+                    <option value="UTC">UTC</option>
+                    <option value="Australia/Sydney">AET - Sydney</option>
+                    <option value="Pacific/Auckland">NZT - Auckland</option>
+                  </optgroup>
+                </select>
+              </div>
             </div>
+            {timezone && (
+              <div className="mt-3 p-2 bg-blue-50 rounded-lg text-sm text-blue-700">
+                <span className="font-medium">Selected Timezone:</span> {timezone}
+              </div>
+            )}
           </div>
         )}
 
@@ -904,6 +961,60 @@ export const EventTypeSection = ({
             </>
           )}
         </ul>
+      </div>
+
+      {/* Step 4: Timing & Registration Settings */}
+      <div className="space-y-6 border-t border-gray-200 pt-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-xl flex items-center justify-center font-bold shadow-lg shadow-indigo-200">
+            4
+          </div>
+          <h3 className="text-xl font-bold text-gray-900">Timing & Registration</h3>
+        </div>
+        
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Doors Open Time */}
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-gray-700">
+              Doors Open Time <span className="text-gray-400 font-normal">(Optional)</span>
+            </label>
+            <input
+              type="datetime-local"
+              value={doorsOpenTime}
+              onChange={(e) => onDoorsOpenTimeChange(e.target.value)}
+              className="w-full text-black text-base leading-relaxed focus:outline-none bg-white border border-gray-300 rounded-xl p-3 placeholder:text-gray-400 hover:border-indigo-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+            />
+            <p className="text-xs text-gray-500">When attendees can start entering the venue</p>
+          </div>
+
+          {/* Registration Start Time */}
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-gray-700">
+              Registration Opens <span className="text-gray-400 font-normal">(Optional)</span>
+            </label>
+            <input
+              type="datetime-local"
+              value={registrationStartTime}
+              onChange={(e) => onRegistrationStartTimeChange(e.target.value)}
+              className="w-full text-black text-base leading-relaxed focus:outline-none bg-white border border-gray-300 rounded-xl p-3 placeholder:text-gray-400 hover:border-indigo-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+            />
+            <p className="text-xs text-gray-500">When registration becomes available</p>
+          </div>
+
+          {/* Registration End Time */}
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-gray-700">
+              Registration Closes <span className="text-gray-400 font-normal">(Optional)</span>
+            </label>
+            <input
+              type="datetime-local"
+              value={registrationEndTime}
+              onChange={(e) => onRegistrationEndTimeChange(e.target.value)}
+              className="w-full text-black text-base leading-relaxed focus:outline-none bg-white border border-gray-300 rounded-xl p-3 placeholder:text-gray-400 hover:border-indigo-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+            />
+            <p className="text-xs text-gray-500">When registration closes (defaults to event start)</p>
+          </div>
+        </div>
       </div>
     </div>
   );

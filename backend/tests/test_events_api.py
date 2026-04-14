@@ -52,16 +52,17 @@ class TestEventsAPI:
             mock_response = MagicMock()
             mock_response.data = mock_events
 
-            # Mock the query chain: table.select("*").is_("deleted_at", "null").limit(20).offset(0).execute()
+            # Mock the query chain: table.select("*").is_("deleted_at", "null").or_(...).limit(20).offset(0).execute()
             mock_table.select.return_value = mock_query
             mock_query.is_.return_value = mock_query
+            mock_query.or_.return_value = mock_query
             mock_query.limit.return_value = mock_query
             mock_query.offset.return_value = mock_query
             mock_query.execute.return_value = mock_response
 
             mock_get_table.return_value = mock_table
 
-            response = client.get("/api/events")
+            response = client.get("/api/events/")
 
             assert response.status_code == 200
             data = response.json()

@@ -67,6 +67,7 @@ export interface Event {
   smoking_policy?: string;
   noise_level?: string;
   physical_intensity?: string;
+  age_restriction?: string;
   // New Event Attributes - Social Features
   networking_focus?: boolean;
   social_mixer?: boolean;
@@ -84,4 +85,5 @@ export interface Event {
   // New Event Attributes - Pricing
   refund_policy?: string;
   group_discounts?: boolean;
+  custom_refund_policy?: string;
 }

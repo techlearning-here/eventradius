@@ -1,0 +1,68 @@
+# Render.com Blueprint for EventRadius Backend
+# Deploy with: render blueprint apply
+# Or connect GitHub repo in Render Dashboard
+
+services:
+  - type: web
+    name: eventradius-backend
+    runtime: python
+    
+    # Instance plan: free | starter | standard | pro
+    plan: free
+    
+    # Region: oregon | virginia | ohio | frankfurt | singapore
+    region: oregon
+    
+    # Build configuration
+    buildCommand: |
+      pip install uv && 
+      cd backend && 
+      uv venv && 
+      uv pip install -e ".[dev]"
+    
+    # Start command - runs from backend directory
+    startCommand: |
+      cd backend && 
+      uv run gunicorn -w 2 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:$PORT
+    
+    # Health check path (FastAPI root endpoint)
+    healthCheckPath: /
+    
+    # Environment variables
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.10"
+      
+      # Supabase - Set these in Render Dashboard (sensitive)
+      - key: SUPABASE_URL
+        sync: false  # Don't sync from blueprint
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      
+      # JWT - Set in Dashboard or generate secure secret
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
+      
+      # CORS - Comma-separated list of allowed origins
+      # Use "*" to allow all (not recommended for production)
+      # Leave empty to use default dev ports (5173, 5174, 3000, etc)
+      - key: BACKEND_CORS_ORIGINS
+        value: ""
+      
+      # Server config
+      - key: BACKEND_HOST
+        value: "0.0.0.0"
+      - key: BACKEND_PORT
+        value: "10000"  # Render sets $PORT, this is fallback
+
+# Optional: PostgreSQL database (if not using Supabase)
+# databases:
+#   - name: eventradius-db
+#     plan: free
+#     ipAllowList: []  # Allow from anywhere (use with caution)

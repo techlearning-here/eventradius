@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarIcon, MapPin, Users, Clock, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
-import { EventDetailOverlay } from '@/components/EventDetailPage';
+import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
 import { CATEGORIES } from '@/data/cities';
 import { type Event } from '@/integrations/backend/api';
 

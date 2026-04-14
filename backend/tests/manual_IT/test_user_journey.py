@@ -1,5 +1,9 @@
 """
-Integration tests for complete user journeys
+MANUAL INTEGRATION TEST - NOT RUN IN CI
+
+Integration tests for complete user journeys (uses mocks).
+
+pytest marker: manual
 """
 
 import json
@@ -9,6 +13,9 @@ from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+# Mark all tests in this file as manual
+pytestmark = pytest.mark.manual
 from fastapi.testclient import TestClient
 
 # Add the backend directory to Python path

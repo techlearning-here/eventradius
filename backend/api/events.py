@@ -4,7 +4,7 @@ Event-related API endpoints.
 
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -57,6 +57,21 @@ class EventBase(BaseModel):
     accessibility_options: Optional[str] = None
     custom_refund_policy: Optional[str] = None
     ticket_pricing_description: Optional[str] = None
+    # Venue fields
+    venue_street: Optional[str] = None
+    venue_city: Optional[str] = None
+    venue_state: Optional[str] = None
+    venue_zip_code: Optional[str] = None
+    venue_country: Optional[str] = None
+    venue_building_name: Optional[str] = None
+    # Virtual event URL
+    virtual_event_url: Optional[str] = None
+    # Status
+    status: Optional[
+        Literal["draft", "published", "upcoming", "completed", "cancelled"]
+    ] = None
+    # Language
+    language: Optional[str] = None
 
 
 class EventAttributes(BaseModel):
@@ -118,7 +133,15 @@ class EventAttributes(BaseModel):
     sub_category: Optional[str] = None
 
     # Pricing
-    refund_policy: Optional[str] = None
+    refund_policy: Optional[
+        Literal[
+            "no_refunds",
+            "refund_up_to_7_days",
+            "refund_up_to_24_hours",
+            "refund_up_to_1_hour",
+            "custom",
+        ]
+    ] = None
     group_discounts: Optional[bool] = None
 
 
@@ -206,8 +229,31 @@ class EventUpdate(BaseModel):
     sub_category: Optional[str] = None
 
     # Pricing
-    refund_policy: Optional[str] = None
+    refund_policy: Optional[
+        Literal[
+            "no_refunds",
+            "refund_up_to_7_days",
+            "refund_up_to_24_hours",
+            "refund_up_to_1_hour",
+            "custom",
+        ]
+    ] = None
     group_discounts: Optional[bool] = None
+    # Venue fields
+    venue_street: Optional[str] = None
+    venue_city: Optional[str] = None
+    venue_state: Optional[str] = None
+    venue_zip_code: Optional[str] = None
+    venue_country: Optional[str] = None
+    venue_building_name: Optional[str] = None
+    # Virtual event URL
+    virtual_event_url: Optional[str] = None
+    # Status
+    status: Optional[
+        Literal["draft", "published", "upcoming", "completed", "cancelled"]
+    ] = None
+    # Language
+    language: Optional[str] = None
 
 
 class EventResponse(EventBase, EventAttributes):
@@ -227,6 +273,9 @@ async def get_events(
     offset: int = Query(0, ge=0),
     category: Optional[str] = None,
     is_public: Optional[bool] = None,
+    status: Optional[str] = Query(
+        None, description="Filter by status: draft, published"
+    ),
     user: Optional[dict] = Depends(optional_auth),
 ):
     """
@@ -240,14 +289,27 @@ async def get_events(
         # Apply filters
         if category:
             query = query.eq("category", category)
+            logger.info(f"Filtering by category: {category}")
 
         if is_public is not None:
             query = query.eq("is_public", is_public)
+            logger.info(f"Filtering by is_public: {is_public}")
 
         # Exclude soft-deleted events
         query = query.is_("deleted_at", "null")
 
+        # Filter by status - default to published/upcoming only for discover view
+        if status:
+            query = query.eq("status", status)
+            logger.info(f"Filtering by status: {status}")
+        else:
+            # Default: show published, upcoming OR events with no status (backward compat)
+            query = query.or_("status.eq.published,status.eq.upcoming,status.is.null")
+            logger.info("Default filter: status=published/upcoming OR status is null")
+
         response = query.limit(limit).offset(offset).execute()
+
+        logger.info(f"[get_events] Query returned {len(response.data)} events")
 
         # Transform data
         events = []
@@ -326,18 +388,15 @@ async def get_event(event_id: str, user: Optional[dict] = Depends(optional_auth)
         )
 
 
-@router.post("/", response_model=EventResponse)
-async def create_event(event: EventCreate, user: dict = Depends(get_current_user)):
-    """
-    Create a new event.
-    Requires authentication.
-    """
+async def _create_event_logic(event: EventCreate, user: dict) -> EventResponse:
+    """Shared logic for creating an event."""
     try:
         event_data = event.model_dump()
         event_data["organizer_id"] = user["id"]
 
         logger.info("=== BACKEND DEBUG ===")
         logger.info(f"Received event data keys: {list(event_data.keys())}")
+        logger.info(f"User creating event: {user.get('id', 'unknown')}")
         logger.info("Attribute fields:")
         logger.info(f"  age_categories: {event_data.get('age_categories')}")
         logger.info(f"  gender_preference: {event_data.get('gender_preference')}")
@@ -347,28 +406,56 @@ async def create_event(event: EventCreate, user: dict = Depends(get_current_user
         )
         logger.info(f"  religious_context: {event_data.get('religious_context')}")
         logger.info(f"  skill_level: {event_data.get('skill_level')}")
+        logger.info(f"  ticketing_website: '{event_data.get('ticketing_website')}'")
+        logger.info(f"  event_website: '{event_data.get('event_website')}'")
+        logger.info(f"  is_paid_event: {event_data.get('is_paid_event')}")
         logger.info("=====================")
 
         response = insert_record("events", event_data)
 
         if not response.data:
+            logger.error(f"Insert failed - no data returned. Response: {response}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create event",
+                detail="Failed to create event - database returned no data",
             )
 
         created_event = response.data[0]
         created_event["current_participants"] = 0
+        logger.info(f"Event created successfully: {created_event.get('id')}")
 
         return created_event
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating event: {e}")
+        logger.error(f"Error creating event: {type(e).__name__}: {e}")
+        import traceback
+
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create event",
+            detail=f"Failed to create event: {str(e)}",
         )
+
+
+@router.post("/", response_model=EventResponse)
+async def create_event(event: EventCreate, user: dict = Depends(get_current_user)):
+    """
+    Create a new event (with trailing slash).
+    Requires authentication.
+    """
+    return await _create_event_logic(event, user)
+
+
+@router.post("", response_model=EventResponse)
+async def create_event_no_slash(
+    event: EventCreate, user: dict = Depends(get_current_user)
+):
+    """
+    Create a new event (without trailing slash).
+    Requires authentication.
+    """
+    return await _create_event_logic(event, user)
 
 
 @router.post("/seed-dummy-events", response_model=dict)

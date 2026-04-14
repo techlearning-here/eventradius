@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { EventDetailOverlay } from '@/components/EventDetailPage';
+import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
 
 const Index = () => {
   const { id } = useParams();

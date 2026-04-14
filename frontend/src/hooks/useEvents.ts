@@ -176,12 +176,15 @@ export const useEventActions = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('=== useEvents: Creating event ===', eventData.title);
       const newEvent = await apiClient.createEvent(eventData);
+      console.log('=== useEvents: Event created ===', newEvent);
       return newEvent;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create event';
+      console.error('=== useEvents: createEvent ERROR ===', errorMessage);
       setError(errorMessage);
-      return null;
+      throw err; // Re-throw so caller can handle it
     } finally {
       setLoading(false);
     }

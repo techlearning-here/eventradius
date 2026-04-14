@@ -21,15 +21,23 @@ export const EventStepContent = ({ currentSubStepId, formData, updateFormData, g
         <div className="space-y-8">
           <BasicInfo
             eventName={formData.title}
+            subtitle={formData.subtitle || ''}
+            summary={formData.summary || ''}
             description={formData.description}
             isPaidEvent={formData.is_paid_event}
             ticketingUrl={formData.ticketing_website}
             language={formData.language || ''}
+            category={formData.category || ''}
+            tags={formData.tags || []}
             onEventNameChange={(title) => updateFormData({ title })}
+            onSubtitleChange={(subtitle) => updateFormData({ subtitle })}
+            onSummaryChange={(summary) => updateFormData({ summary })}
             onDescriptionChange={(description) => updateFormData({ description })}
             onIsPaidEventChange={(is_paid_event) => updateFormData({ is_paid_event })}
             onTicketingUrlChange={(ticketing_website) => updateFormData({ ticketing_website })}
             onLanguageChange={(language) => updateFormData({ language })}
+            onCategoryChange={(category) => updateFormData({ category })}
+            onTagsChange={(tags) => updateFormData({ tags })}
           />
           <div className="flex justify-center">
             <ImageUpload
@@ -77,12 +85,13 @@ export const EventStepContent = ({ currentSubStepId, formData, updateFormData, g
           onEventTypeChange={(event_type) => updateFormData({ event_type })}
           onEventFormatChange={(event_format) => updateFormData({ event_format })}
           onVenueAddressChange={(venue_address) => updateFormData({ venue_address })}
+          timezone={formData.timezone || ''}
+          onTimezoneChange={(timezone) => updateFormData({ timezone })}
           onVirtualEventUrlChange={(virtual_event_url) => updateFormData({ virtual_event_url })}
           onVirtualEventPlatformChange={(virtual_event_platform) => updateFormData({ virtual_event_platform })}
           onVirtualEventDetailsChange={(virtual_event_details) => updateFormData({ virtual_event_details })}
           onStartTimeChange={(start_time) => updateFormData({ start_time })}
           onEndTimeChange={(end_time) => updateFormData({ end_time })}
-          onTimezoneChange={(timezone) => updateFormData({ timezone })}
           onSingleEventDateChange={(single_event_date) => updateFormData({ single_event_date })}
           onSingleEventStartTimeChange={(single_event_start_time) => updateFormData({ single_event_start_time })}
           onSingleEventEndTimeChange={(single_event_end_time) => updateFormData({ single_event_end_time })}
@@ -95,6 +104,13 @@ export const EventStepContent = ({ currentSubStepId, formData, updateFormData, g
           onRecurringDailyTypeChange={(recurring_daily_type) => updateFormData({ recurring_daily_type })}
           onRecurringExcludedDaysChange={(recurring_excluded_days) => updateFormData({ recurring_excluded_days })}
           onMultiDateEventsChange={(multi_date_events) => updateFormData({ multi_date_events })}
+          // Timing & Registration fields - convert Date to ISO string for inputs
+          doorsOpenTime={formData.doors_open_time ? new Date(formData.doors_open_time).toISOString().slice(0, 16) : ''}
+          registrationStartTime={formData.registration_start_time ? new Date(formData.registration_start_time).toISOString().slice(0, 16) : ''}
+          registrationEndTime={formData.registration_end_time ? new Date(formData.registration_end_time).toISOString().slice(0, 16) : ''}
+          onDoorsOpenTimeChange={(doors_open_time) => updateFormData({ doors_open_time: doors_open_time ? new Date(doors_open_time) : null })}
+          onRegistrationStartTimeChange={(registration_start_time) => updateFormData({ registration_start_time: registration_start_time ? new Date(registration_start_time) : null })}
+          onRegistrationEndTimeChange={(registration_end_time) => updateFormData({ registration_end_time: registration_end_time ? new Date(registration_end_time) : null })}
         />
       );
 

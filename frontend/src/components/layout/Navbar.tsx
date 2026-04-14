@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Zap } from 'lucide-react';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
-import { AuthSheet } from './AuthSheet';
-import { RoleSwitcher } from './RoleSwitcher';
-import { AccountDetails } from './AccountDetails';
+import { AuthSheet } from '@/components/AuthSheet';
+import { RoleSwitcher } from '@/components/RoleSwitcher';
+import { AccountDetails } from '@/components/AccountDetails';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { toast } from 'sonner';
 

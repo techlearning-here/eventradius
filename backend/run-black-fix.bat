@@ -1,4 +1,8 @@
 @echo off
-call venv\Scripts\activate
-black api/ config/ tests/
+if exist ".venv\Scripts\activate.bat" (
+    call .venv\Scripts\activate
+) else if exist "venv\Scripts\activate.bat" (
+    call venv\Scripts\activate
+)
+uv run black api/ config/ tests/
 echo Black formatting applied successfully!

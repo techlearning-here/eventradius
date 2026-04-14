@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { CATEGORIES } from '@/data/cities';
 import { SEOHead } from '@/components/SEOHead';
 import { EventCard } from '@/components/discover/EventCard';
-import { EventDetailOverlay } from '@/components/EventDetailPage';
+import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
 import { type Event } from '@/integrations/backend/api';
 
 
