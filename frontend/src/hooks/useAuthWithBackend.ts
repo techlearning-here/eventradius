@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { User } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { apiClient, type UserProfile } from '@/integrations/backend/api';
 
@@ -58,8 +58,17 @@ const saveUserSettings = (settings: {
   }));
 };
 
+// Public routes that don't require auth and shouldn't redirect on auth failure
+const PUBLIC_ROUTES = ['/', '/discover-nosignup', '/discover', '/events', '/about'];
+
+// Helper to check if current route is public
+const isPublicRoute = (pathname: string) => {
+  return PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route + '/'));
+};
+
 export const useAuthWithBackend = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
   
   // Initialize from localStorage to avoid flicker on refresh
@@ -382,10 +391,13 @@ export const useAuthWithBackend = () => {
         setActiveRoleUi(null);
         setOnboardingCompleted(null);
         setUserProfile(null);
-        navigate('/');
+        // Only redirect to landing if not on a public route
+        if (!isPublicRoute(location.pathname)) {
+          navigate('/');
+        }
       }
     },
-    [fetchRoles, seedFirstRole, syncActiveUiFromRoles, fetchUserProfile, ensureUserPreferencesRow, fetchOnboardingStatus, isInitialized, fetchCombinedUserData]
+    [fetchRoles, seedFirstRole, syncActiveUiFromRoles, fetchUserProfile, ensureUserPreferencesRow, fetchOnboardingStatus, isInitialized, fetchCombinedUserData, location.pathname]
   );
 
   const setActiveRole = useCallback(
@@ -499,7 +511,7 @@ export const useAuthWithBackend = () => {
       if (session?.user) {
         await loadSession(session.user);
       } else {
-        // User signed out or session expired - clear localStorage and redirect to landing page
+        // User signed out or session expired - clear localStorage
         localStorage.removeItem('supabase.auth.user');
         localStorage.removeItem('supabase.auth.token');
         setUser(null);
@@ -507,7 +519,10 @@ export const useAuthWithBackend = () => {
         setRoles([]);
         setActiveRoleUi(null);
         setUserProfile(null);
-        navigate('/');
+        // Only redirect to landing if not on a public route
+        if (!isPublicRoute(location.pathname)) {
+          navigate('/');
+        }
       }
     });
 

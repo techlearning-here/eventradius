@@ -181,6 +181,8 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({
 
   if (!isOpen) return null;
 
+  console.log('[EventDetailOverlay] Rendering portal with event:', event?.title);
+
   return createPortal(
     <div 
       className="fixed inset-0 z-[5000] flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
