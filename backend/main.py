@@ -22,7 +22,7 @@ app = FastAPI(
 )
 
 # CORS configuration - support env variable for flexibility
-# Default origins that are always allowed
+# Local development origins (always allowed)
 default_origins = [
     "http://localhost:5173",
     "http://localhost:5174",
@@ -30,9 +30,8 @@ default_origins = [
     "http://localhost:4174",
     "http://localhost:3000",
     "http://localhost:8080",
-    "https://eventpinger.vercel.app",
-    "https://eventradius.vercel.app",
 ]
+# Production URLs should be set via BACKEND_CORS_ORIGINS env var
 
 cors_origins_env = os.getenv("BACKEND_CORS_ORIGINS", "")
 if cors_origins_env == "*":
