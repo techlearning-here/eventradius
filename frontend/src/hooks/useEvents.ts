@@ -1,10 +1,47 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient, type Event, type EventCreate, type EventUpdate } from '@/integrations/backend/api';
+import { eventCache } from '@/components/events/details/EventDetailPage';
 
 export type { EventCreate } from '@/integrations/backend/api';
 
 // Module-level request cache to deduplicate concurrent requests (React StrictMode fix)
-const inFlightRequests = new Map<string, Promise<Event[]>>();
+export const inFlightEventRequests = new Map<string, Promise<Event[]>>();
+
+// Global events cache - persists across component unmounts/remounts
+export const eventsCache = new Map<string, Event[]>();
+
+// Load cached events from localStorage on module init
+const STORAGE_KEY = 'events_cache';
+try {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    const parsed = JSON.parse(stored);
+    Object.entries(parsed).forEach(([key, value]) => {
+      eventsCache.set(key, value as Event[]);
+    });
+    // Also populate individual event cache for EventDetail sharing
+    Object.values(parsed).forEach((eventsArray: unknown) => {
+      (eventsArray as Event[]).forEach(event => {
+        if (event.id) eventCache.set(event.id, event);
+      });
+    });
+  }
+} catch {
+  // Ignore localStorage errors
+}
+
+// Save cache to localStorage
+const saveCache = () => {
+  try {
+    const obj: Record<string, Event[]> = {};
+    eventsCache.forEach((value, key) => {
+      obj[key] = value;
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+  } catch {
+    // Ignore localStorage errors
+  }
+};
 
 const getCacheKey = (params: Record<string, unknown>): string => {
   return JSON.stringify(params);
@@ -16,12 +53,40 @@ export const useEvents = (params: {
   category?: string;
   is_public?: boolean;
 } = {}) => {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = getCacheKey(params);
+  const cachedEvents = eventsCache.get(cacheKey);
+  
+  const [events, setEvents] = useState<Event[]>(cachedEvents || []);
+  const [loading, setLoading] = useState(!cachedEvents);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Synchronous cache check - skip useEffect entirely if we have cached data
+  const cachedData = eventsCache.get(cacheKey);
+  const hasCachedData = cachedData && cachedData.length > 0;
+
   useEffect(() => {
+    // Skip if we already have cached data (checked synchronously above)
+    if (hasCachedData) {
+      return;
+    }
+
+    // Check if there's already an in-flight request for this cache key
+    const inFlight = inFlightEventRequests.get(cacheKey);
+    if (inFlight) {
+      inFlight.then((fetchedEvents) => {
+        if (isMounted) {
+          setEvents(fetchedEvents);
+          setLoading(false);
+        }
+      }).catch(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
+      return;
+    }
+
     // Cancel any ongoing request from this hook instance
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -32,28 +97,34 @@ export const useEvents = (params: {
     const { signal } = abortControllerRef.current;
 
     let isMounted = true;
-    const cacheKey = getCacheKey(params);
 
     const fetchEvents = async () => {
       // Check if there's already an in-flight request for these params
-      let requestPromise = inFlightRequests.get(cacheKey);
+      let fetchPromise = inFlightEventRequests.get(cacheKey);
       
-      if (!requestPromise) {
+      if (!fetchPromise) {
         // Create new request and cache it
-        requestPromise = apiClient.getEvents(params);
-        inFlightRequests.set(cacheKey, requestPromise);
+        fetchPromise = apiClient.getEvents(params);
+        inFlightEventRequests.set(cacheKey, fetchPromise);
         
         // Clean up cache after request completes (success or error)
-        requestPromise.finally(() => {
-          inFlightRequests.delete(cacheKey);
+        fetchPromise.finally(() => {
+          inFlightEventRequests.delete(cacheKey);
         });
       }
 
       try {
         setLoading(true);
         setError(null);
-        const fetchedEvents = await requestPromise;
+        const fetchedEvents = await fetchPromise;
         if (isMounted && !signal.aborted) {
+          // Store in global cache and localStorage
+          eventsCache.set(cacheKey, fetchedEvents);
+          saveCache();
+          // Also populate individual event cache for EventDetail sharing
+          fetchedEvents.forEach(event => {
+            if (event.id) eventCache.set(event.id, event);
+          });
           setEvents(fetchedEvents);
         }
       } catch (err) {
@@ -78,9 +149,18 @@ export const useEvents = (params: {
         abortControllerRef.current.abort();
       }
     };
-  }, [JSON.stringify(params)]);
+  }, [cacheKey]);
 
   const refetch = useCallback(async () => {
+    // Clear cache to force fresh fetch
+    eventsCache.delete(cacheKey);
+    // Also clear from localStorage
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Ignore localStorage errors
+    }
+    
     // Cancel any ongoing request
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -94,6 +174,13 @@ export const useEvents = (params: {
       setError(null);
       const fetchedEvents = await apiClient.getEvents(params);
       if (!signal.aborted) {
+        // Update global cache
+        eventsCache.set(cacheKey, fetchedEvents);
+        saveCache(); // Add saveCache call here
+        // Also populate individual event cache for EventDetail sharing
+        fetchedEvents.forEach(event => {
+          if (event.id) eventCache.set(event.id, event);
+        });
         setEvents(fetchedEvents);
       }
     } catch (err) {
@@ -109,7 +196,7 @@ export const useEvents = (params: {
         setLoading(false);
       }
     }
-  }, [params]);
+  }, [cacheKey, params]);
 
   return { events, loading, error, refetch };
 };

@@ -20,7 +20,7 @@ export const supabase = createClient<Database>(
   auth: {
     storage: localStorage,
     persistSession: true,
-    autoRefreshToken: true,
+    autoRefreshToken: true, // Enabled for seamless session refresh every ~50 minutes
     flowType: 'pkce', // Recommended for web apps with OAuth
     detectSessionInUrl: true,
   }

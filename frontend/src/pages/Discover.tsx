@@ -4,11 +4,11 @@ import { RoleSwitcher } from '@/components/RoleSwitcher';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
+import { useAuth } from '@/contexts/AuthContext';
 import { useEvents } from '@/hooks/useEvents';
+import { supabase } from '@/integrations/supabase/client';
 import { apiClient } from '@/integrations/backend/api';
-import { CalendarIcon, MapPin, Plus, ArrowRight, Building2, LayoutGrid, List, Users } from 'lucide-react';
+import { CalendarIcon, MapPin, Plus, ArrowRight, Building2, LayoutGrid, List, Users, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CATEGORIES } from '@/data/cities';
@@ -17,6 +17,10 @@ import { EventCard } from '@/components/discover/EventCard';
 import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
 import { type Event } from '@/integrations/backend/api';
 
+// Global caches to persist data across page switches
+let cachedUserPrefs: UserPrefs | null = null;
+let cachedParticipantCounts: Map<string, { interested: number; going: number }> | null = null;
+let cachedEventIds: string[] = [];
 
 interface UserPrefs {
   interests: string[];
@@ -37,12 +41,16 @@ const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 };
 
 const Discover = () => {
-  const { user, role, onboardingCompleted, canSwitchRole, hasOrganizerRole } = useAuthWithBackend();
+  const { user, role, onboardingCompleted, canSwitchRole, hasOrganizerRole } = useAuth();
   const navigate = useNavigate();
   const [date, setDate] = useState<Date | undefined>(undefined);
   const { events, loading, error, refetch } = useEvents();
-  
-  
+
+  // Store last dashboard visit
+  useEffect(() => {
+    localStorage.setItem('lastDashboard', '/discover');
+  }, []);
+
   useEffect(() => {
     if (user && role === 'user' && onboardingCompleted === false) {
       navigate('/onboarding');
@@ -54,7 +62,7 @@ const Discover = () => {
       console.error('API Error:', error);
     }
   }, [loading, error, events]);
-  const [prefs, setPrefs] = useState<UserPrefs | null>(null);
+  const [prefs, setPrefs] = useState<UserPrefs | null>(cachedUserPrefs);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'card' | 'list'>('list');
   
@@ -63,20 +71,29 @@ const Discover = () => {
   const [previewEvent, setPreviewEvent] = useState<Event | null>(null);
   
   // Bulk participant counts for all events - reduces API calls from N to 1
-  const [participantCounts, setParticipantCounts] = useState<Map<string, { interested: number; going: number }>>(new Map());
+  const [participantCounts, setParticipantCounts] = useState<Map<string, { interested: number; going: number }>>(cachedParticipantCounts || new Map());
   
-  // Fetch all participant counts in bulk when events load
+  // Fetch all participant counts in bulk when events load (with caching)
   useEffect(() => {
     if (events.length === 0) return;
     
+    const eventIds = events.map(e => e.id);
+    
+    // Check if we already have cached data for these exact events
+    const hasAllCached = eventIds.length > 0 && eventIds.every(id => cachedParticipantCounts?.has(id));
+    if (hasAllCached && cachedEventIds.length === eventIds.length && 
+        cachedEventIds.every(id => eventIds.includes(id))) {
+      // Use cached data
+      setParticipantCounts(cachedParticipantCounts!);
+      return;
+    }
+    
     const fetchBulkParticipants = async () => {
       try {
-        const eventIds = events.map(e => e.id);
-        console.log('[Discover] Fetching bulk participants for', eventIds.length, 'events');
         const response = await apiClient.getBulkEventParticipants(eventIds);
-        console.log('[Discover] Bulk participants response:', Object.keys(response).length, 'events');
         
         const countsMap = new Map<string, { interested: number; going: number }>();
+        
         Object.entries(response).forEach(([eventId, data]) => {
           countsMap.set(eventId, {
             interested: data.counts.interested,
@@ -84,6 +101,9 @@ const Discover = () => {
           });
         });
         
+        // Update global cache
+        cachedParticipantCounts = countsMap;
+        cachedEventIds = eventIds;
         setParticipantCounts(countsMap);
       } catch (err) {
         console.error('Failed to fetch bulk participants:', err);
@@ -93,7 +113,8 @@ const Discover = () => {
     // Small delay to batch rapid updates, but faster than component-level delays
     const timeout = setTimeout(fetchBulkParticipants, 50);
     return () => clearTimeout(timeout);
-  }, [events]);
+    // Use JSON.stringify of event IDs as stable dependency
+  }, [events.length > 0 ? JSON.stringify(events.map(e => e.id).sort()) : '']);
   
   const handlePreviewEvent = (event: Event) => {
     setPreviewEventId(event.id);
@@ -108,60 +129,64 @@ const Discover = () => {
   }, [user, role, onboardingCompleted, navigate]);
 
   useEffect(() => {
-    if (user && role === 'user') fetchPrefs();
-  }, [user, role]);
+    // Skip if no user or already cached
+    if (!user || role !== 'user' || cachedUserPrefs) return;
+    fetchPrefs();
+  }, [user?.id, role]);
 
   const fetchPrefs = async () => {
     if (!user) return;
+    
+    // Use cached prefs if available
+    if (cachedUserPrefs) {
+      setPrefs(cachedUserPrefs);
+      return;
+    }
+    
     const { data } = await supabase
       .from('user_preferences')
       .select('interests, has_kids, latitude, longitude, distance_range, city')
       .eq('user_id', user.id)
       .single();
     if (data) {
-      setPrefs(data as UserPrefs);
-      setSelectedCategories((data.interests as string[]) || []);
+      const prefsData = {
+        interests: data.interests || [],
+        has_kids: data.has_kids || false,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        distance_range: data.distance_range || 50,
+        city: data.city
+      };
+      // Update global cache
+      cachedUserPrefs = prefsData;
+      setPrefs(prefsData);
     }
   };
-
 
   const toggleCategory = (id: string) => {
     setSelectedCategories(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
   };
 
-  const filteredEvents = useMemo(() => {
-    // Only log in development
-    if (import.meta.env.DEV) {
-      console.log('=== EVENT FILTERING DEBUG ===');
-      console.log('Total events fetched:', events.length);
+  // Clear all caches and refetch
+  const handleRefresh = async () => {
+    // Clear local caches
+    cachedUserPrefs = null;
+    cachedParticipantCounts = null;
+    cachedEventIds = [];
+    // Refetch events (this clears the events cache too)
+    await refetch();
+    // Refetch user prefs
+    if (user && role === 'user') {
+      await fetchPrefs();
     }
-    
-    const filtered = events.filter((event, index) => {
-      const matchesDate = !date || new Date(event.start_time || event.created_at).toDateString() === date.toDateString();
+  };
+
+  const filteredEvents = useMemo(() => {
+    return events.filter((event) => {
+      const matchesDate = !date || (event.start_time && new Date(event.start_time).toDateString() === date.toDateString());
       const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(event.category || '');
-      
-      if (import.meta.env.DEV) {
-        console.log(`\n--- Event ${index + 1} ---`);
-        console.log('ID:', event.id);
-        console.log('Title:', event.title);
-        console.log('Matches date filter:', matchesDate);
-        console.log('Matches category filter:', matchesCategory);
-        console.log('Selected categories:', selectedCategories);
-        console.log('Event category:', event.category);
-        console.log('Will pass filter:', matchesDate && matchesCategory);
-      }
-      
       return matchesDate && matchesCategory;
     });
-    
-    if (import.meta.env.DEV) {
-      console.log('\n=== FILTERING RESULTS ===');
-      console.log('Events after filtering:', filtered.length);
-      console.log('Filtered events:', filtered.map(e => ({ id: e.id, title: e.title, start_time: e.start_time, category: e.category })));
-      console.log('=========================\n');
-    }
-
-    return filtered;
   }, [events, date, selectedCategories]);
 
   return (
@@ -175,7 +200,17 @@ const Discover = () => {
         {/* Small Hero Space */}
         <section className="pt-24 pb-8 px-4 md:px-8">
           <div className="max-w-6xl mx-auto text-center">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Discover Events</h1>
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground">Discover Events</h1>
+              <button
+                onClick={handleRefresh}
+                disabled={loading}
+                className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors disabled:opacity-50"
+                title="Refresh events"
+              >
+                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               Find events that match your interests and connect with your community
             </p>
@@ -308,7 +343,7 @@ const Discover = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button 
-                    onClick={refetch} 
+                    onClick={handleRefresh} 
                     className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all duration-200 hover:scale-105 active:scale-95"
                   >
                     Try Again
@@ -347,7 +382,7 @@ const Discover = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button 
-                    onClick={refetch} 
+                    onClick={handleRefresh} 
                     className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-primary/25"
                   >
                     Refresh Events

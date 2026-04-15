@@ -30,12 +30,12 @@ const Pricing = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEOHead
-        title="Pricing — Event Radius"
+        title="Pricing — Events Radius"
         description="Simple, transparent pricing for event organizers. Start free, upgrade when you grow. Pay only when our AI helps you make sales."
       />
 
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-4 md:px-8 py-6 bg-background/80 backdrop-blur-sm">
+      <nav className="z-50 px-4 md:px-8 py-6 bg-background/80 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <button 
             onClick={() => navigate('/')} 
@@ -45,7 +45,7 @@ const Pricing = () => {
               <Zap className="w-5 h-5 text-white" />
             </div>
             <div>
-              <span className="text-xl font-bold tracking-tight text-foreground">Event Radius</span>
+              <span className="text-xl font-bold tracking-tight text-foreground">Events Radius</span>
               <div className="text-xs text-muted-foreground">Discover Events Intelligently</div>
             </div>
           </button>
@@ -128,7 +128,7 @@ const Pricing = () => {
       {/* Footer */}
       <footer className="py-8 px-4 md:px-8 border-t border-border/20">
         <div className="max-w-6xl mx-auto text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Event Radius. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Events Radius. All rights reserved.</p>
         </div>
       </footer>
     </div>

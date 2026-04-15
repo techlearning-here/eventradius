@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AccountDetailsProps {
   className?: string;
@@ -26,9 +27,11 @@ const getCachedUserSettings = () => {
 
 export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }) => {
   // Call all hooks at the top level to ensure consistent order
-  const authResult = useAuthWithBackend();
+  const authResult = useAuth();
   const { user, userProfile, signOut, loading } = authResult;
   const navigate = useNavigate();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 80, right: 20 });
   
   // Get cached data for instant display
   const cachedSettings = getCachedUserSettings();
@@ -53,28 +56,50 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
     localStorage.setItem('accountDetailsOpen', isOpen.toString());
   }, [isOpen]);
 
-  const handleSettings = () => {
+  // Update dropdown position when opening
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right
+      });
+    }
+  }, [isOpen]);
+
+  const handleSettings = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsOpen(false);
     navigate('/settings');
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     setIsOpen(false);
-    signOut();
+    // Small delay to allow dropdown to close before signing out
+    setTimeout(() => {
+      signOut();
+    }, 100);
   };
 
   // Use cached data for instant display, fallback to auth data when loaded
   const displayUser = user;
   const displayUserProfile = userProfile || cachedSettings?.userProfile;
   
-  // Don't render if no user at all (not even cached)
+  // Show loading state if no user yet
   if (!displayUser) {
-    return null;
+    return (
+      <div className={`relative ${className}`}>
+        <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+      </div>
+    );
   }
 
   return (
     <div className={`relative ${className}`}>
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white text-sm font-medium shadow-md hover:shadow-lg transition-all duration-200 group"
       >
@@ -87,16 +112,25 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
         <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {isOpen && (
+      {isOpen && createPortal(
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-[1999]"
-            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 z-[1998] bg-transparent"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+            }}
           />
 
           {/* Dropdown */}
-          <div className="absolute top-full right-0 mt-2 w-72 bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl z-[2001] overflow-hidden">
+          <div 
+            className="fixed z-[1999] w-72 bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden"
+            style={{ 
+              top: `${dropdownPosition.top}px`, 
+              right: `${dropdownPosition.right}px` 
+            }}
+          >
             {/* User Info Header */}
             <div className="p-5 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 border-b border-border/50">
               <div className="flex items-center gap-4">
@@ -117,8 +151,9 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
             {/* Menu Items */}
             <div className="p-3 space-y-1">
               <button
+                type="button"
                 onClick={handleSettings}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground rounded-xl hover:bg-muted/80 transition-all duration-200 group"
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground rounded-xl hover:bg-muted/80 transition-all duration-200 group cursor-pointer"
               >
                 <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center group-hover:bg-background transition-colors">
                   <Settings className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
@@ -129,8 +164,9 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
               <div className="h-px bg-border/50 my-2" />
 
               <button
+                type="button"
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 group"
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200 group cursor-pointer"
               >
                 <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/30 flex items-center justify-center group-hover:bg-red-200 dark:group-hover:bg-red-900/40 transition-colors">
                   <LogOut className="w-4 h-4 text-red-500" />
@@ -139,7 +175,8 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
               </button>
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );

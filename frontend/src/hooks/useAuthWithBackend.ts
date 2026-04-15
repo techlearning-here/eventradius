@@ -28,6 +28,20 @@ const globalRequestPromises = new Map<string, Promise<unknown>>();
 export const globalRequestResults = new Map<string, { data: unknown; timestamp: number }>();
 const CACHE_TTL = 5000; // 5 second cache
 
+// Module-level guard to prevent multiple hook instances from all initializing
+// eslint-disable-next-line prefer-const
+let isGlobalInitializing = false;
+// eslint-disable-next-line prefer-const
+let globalInitPromise: Promise<void> | null = null;
+// eslint-disable-next-line prefer-const
+let globalInitializedUserId: string | null = null; // Track which user is initialized globally
+// eslint-disable-next-line prefer-const
+let globalLoadSessionUserId: string | null = null;
+// eslint-disable-next-line prefer-const
+let globalLoadSessionPromise: Promise<void> | null = null;
+// eslint-disable-next-line prefer-const
+let globalIsInitialized = false; // Global flag to prevent re-initialization across all instances
+
 // Helper to get initial user settings from localStorage
 const getStoredUserSettings = () => {
   try {
@@ -78,9 +92,16 @@ export const useAuthWithBackend = () => {
   const [loading, setLoading] = useState(true);
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(storedSettings?.onboardingCompleted ?? null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(storedSettings?.userProfile ?? null);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Flag to prevent race conditions during initialization
-  const [isInitialized, setIsInitialized] = useState(false);
+  // Refs to track current values for use in callbacks (avoid stale closures)
+  const isInitializedRef = useRef(false);
+  const userRef = useRef<User | null>(null);
+  
+  // Keep refs in sync with state
+  useEffect(() => { isInitializedRef.current = isInitialized; }, [isInitialized]);
+  useEffect(() => { userRef.current = user; }, [user]);
   const isInitializingRef = useRef(false);
 
   const fetchOnboardingStatus = useCallback(async (userId: string) => {
@@ -343,11 +364,34 @@ export const useAuthWithBackend = () => {
 
   const loadSession = useCallback(
     async (sessionUser: User) => {
-      // Prevent race conditions during initialization
-      if (isInitialized) {
+      // Prevent race conditions during initialization - use ref for current value
+      if (isInitializedRef.current) {
         return;
       }
       
+      // Global guard: if already initialized for this user globally, restore from storage
+      if (globalInitializedUserId === sessionUser.id) {
+        const stored = getStoredUserSettings();
+        if (stored) {
+          setUser(sessionUser);
+          setRoles(stored.roles);
+          setOnboardingCompleted(stored.onboardingCompleted);
+          setUserProfile(stored.userProfile);
+          syncActiveUiFromRoles(stored.roles);
+          setIsInitialized(true);
+          setLoading(false);
+        }
+        return;
+      }
+      
+      // Global guard: if another hook instance is already loading this user, wait for it
+      if (globalLoadSessionUserId === sessionUser.id && globalLoadSessionPromise) {
+        await globalLoadSessionPromise;
+        return;
+      }
+      
+      // Create the actual loading work as a promise we can track globally
+      const loadPromise = (async () => {
       // Store user state to localStorage for persistence
       localStorage.setItem('supabase.auth.user', JSON.stringify(sessionUser));
       localStorage.setItem('supabase.auth.token', JSON.stringify(sessionUser));
@@ -395,9 +439,24 @@ export const useAuthWithBackend = () => {
         if (!isPublicRoute(location.pathname)) {
           navigate('/');
         }
+      } finally {
+        // Mark this user as initialized globally
+        globalInitializedUserId = sessionUser.id;
+        // Clear global promise when done (but only if it's still ours)
+        if (globalLoadSessionUserId === sessionUser.id) {
+          globalLoadSessionUserId = null;
+          globalLoadSessionPromise = null;
+        }
       }
+      })(); // End of loadPromise
+      
+      // Store globally so other instances can wait
+      globalLoadSessionUserId = sessionUser.id;
+      globalLoadSessionPromise = loadPromise;
+      
+      await loadPromise;
     },
-    [fetchRoles, seedFirstRole, syncActiveUiFromRoles, fetchUserProfile, ensureUserPreferencesRow, fetchOnboardingStatus, isInitialized, fetchCombinedUserData, location.pathname]
+    [fetchRoles, seedFirstRole, syncActiveUiFromRoles, fetchUserProfile, ensureUserPreferencesRow, fetchOnboardingStatus, fetchCombinedUserData, location.pathname]
   );
 
   const setActiveRole = useCallback(
@@ -481,6 +540,50 @@ export const useAuthWithBackend = () => {
       return;
     }
     
+    // Global guard: if already initialized globally, restore from storage
+    if (globalIsInitialized) {
+      const storedUser = localStorage.getItem('supabase.auth.user');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        const stored = getStoredUserSettings();
+        if (stored) {
+          setUser(parsedUser);
+          setRoles(stored.roles);
+          setOnboardingCompleted(stored.onboardingCompleted);
+          setUserProfile(stored.userProfile);
+          syncActiveUiFromRoles(stored.roles);
+          setIsInitialized(true);
+          setLoading(false);
+          isInitializingRef.current = false;
+          return;
+        }
+      }
+    }
+    
+    // Global guard: if another instance is currently loading session, just wait
+    if (globalLoadSessionPromise) {
+      globalLoadSessionPromise.then(() => {
+        // After the other instance completes, restore from storage
+        if (globalIsInitialized) {
+          const storedUser = localStorage.getItem('supabase.auth.user');
+          if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            const stored = getStoredUserSettings();
+            if (stored) {
+              setUser(parsedUser);
+              setRoles(stored.roles);
+              setOnboardingCompleted(stored.onboardingCompleted);
+              setUserProfile(stored.userProfile);
+              syncActiveUiFromRoles(stored.roles);
+              setIsInitialized(true);
+              setLoading(false);
+            }
+          }
+        }
+      });
+      return;
+    }
+    
     isInitializingRef.current = true;
     
     const init = async () => {
@@ -490,6 +593,21 @@ export const useAuthWithBackend = () => {
       
       if (storedUser && storedToken) {
         const parsedUser = JSON.parse(storedUser);
+        // Check if already initialized globally - restore from storage without API calls
+        if (globalInitializedUserId === parsedUser.id) {
+          const stored = getStoredUserSettings();
+          if (stored) {
+            setUser(parsedUser);
+            setRoles(stored.roles);
+            setOnboardingCompleted(stored.onboardingCompleted);
+            setUserProfile(stored.userProfile);
+            syncActiveUiFromRoles(stored.roles);
+            setIsInitialized(true);
+            setLoading(false);
+            isInitializingRef.current = false;
+            return;
+          }
+        }
         await loadSession(parsedUser);
       } else {
         // Fallback to Supabase session
@@ -503,12 +621,19 @@ export const useAuthWithBackend = () => {
       setIsInitialized(true);
       setLoading(false);
       isInitializingRef.current = false;
+      globalIsInitialized = true;
     };
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
+        // Skip if already initialized for this user (prevents duplicate calls)
+        if (isInitializedRef.current && userRef.current?.id === session.user.id) {
+          console.log('[useAuth] onAuthStateChange: skipping, already initialized for user', session.user.id);
+          return;
+        }
+        console.log('[useAuth] onAuthStateChange: calling loadSession for user', session.user.id);
         await loadSession(session.user);
       } else {
         // User signed out or session expired - clear localStorage

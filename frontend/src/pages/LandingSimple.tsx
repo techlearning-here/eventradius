@@ -9,17 +9,17 @@ const LandingSimple = () => {
   return (
     <div className="min-h-screen bg-foreground text-primary-foreground">
       <SEOHead
-        title="Event Radius — Hyper-Local Event Discovery"
+        title="Events Radius — Hyper-Local Event Discovery"
         description="Discover events near you based on your interests and location."
       />
 
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-4 md:px-8 py-6 flex items-center justify-between">
+      <nav className="z-50 px-4 md:px-8 py-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-[hsl(295,100%,73%)] rounded-full flex items-center justify-center">
             <Zap className="w-4 h-4 text-foreground" />
           </div>
-          <span className="text-lg font-semibold tracking-tight">Event Radius</span>
+          <span className="text-lg font-semibold tracking-tight">Events Radius</span>
         </div>
         <button
           onClick={() => navigate('/auth')}

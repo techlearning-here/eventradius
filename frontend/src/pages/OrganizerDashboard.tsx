@@ -1,13 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/integrations/backend/api';
-import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
+import { useAuth } from '@/contexts/AuthContext';
 import { Navbar } from '@/components/Navbar';
 import { RoleSwitcher } from '@/components/RoleSwitcher';
 import { SEOHead } from '@/components/SEOHead';
 import { toast } from 'sonner';
 import { EventWizard, type EventFormData } from '@/components/EventWizard/EventWizard';
 import { useEventActions } from '@/hooks/useEvents';
+
+// Module-level cache for bulk participants to prevent redundant API calls
+let cachedOrganizerParticipantCounts: Record<string, { interested: number; going: number }> | null = null;
+let cachedOrganizerEventIds: string = '';
+
+// Cache for user events
+let cachedUserEvents: Event[] | null = null;
+let cachedUserEventsTimestamp: number = 0;
+const USER_EVENTS_CACHE_TTL = 60 * 1000; // 1 minute
+
 import { Sidebar } from '@/components/OrganizerDashboard/Sidebar';
 import { SectionHeader } from '@/components/OrganizerDashboard/SectionHeader';
 import { EventsList } from '@/components/OrganizerDashboard/EventsList';
@@ -29,11 +39,20 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const OrganizerDashboard = () => {
-  const { user, role, loading: authLoading } = useAuthWithBackend();
+  const { user, role, roles, activeRoleUi, canSwitchRole, hasOrganizerRole, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Store last dashboard visit
+  useEffect(() => {
+    localStorage.setItem('lastDashboard', '/organizer');
+  }, []);
   const { createEvent, updateEvent } = useEventActions();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Initialize from cache to prevent loading flash
+  const initialEvents = cachedUserEvents || [];
+  const initialLoading = !cachedUserEvents;
+  
+  const [events, setEvents] = useState<Event[]>(initialEvents);
+  const [loading, setLoading] = useState(initialLoading);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingEventInitialData, setEditingEventInitialData] = useState<Partial<EventFormData> | null>(null);
@@ -79,17 +98,37 @@ const OrganizerDashboard = () => {
     const fetchBulkParticipants = async () => {
       try {
         const eventIds = events.map(e => e.id);
-        console.log('[OrganizerDashboard] Fetching bulk participants for', eventIds.length, 'events');
+        const eventIdsKey = eventIds.join(',');
+        
+        // Check cache first
+        if (cachedOrganizerParticipantCounts && cachedOrganizerEventIds === eventIdsKey) {
+          const countsMap = new Map<string, { interested: number; going: number }>();
+          Object.entries(cachedOrganizerParticipantCounts).forEach(([eventId, data]) => {
+            countsMap.set(eventId, data);
+          });
+          setParticipantCounts(countsMap);
+          return;
+        }
+        
         const response = await apiClient.getBulkEventParticipants(eventIds);
-        console.log('[OrganizerDashboard] Bulk participants response:', Object.keys(response).length, 'events');
 
+        // Convert to simple record for caching
+        const countsRecord: Record<string, { interested: number; going: number }> = {};
         const countsMap = new Map<string, { interested: number; going: number }>();
         Object.entries(response).forEach(([eventId, data]) => {
+          countsRecord[eventId] = {
+            interested: data.counts.interested,
+            going: data.counts.going
+          };
           countsMap.set(eventId, {
             interested: data.counts.interested,
             going: data.counts.going
           });
         });
+        
+        // Update cache
+        cachedOrganizerParticipantCounts = countsRecord;
+        cachedOrganizerEventIds = eventIdsKey;
 
         setParticipantCounts(countsMap);
       } catch (err) {
@@ -114,11 +153,23 @@ const OrganizerDashboard = () => {
   };
 
   const fetchEvents = async () => {
+    // Check cache first
+    const now = Date.now();
+    if (cachedUserEvents && (now - cachedUserEventsTimestamp < USER_EVENTS_CACHE_TTL)) {
+      setEvents(cachedUserEvents);
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
       // Use getUserEvents to fetch only the current user's created events
       const response = await apiClient.getUserEvents();
-      setEvents(response.created || []);
+      const eventsData = response.created || [];
+      // Update cache
+      cachedUserEvents = eventsData;
+      cachedUserEventsTimestamp = now;
+      setEvents(eventsData);
     } catch (error) {
       console.error('Failed to fetch events:', error);
       toast.error('Failed to load events');
@@ -970,6 +1021,7 @@ const OrganizerDashboard = () => {
           onSectionChange={setActiveSection}
           shouldCollapse={showCreateWizard || !!previewEventId}
           onCollapsedChange={setSidebarCollapsed}
+          onLogout={signOut}
         />
 
         {/* Main Content Area */}
