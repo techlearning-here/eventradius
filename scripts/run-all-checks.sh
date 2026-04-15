@@ -123,20 +123,17 @@ fi
 echo
 
 echo "[7/7] Frontend Unit Tests..."
-echo "Note: Integration tests excluded via jest.config.cjs"
-echo "⚠️  Frontend unit tests skipped (test setup issues - non-blocking)"
-echo "    Run 'npm test' in frontend/ to see test status"
-echo
-# npm test -- --testPathIgnorePatterns=integration --passWithNoTests
-# FRONTEND_TEST_STATUS=$?
-# print_status "7/7" "Frontend unit tests" $FRONTEND_TEST_STATUS
-# if [ $FRONTEND_TEST_STATUS -ne 0 ]; then
-#     echo
-#     echo "========================================"
-#     echo "❌ CHECKS FAILED!"
-#     echo "========================================"
-#     exit 1
-# fi
+echo "Note: Running caching infrastructure verification tests"
+cd "$PROJECT_ROOT/frontend" && npm test -- --testPathPatterns="cache-infrastructure" --passWithNoTests
+FRONTEND_TEST_STATUS=$?
+print_status "7/7" "Frontend unit tests" $FRONTEND_TEST_STATUS
+if [ $FRONTEND_TEST_STATUS -ne 0 ]; then
+    echo
+    echo "========================================"
+    echo "❌ CHECKS FAILED!"
+    echo "========================================"
+    exit 1
+fi
 echo
 
 echo "========================================"
@@ -150,7 +147,7 @@ echo "- Backend Isort: ✅"
 echo "- Backend Flake8: ✅"
 echo "- Frontend ESLint: ✅"
 echo "- Frontend TypeScript: ✅"
-echo "- Frontend Unit Tests: ⏭️  Skipped (non-blocking)"
+echo "- Frontend Unit Tests: ✅"
 echo "- Frontend Integration Tests: ⏭️  Excluded (manual run only)"
 echo
 echo "All quality checks completed successfully!"

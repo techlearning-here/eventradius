@@ -5,10 +5,10 @@ import { eventCache } from '@/components/events/details/EventDetailPage';
 export type { EventCreate } from '@/integrations/backend/api';
 
 // Module-level request cache to deduplicate concurrent requests (React StrictMode fix)
-const inFlightRequests = new Map<string, Promise<Event[]>>();
+export const inFlightEventRequests = new Map<string, Promise<Event[]>>();
 
 // Global events cache - persists across component unmounts/remounts
-const eventsCache = new Map<string, Event[]>();
+export const eventsCache = new Map<string, Event[]>();
 
 // Load cached events from localStorage on module init
 const STORAGE_KEY = 'events_cache';
@@ -72,7 +72,7 @@ export const useEvents = (params: {
     }
 
     // Check if there's already an in-flight request for this cache key
-    const inFlight = inFlightRequests.get(cacheKey);
+    const inFlight = inFlightEventRequests.get(cacheKey);
     if (inFlight) {
       inFlight.then((fetchedEvents) => {
         if (isMounted) {
@@ -100,23 +100,23 @@ export const useEvents = (params: {
 
     const fetchEvents = async () => {
       // Check if there's already an in-flight request for these params
-      let requestPromise = inFlightRequests.get(cacheKey);
+      let fetchPromise = inFlightEventRequests.get(cacheKey);
       
-      if (!requestPromise) {
+      if (!fetchPromise) {
         // Create new request and cache it
-        requestPromise = apiClient.getEvents(params);
-        inFlightRequests.set(cacheKey, requestPromise);
+        fetchPromise = apiClient.getEvents(params);
+        inFlightEventRequests.set(cacheKey, fetchPromise);
         
         // Clean up cache after request completes (success or error)
-        requestPromise.finally(() => {
-          inFlightRequests.delete(cacheKey);
+        fetchPromise.finally(() => {
+          inFlightEventRequests.delete(cacheKey);
         });
       }
 
       try {
         setLoading(true);
         setError(null);
-        const fetchedEvents = await requestPromise;
+        const fetchedEvents = await fetchPromise;
         if (isMounted && !signal.aborted) {
           // Store in global cache and localStorage
           eventsCache.set(cacheKey, fetchedEvents);

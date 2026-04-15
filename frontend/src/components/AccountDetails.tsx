@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AccountDetailsProps {
   className?: string;
@@ -27,7 +27,7 @@ const getCachedUserSettings = () => {
 
 export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }) => {
   // Call all hooks at the top level to ensure consistent order
-  const authResult = useAuthWithBackend();
+  const authResult = useAuth();
   const { user, userProfile, signOut, loading } = authResult;
   const navigate = useNavigate();
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -87,9 +87,13 @@ export const AccountDetails: React.FC<AccountDetailsProps> = ({ className = '' }
   const displayUser = user;
   const displayUserProfile = userProfile || cachedSettings?.userProfile;
   
-  // Don't render if no user at all (not even cached)
+  // Show loading state if no user yet
   if (!displayUser) {
-    return null;
+    return (
+      <div className={`relative ${className}`}>
+        <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+      </div>
+    );
   }
 
   return (

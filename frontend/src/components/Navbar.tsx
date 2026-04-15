@@ -149,62 +149,26 @@ export const Navbar: React.FC = () => {
                 )}
               </div>
 
-              <div className="h-6 w-px bg-border mx-2" />
+              <div className="hidden md:block h-6 w-px bg-border mx-2" />
               
-              <ThemeToggle />
+              <div className="hidden md:flex">
+                <ThemeToggle />
+              </div>
               
-              {user && <AccountDetails />}
-
-              {/* Mobile action buttons - always visible */}
-              <div className="flex md:hidden items-center gap-2">
-                {/* Discover Events button (icon only) */}
-                {!location.pathname.includes('/discover') && !location.pathname.includes('/organizer') && (role === 'user' || !role) && (
-                  <button
-                    onClick={() => navigate('/discover')}
-                    className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                    title="Discover Events"
-                  >
-                    <Compass className="w-5 h-5" />
-                  </button>
-                )}
-                
-                {/* Create Event button for organizers (icon only) */}
-                {(role === 'organizer' || roles.includes('organizer')) && !location.pathname.includes('/organizer') && (
-                  <button
-                    onClick={() => navigate('/organizer')}
-                    className="p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                    title="Create Event"
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
-                )}
-                
-                {/* Account & Theme - compact */}
+              <div className="hidden md:flex">
                 {user ? (
-                  <>
-                    <ThemeToggle />
-                    <AccountDetails
-                      user={user}
-                      role={role}
-                      onSwitchRole={setActiveRole}
-                      canSwitchRole={canSwitchRole}
-                      onSignOut={signOut}
-                    />
-                  </>
+                  <AccountDetails />
                 ) : (
-                  <button
-                    onClick={() => setIsAuthOpen(true)}
-                    className="px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                  >
-                    Sign In
-                  </button>
+                  <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
                 )}
               </div>
+            </div>
 
-              {/* Mobile menu button (hamburger for additional options) */}
+            {/* Mobile menu button (hamburger only) */}
+            <div className="md:hidden flex items-center">
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="md:hidden p-2 rounded-lg hover:bg-accent transition-colors ml-1"
+                className="p-2 rounded-lg hover:bg-accent transition-colors"
                 aria-label="Open menu"
               >
                 <Menu className="w-6 h-6" />
@@ -230,6 +194,33 @@ export const Navbar: React.FC = () => {
               <div className="flex justify-center py-6 border-b border-border">
                 <RoleSwitcher />
               </div>
+            )}
+            {/* Toggle button: Create Event on Discover, Discover Events on Organizer */}
+            {user && (
+              <>
+                {location.pathname === '/discover' ? (
+                  <button
+                    onClick={() => {
+                      handleCreateEvent();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex-1 flex items-center justify-center text-[17px] font-medium uppercase border-b border-border tracking-[-0.34px] text-blue-600"
+                  >
+                    Create Event
+                  </button>
+                ) : location.pathname === '/organizer' ? (
+                  <Link
+                    to="/discover"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      if (canSwitchRole) setActiveRole('user');
+                    }}
+                    className="flex-1 flex items-center justify-center text-[17px] font-medium uppercase border-b border-border tracking-[-0.34px]"
+                  >
+                    Discover Events
+                  </Link>
+                ) : null}
+              </>
             )}
             {links.map(link => (
               link.to ? (

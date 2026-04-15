@@ -29,11 +29,17 @@ export const globalRequestResults = new Map<string, { data: unknown; timestamp: 
 const CACHE_TTL = 5000; // 5 second cache
 
 // Module-level guard to prevent multiple hook instances from all initializing
+// eslint-disable-next-line prefer-const
 let isGlobalInitializing = false;
+// eslint-disable-next-line prefer-const
 let globalInitPromise: Promise<void> | null = null;
+// eslint-disable-next-line prefer-const
 let globalInitializedUserId: string | null = null; // Track which user is initialized globally
+// eslint-disable-next-line prefer-const
 let globalLoadSessionUserId: string | null = null;
+// eslint-disable-next-line prefer-const
 let globalLoadSessionPromise: Promise<void> | null = null;
+// eslint-disable-next-line prefer-const
 let globalIsInitialized = false; // Global flag to prevent re-initialization across all instances
 
 // Helper to get initial user settings from localStorage

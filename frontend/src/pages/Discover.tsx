@@ -94,8 +94,11 @@ const Discover = () => {
         
         const countsMap = new Map<string, { interested: number; going: number }>();
         
-        Object.entries(response).forEach(([eventId, counts]) => {
-          countsMap.set(eventId, counts as { interested: number; going: number });
+        Object.entries(response).forEach(([eventId, data]) => {
+          countsMap.set(eventId, {
+            interested: data.counts.interested,
+            going: data.counts.going
+          });
         });
         
         // Update global cache
