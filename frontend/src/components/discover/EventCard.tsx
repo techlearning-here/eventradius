@@ -26,13 +26,17 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPreview, particip
     }
   };
 
+  const handleCloseOverlay = () => {
+    setIsOverlayOpen(false);
+  };
+
   return (
     <div className="group cursor-pointer" onClick={handleEventClick}>
-      {!onPreview && (
-        <EventDetailOverlay 
-          eventId={event.id} 
-          isOpen={isOverlayOpen} 
-          onClose={() => setIsOverlayOpen(false)}
+      {!onPreview && isOverlayOpen && (
+        <EventDetailOverlay
+          eventId={event.id}
+          isOpen={true}
+          onClose={handleCloseOverlay}
           eventData={event}
         />
       )}

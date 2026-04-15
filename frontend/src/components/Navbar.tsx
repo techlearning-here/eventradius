@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Zap } from 'lucide-react';
-import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
+import { Zap, Plus, Compass, Menu, X } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { AuthSheet } from './AuthSheet';
 import { RoleSwitcher } from './RoleSwitcher';
 import { AccountDetails } from './AccountDetails';
@@ -10,7 +9,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { toast } from 'sonner';
 
 export const Navbar: React.FC = () => {
-  const { user, roles, signOut, setActiveRole, canSwitchRole, role } = useAuthWithBackend();
+  const { user, roles, signOut, setActiveRole, canSwitchRole, role } = useAuth();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -18,10 +17,14 @@ export const Navbar: React.FC = () => {
 
   const navLinks = () => {
     const links: { label: string; to?: string; onClick?: () => void }[] = [];
+    const isOnDiscoverPage = location.pathname === '/discover';
+    const isOnOrganizerDashboard = location.pathname === '/organizer';
 
     if (user) {
       // Role-based navigation (excluding signout and settings)
-      if (role === 'user' || !role) {
+      // Show Discover Events pill only when NOT on discover AND NOT on organizer page
+      // (on organizer page we show the blue button instead)
+      if ((role === 'user' || !role) && !isOnDiscoverPage && !isOnOrganizerDashboard) {
         links.push({ label: 'Discover Events', to: '/discover' });
       }
 
@@ -29,7 +32,9 @@ export const Navbar: React.FC = () => {
         links.push({ label: 'Admin', to: '/admin-dashboard' });
       }
     } else {
-      links.push({ label: 'Discover Events', to: '/discover' });
+      if (!isOnDiscoverPage) {
+        links.push({ label: 'Discover Events', to: '/discover' });
+      }
       links.push({ label: 'Sign In', onClick: () => setIsAuthOpen(true) });
     }
     return links;
@@ -55,9 +60,9 @@ export const Navbar: React.FC = () => {
       return true;
     }
     
-    // Show Discover Events on Organizer dashboard
+    // Hide Create Event on Organizer dashboard (user is already there)
     if (isOnOrganizerDashboard && user) {
-      return false; // Will show Discover Events button instead
+      return false;
     }
     
     return false;
@@ -66,16 +71,17 @@ export const Navbar: React.FC = () => {
   const shouldShowDiscoverEventsButton = () => {
     const isOnOrganizerDashboard = location.pathname === '/organizer';
     
-    // Show Discover Events on Organizer dashboard
+    // Show Discover Events on Organizer dashboard for all logged-in users
+    // (the pill is hidden on organizer page, so we show the blue button instead)
     return isOnOrganizerDashboard && user;
   };
 
   const links = navLinks();
 
-  return createPortal(
-    <>
+  return (
+    <div className="w-full">
       {/* Modern Glassmorphism Navbar */}
-      <div className="fixed top-0 left-0 right-0 z-[2000] px-4 md:px-8 py-4">
+      <div className="z-[2000] px-4 md:px-8 py-4">
         <div className="max-w-7xl mx-auto">
           <nav className="flex items-center justify-between bg-background/80 backdrop-blur-xl border border-border/50 rounded-2xl px-6 py-3 shadow-lg shadow-black/5">
             {/* Site Name / Logo */}
@@ -111,7 +117,11 @@ export const Navbar: React.FC = () => {
                     <button 
                       key={link.label} 
                       onClick={link.onClick}
-                      className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-background transition-all duration-200"
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        link.label === 'Sign In' 
+                          ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md hover:scale-105 active:scale-95' 
+                          : 'text-muted-foreground hover:text-foreground hover:bg-background'
+                      }`}
                     >
                       {link.label}
                     </button>
@@ -145,14 +155,59 @@ export const Navbar: React.FC = () => {
               
               {user && <AccountDetails />}
 
-              {/* Mobile Menu Button */}
-              <button 
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
+              {/* Mobile action buttons - always visible */}
+              <div className="flex md:hidden items-center gap-2">
+                {/* Discover Events button (icon only) */}
+                {!location.pathname.includes('/discover') && !location.pathname.includes('/organizer') && (role === 'user' || !role) && (
+                  <button
+                    onClick={() => navigate('/discover')}
+                    className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                    title="Discover Events"
+                  >
+                    <Compass className="w-5 h-5" />
+                  </button>
+                )}
+                
+                {/* Create Event button for organizers (icon only) */}
+                {(role === 'organizer' || roles.includes('organizer')) && !location.pathname.includes('/organizer') && (
+                  <button
+                    onClick={() => navigate('/organizer')}
+                    className="p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                    title="Create Event"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                )}
+                
+                {/* Account & Theme - compact */}
+                {user ? (
+                  <>
+                    <ThemeToggle />
+                    <AccountDetails
+                      user={user}
+                      role={role}
+                      onSwitchRole={setActiveRole}
+                      canSwitchRole={canSwitchRole}
+                      onSignOut={signOut}
+                    />
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setIsAuthOpen(true)}
+                    className="px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Sign In
+                  </button>
+                )}
+              </div>
+
+              {/* Mobile menu button (hamburger for additional options) */}
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="md:hidden p-2 rounded-lg hover:bg-accent transition-colors ml-1"
+                aria-label="Open menu"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+                <Menu className="w-6 h-6" />
               </button>
             </div>
           </nav>
@@ -218,7 +273,6 @@ export const Navbar: React.FC = () => {
       )}
 
       <AuthSheet isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
-    </>,
-    document.body
+    </div>
   );
 };

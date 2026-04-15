@@ -185,7 +185,7 @@ const DiscoverNoSignup = () => {
         />
         
         {/* Public Navbar - Simplified for non-authenticated users */}
-        <div className="fixed top-0 left-0 right-0 z-[2000] px-4 md:px-8 py-4">
+        <div className="z-[2000] px-4 md:px-8 py-4">
           <div className="max-w-7xl mx-auto">
             <nav className="flex items-center justify-between bg-background/80 backdrop-blur-xl border border-border/50 rounded-2xl px-6 py-3 shadow-lg shadow-black/5">
               {/* Site Name / Logo */}

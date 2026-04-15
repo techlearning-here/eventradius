@@ -27,6 +27,20 @@ import {
 // Import types
 import { Event, OrganizerProfile } from './types';
 
+// Module-level cache for event data to share between components
+export const eventCache = new Map<string, Event>();
+const EVENT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Shared in-flight promises to deduplicate concurrent event fetches
+const inFlightEventRequests = new Map<string, Promise<Event>>();
+
+// Cache for user registration status per event
+const registrationCache = new Map<string, { isRegistered: boolean; timestamp: number }>();
+const REGISTRATION_CACHE_TTL = 30 * 1000; // 30 seconds
+
+// Shared in-flight promises for registration checks
+const inFlightRegistrationChecks = new Map<string, Promise<void>>();
+
 // Import EventDetailAttributes for the attributes grid
 import { EventDetailAttributes } from '../../EventDetail/EventDetailAttributes';
 
@@ -61,22 +75,54 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({
 }) => {
   const { user } = useAuth();
   const [isRegistered, setIsRegistered] = useState(participantData?.is_registered || false);
-  const [event, setEvent] = useState<Event | null>(preloadedEventData || null);
+  // Check cache synchronously on initial render
+  const cachedEvent = eventId ? eventCache.get(eventId) : undefined;
+  const [event, setEvent] = useState<Event | null>(preloadedEventData || cachedEvent || null);
   const [organizerProfile, setOrganizerProfile] = useState<OrganizerProfile | null>(null);
-  const [loading, setLoading] = useState(!preloadedEventData);
+  const [loading, setLoading] = useState(!(preloadedEventData || cachedEvent));
   const [error, setError] = useState<string | null>(null);
 
   const fetchEvent = useCallback(async () => {
     try {
       let data;
       
+      // Check cache first
+      if (eventId && eventCache.has(eventId)) {
+        data = eventCache.get(eventId);
+      }
       // Use dummy event if eventId matches any demo event IDs
-      if (isDummyEvent(eventId)) {
+      else if (isDummyEvent(eventId)) {
         data = dummyEvents[eventId];
+      }
+      // Check if there's already an in-flight request for this event
+      else if (eventId && inFlightEventRequests.has(eventId)) {
+        data = await inFlightEventRequests.get(eventId);
       } else {
-        data = eventId
-          ? await apiClient.getEvent(eventId)
-          : await apiClient.getEvents({ limit: 1 }).then(events => events[0]);
+        // Create the fetch promise
+        const fetchPromise = (async () => {
+          const result = eventId
+            ? await apiClient.getEvent(eventId)
+            : await apiClient.getEvents({ limit: 1 }).then(events => events[0]);
+          // Cache the fetched event
+          if (eventId && result) {
+            eventCache.set(eventId, result);
+          }
+          return result;
+        })();
+        
+        // Store in-flight promise
+        if (eventId) {
+          inFlightEventRequests.set(eventId, fetchPromise);
+        }
+        
+        try {
+          data = await fetchPromise;
+        } finally {
+          // Clean up in-flight promise even on error
+          if (eventId) {
+            inFlightEventRequests.delete(eventId);
+          }
+        }
       }
 
       if (data) {
@@ -138,22 +184,60 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({
 
   const checkRegistration = useCallback(async () => {
     if (!eventId || !user) return;
+    
+    // Check cache first
+    const cacheKey = `${user.id}:${eventId}`;
+    const cached = registrationCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < REGISTRATION_CACHE_TTL) {
+      setIsRegistered(cached.isRegistered);
+      return;
+    }
+    
+    // Check if there's already an in-flight request for this user+event
+    if (inFlightRegistrationChecks.has(cacheKey)) {
+      await inFlightRegistrationChecks.get(cacheKey);
+      const updated = registrationCache.get(cacheKey);
+      if (updated) setIsRegistered(updated.isRegistered);
+      return;
+    }
+    
+    // Create the check promise
+    const checkPromise = (async () => {
+      try {
+        // Use backend API to check registration
+        const userEvents = await apiClient.getUserEvents();
+        const isEventRegistered = userEvents.some((e: Event) => e.id === eventId);
+        setIsRegistered(isEventRegistered);
+        // Cache the result
+        registrationCache.set(cacheKey, { isRegistered: isEventRegistered, timestamp: Date.now() });
+      } catch (error) {
+        console.error('Error checking registration:', error);
+      }
+    })();
+    
+    // Store in-flight promise
+    inFlightRegistrationChecks.set(cacheKey, checkPromise);
+    
     try {
-      // Use backend API to check registration
-      const registrations = await apiClient.getUserEvents();
-      const isEventRegistered = registrations.participating.some(event => event.id === eventId);
-      setIsRegistered(isEventRegistered);
-    } catch (error) {
-      console.error('Error checking registration:', error);
-      setIsRegistered(false);
+      await checkPromise;
+    } finally {
+      // Clean up in-flight promise
+      inFlightRegistrationChecks.delete(cacheKey);
     }
   }, [eventId, user]);
 
   useEffect(() => {
     if (isOpen) {
-      // Skip fetching if we already have preloaded event data
-      if (!preloadedEventData) {
+      // Skip fetching if we already have preloaded event data or cached event
+      if (!preloadedEventData && !(eventId && eventCache.has(eventId))) {
         fetchEvent();
+      } else if (eventId && eventCache.has(eventId)) {
+        // Use cached event data directly
+        const cachedEvent = eventCache.get(eventId);
+        if (cachedEvent) {
+          setEvent(cachedEvent);
+          setLoading(false);
+        }
       } else {
         // Log preloaded data for debugging
         console.log('[EventDetailPage] Using preloaded event data:', {
@@ -300,17 +384,54 @@ export const EventDetailPage: React.FC<{ eventId?: string }> = ({ eventId }) => 
   const { id: urlId } = useParams();
   const navigate = useNavigate();
   const [isRegistered, setIsRegistered] = useState(false);
-  const [event, setEvent] = useState<Event | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Check cache synchronously on initial render
+  const targetId = eventId || urlId;
+  const cachedEvent = targetId ? eventCache.get(targetId) : undefined;
+  const [event, setEvent] = useState<Event | null>(cachedEvent || null);
+  const [loading, setLoading] = useState(!cachedEvent);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchEvent = useCallback(async () => {
     try {
-      const data = eventId || urlId
-        ? await apiClient.getEvent(eventId || urlId)
-        : await apiClient.getEvents({ limit: 1 }).then(events => events[0]);
+      const targetId = eventId || urlId;
+      let data;
+      
+      // Check cache first
+      if (targetId && eventCache.has(targetId)) {
+        data = eventCache.get(targetId);
+      }
+      // Check if there's already an in-flight request for this event
+      else if (targetId && inFlightEventRequests.has(targetId)) {
+        data = await inFlightEventRequests.get(targetId);
+      } else {
+        // Create the fetch promise
+        const fetchPromise = (async () => {
+          const result = targetId
+            ? await apiClient.getEvent(targetId)
+            : await apiClient.getEvents({ limit: 1 }).then(events => events[0]);
+          // Cache the fetched event
+          if (targetId && result) {
+            eventCache.set(targetId, result);
+          }
+          return result;
+        })();
+        
+        // Store in-flight promise
+        if (targetId) {
+          inFlightEventRequests.set(targetId, fetchPromise);
+        }
+        
+        try {
+          data = await fetchPromise;
+        } finally {
+          // Clean up in-flight promise even on error
+          if (targetId) {
+            inFlightEventRequests.delete(targetId);
+          }
+        }
+      }
 
       if (data) {
         setEvent(data);
@@ -329,19 +450,64 @@ export const EventDetailPage: React.FC<{ eventId?: string }> = ({ eventId }) => 
   const checkRegistration = useCallback(async () => {
     const currentId = eventId || urlId;
     if (!currentId) return;
+    
     try {
-      // Use backend API to check registration
-      const registrations = await apiClient.getUserEvents();
-      const isEventRegistered = registrations.participating.some(event => event.id === currentId);
-      setIsRegistered(isEventRegistered);
+      const { data: { user } } = await apiClient.getUser();
+      if (!user) return;
+      
+      // Check cache first
+      const cacheKey = `${user.id}:${currentId}`;
+      const cached = registrationCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < REGISTRATION_CACHE_TTL) {
+        setIsRegistered(cached.isRegistered);
+        return;
+      }
+      
+      // Check if there's already an in-flight request for this user+event
+      if (inFlightRegistrationChecks.has(cacheKey)) {
+        await inFlightRegistrationChecks.get(cacheKey);
+        const updated = registrationCache.get(cacheKey);
+        if (updated) setIsRegistered(updated.isRegistered);
+        return;
+      }
+      
+      // Create the check promise
+      const checkPromise = (async () => {
+        // Use backend API to check registration
+        const userEvents = await apiClient.getUserEvents();
+        const isEventRegistered = userEvents.some((event: Event) => event.id === currentId);
+        setIsRegistered(isEventRegistered);
+        // Cache the result
+        registrationCache.set(cacheKey, { isRegistered: isEventRegistered, timestamp: Date.now() });
+      })();
+      
+      // Store in-flight promise
+      inFlightRegistrationChecks.set(cacheKey, checkPromise);
+      
+      try {
+        await checkPromise;
+      } finally {
+        // Clean up in-flight promise
+        inFlightRegistrationChecks.delete(cacheKey);
+      }
     } catch (error) {
       console.error('Error checking registration:', error);
-      setIsRegistered(false);
     }
-  }, [eventId || urlId]);
+  }, [eventId, urlId]);
 
   useEffect(() => {
-    fetchEvent();
+    const targetId = eventId || urlId;
+    // Only fetch if not cached
+    if (!(targetId && eventCache.has(targetId))) {
+      fetchEvent();
+    } else {
+      // Use cached event
+      const cachedEvent = eventCache.get(targetId);
+      if (cachedEvent) {
+        setEvent(cachedEvent);
+        setLoading(false);
+      }
+    }
     checkRegistration();
   }, [fetchEvent, checkRegistration]);
 

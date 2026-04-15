@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/integrations/backend/api';
-import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
+import { useAuth } from '@/contexts/AuthContext';
 import { Navbar } from '@/components/Navbar';
 import { RoleSwitcher } from '@/components/RoleSwitcher';
 import { SEOHead } from '@/components/SEOHead';
@@ -29,8 +29,13 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const OrganizerDashboard = () => {
-  const { user, role, loading: authLoading } = useAuthWithBackend();
+  const { user, role, roles, activeRoleUi, canSwitchRole, hasOrganizerRole, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Store last dashboard visit
+  useEffect(() => {
+    localStorage.setItem('lastDashboard', '/organizer');
+  }, []);
   const { createEvent, updateEvent } = useEventActions();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -970,6 +975,7 @@ const OrganizerDashboard = () => {
           onSectionChange={setActiveSection}
           shouldCollapse={showCreateWizard || !!previewEventId}
           onCollapsedChange={setSidebarCollapsed}
+          onLogout={signOut}
         />
 
         {/* Main Content Area */}

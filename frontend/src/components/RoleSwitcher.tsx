@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/integrations/backend/api';
 import { Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,7 +11,7 @@ import { toast } from 'sonner';
  * Event Publisher: Create, edit, delete, and manage events
  */
 export const RoleSwitcher = () => {
-  const { canSwitchRole, role, setActiveRole, loading } = useAuthWithBackend();
+  const { canSwitchRole, role, setActiveRole, loading } = useAuth();
   const navigate = useNavigate();
   const [switching, setSwitching] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);

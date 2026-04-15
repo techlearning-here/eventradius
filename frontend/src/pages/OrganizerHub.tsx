@@ -155,8 +155,8 @@ const OrganizerHub = () => {
         description="Discover micro-event ideas, event categories, and practical guides for organizing small local experiences. Perfect for first-time hosts and small business owners."
       />
 
-      {/* Sticky Mini Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
+      {/* Mini Nav */}
+      <nav className="z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <button onClick={() => navigate('/')} className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-cyan-600 rounded-lg flex items-center justify-center">

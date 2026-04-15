@@ -15,6 +15,7 @@ interface SidebarProps {
   onSectionChange: (section: string) => void;
   shouldCollapse?: boolean;
   onCollapsedChange?: (isCollapsed: boolean) => void;
+  onLogout?: () => void;
 }
 
 const sidebarItems: SidebarItem[] = [
@@ -31,7 +32,7 @@ const sidebarItems: SidebarItem[] = [
 
 const bottomItems: SidebarItem[] = [];
 
-export const Sidebar = ({ activeSection, onSectionChange, shouldCollapse = false, onCollapsedChange }: SidebarProps) => {
+export const Sidebar = ({ activeSection, onSectionChange, shouldCollapse = false, onCollapsedChange, onLogout }: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   
   // Auto-collapse when shouldCollapse is true
@@ -156,7 +157,7 @@ export const Sidebar = ({ activeSection, onSectionChange, shouldCollapse = false
         {/* Logout */}
         <button
           onClick={() => {
-            window.location.href = '/';
+            onLogout?.();
           }}
           className={`w-full flex items-center rounded-xl text-left text-sidebar-foreground/70 hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 group ${
             effectiveCollapsed ? 'justify-center p-3' : 'gap-3 px-3 py-3'

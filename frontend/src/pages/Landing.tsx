@@ -5,6 +5,12 @@ import { AuthSheet } from '@/components/AuthSheet';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { MapPin, Calendar, Users, Zap, Sun, Moon } from 'lucide-react';
 
+// Helper to get last visited dashboard
+const getLastDashboard = (): string => {
+  if (typeof window === 'undefined') return '/discover';
+  return localStorage.getItem('lastDashboard') || '/discover';
+};
+
 const Landing = () => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -55,46 +61,47 @@ const Landing = () => {
   return (
     <div className="min-h-screen bg-background text-foreground scroll-smooth">
       <SEOHead
-        title="Event Radius — Hyper-Local Event Discovery"
+        title="Events Radius — Hyper-Local Event Discovery"
         description="Discover events near you based on your interests and location. Find kid-friendly activities, arts, sports, and community events within your preferred distance."
       />
 
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-4 md:px-8 py-6">
+      {/* Nav - Modern Glassmorphism */}
+      <nav className="z-50 px-4 md:px-8 py-4 border-b border-border/50 bg-background/40 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          {/* Logo */}
+          {/* Logo - Enhanced */}
           <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate('/')}>
-            <div className="relative w-10 h-10 bg-gradient-to-br from-teal-600 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-600/25 transition-transform duration-300 group-hover:scale-105 group-hover:shadow-teal-600/40">
-              <Zap className="w-5 h-5 text-white" />
+            <div className="relative w-11 h-11 bg-gradient-to-br from-teal-500 via-cyan-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-500/30 transition-all duration-300 group-hover:scale-110 group-hover:shadow-teal-500/50 group-hover:rotate-3">
+              <Zap className="w-5 h-5 text-white drop-shadow-md" />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
-            <div>
-              <span className="text-xl font-bold tracking-tight text-foreground">Events Radius</span>
-              <div className="text-xs text-muted-foreground">Discover Events Intelligently</div>
+            <div className="hidden sm:block">
+              <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">Events Radius</span>
+              <div className="text-xs text-muted-foreground/80 font-medium">Discover Events Intelligently</div>
             </div>
           </div>
           
-          {/* Navigation actions */}
-          <div className="flex items-center gap-4">
-            {/* Pricing Link */}
+          {/* Navigation actions - Pills */}
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* Pricing Link - Pill */}
             <button
               onClick={() => navigate('/pricing')}
-              className="hidden sm:inline-flex items-center gap-2 px-3 py-2 font-medium text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 font-medium text-sm text-muted-foreground hover:text-foreground rounded-full hover:bg-accent/60 transition-all duration-300 hover:scale-105 active:scale-95"
             >
               Pricing
             </button>
 
-            {/* Organizer Hub Link */}
+            {/* Organizer Hub Link - Pill */}
             <button
               onClick={() => navigate('/organizer-hub')}
-              className="hidden sm:inline-flex items-center gap-2 px-3 py-2 font-medium text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 font-medium text-sm text-muted-foreground hover:text-foreground rounded-full hover:bg-accent/60 transition-all duration-300 hover:scale-105 active:scale-95"
             >
               Organizer Hub
             </button>
 
-            {/* Theme Toggle */}
+            {/* Theme Toggle - Circular */}
             <button
               onClick={toggleTheme}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-background/60 backdrop-blur-sm border border-border/50 font-medium text-sm rounded-lg hover:bg-accent/50 hover:border-border transition-all duration-300 hover:scale-105 active:scale-95 text-foreground"
+              className="inline-flex items-center justify-center w-10 h-10 bg-accent/50 backdrop-blur-sm border border-border/50 rounded-full hover:bg-accent hover:border-border transition-all duration-300 hover:scale-110 active:scale-95 text-foreground"
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
             >
               {theme === 'dark' ? (
@@ -105,14 +112,14 @@ const Landing = () => {
             </button>
 
             {user ? (
-              <div className="flex items-center gap-3">
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-background/60 backdrop-blur-sm border border-border/50 rounded-lg">
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-sm text-muted-foreground">Online</span>
+                  <span className="text-sm text-green-600 dark:text-green-400 font-medium">Online</span>
                 </div>
                 <button
-                  onClick={() => navigate('/organizer')}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium text-sm rounded-lg hover:shadow-lg hover:shadow-teal-600/25 transition-all duration-300 hover:scale-105 active:scale-95"
+                  onClick={() => navigate(getLastDashboard())}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-semibold text-sm rounded-full shadow-lg shadow-teal-500/25 hover:shadow-xl hover:shadow-teal-500/40 hover:from-teal-400 hover:to-cyan-400 transition-all duration-300 hover:scale-105 active:scale-95"
                 >
                   <span>Dashboard</span>
                   <Zap className="w-4 h-4" />
@@ -121,7 +128,7 @@ const Landing = () => {
             ) : (
               <button
                 onClick={() => setIsAuthOpen(true)}
-                className="inline-flex items-center gap-2 px-6 py-2.5 bg-background/60 backdrop-blur-sm border border-border/50 font-medium text-sm rounded-lg hover:bg-accent/50 hover:border-border transition-all duration-300 hover:scale-105 active:scale-95 text-foreground"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-semibold text-sm rounded-full shadow-lg shadow-teal-500/25 hover:shadow-xl hover:shadow-teal-500/40 hover:from-teal-400 hover:to-cyan-400 transition-all duration-300 hover:scale-105 active:scale-95"
               >
                 <span>Sign In</span>
                 <Users className="w-4 h-4" />
@@ -480,7 +487,7 @@ const Landing = () => {
             {/* Main image with rounded edges and strong shadow for depth */}
             <img
               src="/your-image_no_brand.jpeg"
-              alt="Event Radius"
+              alt="Events Radius"
               className="w-full h-auto object-cover rounded-2xl transition-transform duration-500 group-hover:scale-[1.01]"
               style={{
                 boxShadow: 'inset 0 0 100px rgba(0,0,0,0.95)'
@@ -604,7 +611,7 @@ const Landing = () => {
               <ul className="space-y-2">
                 <li><button className="text-sm text-muted-foreground hover:text-primary transition-colors">Help Center</button></li>
                 <li><button className="text-sm text-muted-foreground hover:text-primary transition-colors">Contact Us</button></li>
-                <li><button className="text-sm text-muted-foreground hover:text-primary transition-colors">Privacy Policy</button></li>
+                <li><button onClick={() => navigate('/privacy')} className="text-sm text-muted-foreground hover:text-primary transition-colors">Privacy Policy</button></li>
               </ul>
             </div>
           </div>
@@ -615,8 +622,8 @@ const Landing = () => {
               © {new Date().getFullYear()} Events Radius. All rights reserved.
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <button className="hover:text-primary transition-colors">Terms</button>
-              <button className="hover:text-primary transition-colors">Privacy</button>
+              <button onClick={() => navigate('/terms')} className="hover:text-primary transition-colors">Terms</button>
+              <button onClick={() => navigate('/privacy')} className="hover:text-primary transition-colors">Privacy</button>
               <button className="hover:text-primary transition-colors">Cookies</button>
             </div>
           </div>

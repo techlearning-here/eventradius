@@ -30,27 +30,27 @@ export const AuthSheet: React.FC<AuthSheetProps> = ({ isOpen, onClose }) => {
 
   return createPortal(
     <>
-      <div className="fixed inset-0 bg-black opacity-50 z-[1000]" onClick={onClose} />
-      <div className={`fixed right-0 top-0 h-full w-full max-w-md bg-[hsl(0,0%,10%)] z-[1001] shadow-2xl transition-transform duration-300 ${isOpen ? 'animate-slide-in-right' : ''}`}>
-        <button onClick={onClose} className="absolute top-8 right-8 text-white hover:text-gray-300 transition-colors">
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[1000]" onClick={onClose} />
+      <div className={`fixed right-0 top-0 h-full w-full max-w-md bg-background z-[1001] shadow-2xl border-l border-border transition-transform duration-300 ${isOpen ? 'animate-slide-in-right' : ''}`}>
+        <button onClick={onClose} className="absolute top-8 right-8 text-foreground hover:text-muted-foreground transition-colors p-2 rounded-lg hover:bg-accent">
           <X size={24} />
         </button>
 
         <div className="flex flex-col h-full px-10 pt-24 pb-10 overflow-y-auto">
-          <h2 className="text-white text-4xl font-medium mb-2">
+          <h2 className="text-foreground text-4xl font-medium mb-2">
             Sign In with Google
           </h2>
-          <p className="text-gray-400 text-sm mb-8">
-            Join Event Radius to discover or post events
+          <p className="text-muted-foreground text-sm mb-8">
+            Join Events Radius to discover or post events
           </p>
 
           <button
             type="button"
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full bg-white text-black font-medium py-3 px-6 uppercase text-sm hover:bg-gray-100 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full bg-white text-gray-900 font-medium py-3 px-6 uppercase text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 rounded-lg border border-gray-200 shadow-sm"
           >
-            <Chrome className="w-4 h-4" />
+            <Chrome className="w-5 h-5 text-blue-500" />
             {loading ? 'Please wait...' : 'Continue with Google'}
           </button>
         </div>

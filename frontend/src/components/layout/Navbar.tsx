@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Zap } from 'lucide-react';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
@@ -75,16 +74,16 @@ export const Navbar: React.FC = () => {
 
   const links = navLinks();
 
-  return createPortal(
-    <>
+  return (
+    <div className="w-full">
       {/* Site Name - with safe area for iPhone notch */}
-      <div className="fixed top-[max(1rem,env(safe-area-inset-top))] left-4 md:left-8 z-[2000]">
+      <div className="absolute left-4 md:left-8 z-[2000] pt-4">
         <Link to="/" className="text-2xl font-bold text-foreground hover:shadow-lg transition-all">
           EventsRadius
         </Link>
       </div>
 
-      <nav className="fixed top-[max(3rem,env(safe-area-inset-top)+2rem)] right-[max(1rem,env(safe-area-inset-right))] md:right-8 z-[2000] flex items-center gap-1">
+      <nav className="absolute right-4 md:right-8 z-[2000] flex items-center gap-1 pt-4">
         {/* Logo */}
         <Link to="/" className="bg-foreground text-primary-foreground h-[34px] w-[34px] border border-foreground flex items-center justify-center">
           <Zap className="w-4 h-4" />
@@ -208,7 +207,6 @@ export const Navbar: React.FC = () => {
       )}
 
       <AuthSheet isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
-    </>,
-    document.body
+    </div>
   );
 };
