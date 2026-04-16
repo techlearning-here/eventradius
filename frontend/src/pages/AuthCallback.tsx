@@ -22,21 +22,17 @@ const AuthCallback = () => {
           console.log('User metadata:', result.user.user_metadata);
           console.log('App metadata:', result.user.app_metadata);
 
-          // Check if user has completed onboarding using backend API
-          try {
-            const preferences = await apiClient.getUserPreferences();
-            console.log('Onboarding status from callback:', preferences.onboarding_completed);
+          // Clear any old cached user data to prevent stale user issues
+          localStorage.removeItem('eventradius_user');
+          localStorage.removeItem('eventradius_user_id');
+          console.log('Cleared old cached user data');
 
-            // Redirect based on onboarding status
-            if (preferences.onboarding_completed === true) {
-              navigate('/discover');
-            } else {
-              navigate('/onboarding');
-            }
-          } catch (error) {
-            console.log('No preferences found, going to onboarding');
-            navigate('/onboarding');
-          }
+          // Mark that we just completed OAuth - this helps useAuthWithBackend skip heavy init
+          sessionStorage.setItem('just_completed_oauth', 'true');
+
+          // Redirect to PostAuthRedirect component which will decide where to go
+          console.log('OAuth successful, redirecting to decision component');
+          navigate('/post-auth', { replace: true });
         } else {
           console.error('OAuth failed:', result.error);
           navigate('/auth?error=auth_failed');

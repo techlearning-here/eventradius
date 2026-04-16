@@ -53,22 +53,30 @@ const Onboarding = () => {
       console.log('🚀 Sending preferences to API:', preferencesData);
       console.log('🚀 is_organizer value being sent:', isOrganizer);
       
+      // Set flag to prevent useEffect from redirecting during save
+      sessionStorage.setItem('onboarding_saving', 'true');
+      
       await apiClient.updateUserPreferences(preferencesData);
       
-      console.log('✅ Preferences updated successfully');
-
-      // Clear the cache to ensure fresh data on next fetch
-      const cacheKey = `userPreferences-${user.id}`;
-      globalRequestResults.delete(cacheKey);
-      
-      await fetchOnboardingStatus(user.id);
       toast.success('Preferences saved!');
 
-      // Redirect based on organizer status
-      if (isOrganizer) {
-        navigate('/organizer');
-      } else {
-        navigate('/discover');
+      // Mark onboarding as completed in sessionStorage to prevent other components from redirecting back
+      sessionStorage.setItem('onboarding_completed', 'true');
+      
+      // Navigate based on organizer status (we know onboarding is complete since we just saved)
+      const destination = preferencesData.is_organizer ? '/organizer' : '/discover';
+      console.log('🧭 About to navigate, destination:', destination);
+      console.log('🧭 navigate function:', navigate);
+      console.log('🧭 typeof navigate:', typeof navigate);
+      
+      try {
+        console.log('🧭 Calling navigate...');
+        navigate(destination, { replace: true });
+        console.log('✅ Navigation called successfully');
+      } catch (navError) {
+        console.error('❌ Navigation failed:', navError);
+        // Fallback to window.location if navigate fails
+        window.location.href = destination;
       }
     } catch (err: unknown) {
       toast.error(getErrorMessage(err) || 'Failed to save preferences');
