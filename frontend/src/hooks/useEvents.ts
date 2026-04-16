@@ -52,12 +52,14 @@ export const useEvents = (params: {
   offset?: number;
   category?: string;
   is_public?: boolean;
+  enabled?: boolean;
 } = {}) => {
-  const cacheKey = getCacheKey(params);
+  const { enabled = true, ...fetchParams } = params;
+  const cacheKey = getCacheKey(fetchParams);
   const cachedEvents = eventsCache.get(cacheKey);
   
   const [events, setEvents] = useState<Event[]>(cachedEvents || []);
-  const [loading, setLoading] = useState(!cachedEvents);
+  const [loading, setLoading] = useState(enabled && !cachedEvents);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -66,12 +68,14 @@ export const useEvents = (params: {
   const hasCachedData = cachedData && cachedData.length > 0;
 
   useEffect(() => {
-    // Skip if we already have cached data (checked synchronously above)
-    if (hasCachedData) {
+    // Skip if disabled or already have cached data
+    if (!enabled || hasCachedData) {
       return;
     }
 
     // Check if there's already an in-flight request for this cache key
+    let isMounted = true;
+
     const inFlight = inFlightEventRequests.get(cacheKey);
     if (inFlight) {
       inFlight.then((fetchedEvents) => {
@@ -95,8 +99,6 @@ export const useEvents = (params: {
     // Create new abort controller for this request
     abortControllerRef.current = new AbortController();
     const { signal } = abortControllerRef.current;
-
-    let isMounted = true;
 
     const fetchEvents = async () => {
       // Check if there's already an in-flight request for these params

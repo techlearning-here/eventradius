@@ -12,34 +12,45 @@
 SET session_replication_role = 'replica';
 
 -- Truncate user-related tables in order of dependencies
-
--- 1. Comprehensive event management data (depends on users and events)
-TRUNCATE TABLE IF EXISTS public.event_schedule CASCADE;
-TRUNCATE TABLE IF EXISTS public.event_tags CASCADE;
-TRUNCATE TABLE IF EXISTS public.event_notifications CASCADE;
-TRUNCATE TABLE IF EXISTS public.event_media CASCADE;
-TRUNCATE TABLE IF EXISTS public.registration_fields CASCADE;
-TRUNCATE TABLE IF EXISTS public.ticket_types CASCADE;
-TRUNCATE TABLE IF EXISTS public.event_venues CASCADE;
-TRUNCATE TABLE IF EXISTS public.venues CASCADE;
-
--- 2. Core event data (depends on users)
-TRUNCATE TABLE IF EXISTS public.event_audit CASCADE;
-TRUNCATE TABLE IF EXISTS public.event_registrations CASCADE;
-TRUNCATE TABLE IF EXISTS public.event_categories CASCADE;
-TRUNCATE TABLE IF EXISTS public.event_participants CASCADE;
-TRUNCATE TABLE IF EXISTS public.events CASCADE;
-
--- 3. User preferences and roles
-TRUNCATE TABLE IF EXISTS public.user_preferences CASCADE;
-TRUNCATE TABLE IF EXISTS public.user_roles CASCADE;
-
--- 4. User profiles
-TRUNCATE TABLE IF EXISTS public.profiles CASCADE;
-
--- 5. Core authentication users table
--- This removes all user accounts from the auth system
-TRUNCATE TABLE auth.users CASCADE;
+DO $$
+DECLARE
+    tbl_name TEXT;
+    tables TEXT[] := ARRAY[
+        -- 1. Comprehensive event management data (depends on users and events)
+        'public.event_schedule',
+        'public.event_tags',
+        'public.event_notifications',
+        'public.event_media',
+        'public.registration_fields',
+        'public.ticket_types',
+        'public.event_venues',
+        'public.venues',
+        -- 2. Core event data (depends on users)
+        'public.event_audit',
+        'public.event_registrations',
+        'public.event_categories',
+        'public.event_participants',
+        'public.events',
+        -- 3. User preferences and roles
+        'public.user_preferences',
+        'public.user_roles',
+        -- 4. User profiles
+        'public.profiles',
+        -- 5. Core authentication users table
+        'auth.users'
+    ];
+BEGIN
+    FOREACH tbl_name IN ARRAY tables
+    LOOP
+        IF EXISTS (
+            SELECT 1 FROM information_schema.tables 
+            WHERE table_schema = split_part(tbl_name, '.', 1)
+            AND table_name = split_part(tbl_name, '.', 2)
+        ) THEN
+            EXECUTE 'TRUNCATE TABLE ' || tbl_name || ' CASCADE';
+        END IF;
+    END LOOP;
+END $$;
 
 -- Re-enable foreign key constraints
 SET session_replication_role = 'origin';

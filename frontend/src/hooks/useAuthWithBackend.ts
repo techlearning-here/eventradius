@@ -628,6 +628,22 @@ export const useAuthWithBackend = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
+        // Skip if OAuth just completed - do light init first, then full session
+        if (sessionStorage.getItem('just_completed_oauth') === 'true') {
+          console.log('[useAuth] onAuthStateChange: OAuth just completed, light init for user', session.user.id);
+          // Clear the flag
+          sessionStorage.removeItem('just_completed_oauth');
+          // Set minimal state to allow navigation
+          setUser(session.user);
+          setLoading(false);
+          // Trigger full session load in background (non-blocking)
+          setTimeout(() => {
+            console.log('[useAuth] Loading full session in background...');
+            loadSession(session.user);
+          }, 100);
+          return;
+        }
+        
         // Skip if already initialized for this user (prevents duplicate calls)
         if (isInitializedRef.current && userRef.current?.id === session.user.id) {
           console.log('[useAuth] onAuthStateChange: skipping, already initialized for user', session.user.id);

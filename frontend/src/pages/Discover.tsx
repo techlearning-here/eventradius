@@ -6,7 +6,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEvents } from '@/hooks/useEvents';
-import { supabase } from '@/integrations/supabase/client';
 import { apiClient } from '@/integrations/backend/api';
 import { CalendarIcon, MapPin, Plus, ArrowRight, Building2, LayoutGrid, List, Users, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
@@ -44,18 +43,23 @@ const Discover = () => {
   const { user, role, onboardingCompleted, canSwitchRole, hasOrganizerRole } = useAuth();
   const navigate = useNavigate();
   const [date, setDate] = useState<Date | undefined>(undefined);
-  const { events, loading, error, refetch } = useEvents();
+  const [eventsEnabled, setEventsEnabled] = useState(false);
+  const { events, loading, error, refetch } = useEvents({ enabled: eventsEnabled });
 
   // Store last dashboard visit
   useEffect(() => {
     localStorage.setItem('lastDashboard', '/discover');
   }, []);
 
+  // Enable events loading after initial page load (delayed to allow navigation to complete)
   useEffect(() => {
-    if (user && role === 'user' && onboardingCompleted === false) {
-      navigate('/onboarding');
-    }
-  }, [user, role, onboardingCompleted, navigate]);
+    const timer = setTimeout(() => {
+      setEventsEnabled(true);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Discover page has NO redirect logic - onboarding decision is made in PostAuthRedirect
 
   useEffect(() => {
     if (error) {
@@ -122,6 +126,12 @@ const Discover = () => {
   };
 
   useEffect(() => {
+    // Skip redirect if we just completed onboarding (prevents redirect loop)
+    if (sessionStorage.getItem('onboarding_completed') === 'true') {
+      console.log('Discover: skipping second redirect - just completed flag set');
+      return;
+    }
+    
     // Redirect to onboarding if not completed (null for new users, false for incomplete)
     if (user && role === 'user' && onboardingCompleted !== true) {
       navigate('/onboarding');
@@ -143,23 +153,24 @@ const Discover = () => {
       return;
     }
     
-    const { data } = await supabase
-      .from('user_preferences')
-      .select('interests, has_kids, latitude, longitude, distance_range, city')
-      .eq('user_id', user.id)
-      .single();
-    if (data) {
-      const prefsData = {
-        interests: data.interests || [],
-        has_kids: data.has_kids || false,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        distance_range: data.distance_range || 50,
-        city: data.city
-      };
-      // Update global cache
-      cachedUserPrefs = prefsData;
-      setPrefs(prefsData);
+    try {
+      const preferences = await apiClient.getUserPreferences();
+      if (preferences) {
+        const prefsData = {
+          interests: preferences.interests || [],
+          has_kids: preferences.has_kids || false,
+          latitude: preferences.latitude,
+          longitude: preferences.longitude,
+          distance_range: preferences.distance_range || 50,
+          city: preferences.city
+        };
+        // Update global cache
+        cachedUserPrefs = prefsData;
+        setPrefs(prefsData);
+      }
+    } catch (err) {
+      console.error('Failed to fetch preferences:', err);
+      // Don't throw - let the component continue with default prefs
     }
   };
 

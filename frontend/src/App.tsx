@@ -24,6 +24,7 @@ import NotFound from './pages/NotFound';
 import DiscoverNoSignup from './pages/DiscoverNoSignup';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import { PostAuthRedirect } from './pages/PostAuthRedirect';
 
 const App = () => (
   <ThemeProvider>
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/post-auth" element={<PostAuthRedirect />} />
             <Route path="/test-oauth" element={<TestOAuth />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/pricing" element={<Pricing />} />

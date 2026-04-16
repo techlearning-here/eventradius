@@ -16,7 +16,10 @@ const RoleBasedLanding = () => {
     }
 
     // If onboarding is not completed, redirect to onboarding
-    if (onboardingCompleted === false || onboardingCompleted === null) {
+    // Skip if we just completed onboarding (prevents redirect loop)
+    if (sessionStorage.getItem('onboarding_completed') === 'true') {
+      console.log('RoleBasedLanding: skipping onboarding redirect - just completed');
+    } else if (onboardingCompleted === false || onboardingCompleted === null) {
       navigate('/onboarding');
       return;
     }
