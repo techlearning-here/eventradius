@@ -5,13 +5,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useEvents } from '@/hooks/useEvents';
 import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/integrations/backend/api';
-import { CalendarIcon, MapPin, ArrowRight, Sparkles, UserPlus, Search, Navigation, Crosshair, LayoutGrid, List, Users } from 'lucide-react';
+import { CalendarIcon, MapPin, ArrowRight, Sparkles, UserPlus, Search, Navigation, Crosshair, LayoutGrid, List, Users, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CATEGORIES } from '@/data/cities';
 import { SEOHead } from '@/components/SEOHead';
 import { EventCard } from '@/components/discover/EventCard';
 import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
+import { ShareEventModal } from '@/components/share/ShareEventModal';
 import { type Event } from '@/integrations/backend/api';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Zap } from 'lucide-react';
@@ -47,6 +48,7 @@ const DiscoverNoSignup = () => {
   // Track preview state
   const [previewEventId, setPreviewEventId] = useState<string | null>(null);
   const [previewEvent, setPreviewEvent] = useState<Event | null>(null);
+  const [shareEvent, setShareEvent] = useState<Event | null>(null);
   
   // Bulk participant counts for all events
   const [participantCounts, setParticipantCounts] = useState<Map<string, { interested: number; going: number }>>(new Map());
@@ -133,6 +135,11 @@ const DiscoverNoSignup = () => {
     console.log('[DiscoverNoSignup] Opening preview for event:', event.id, event.title);
     setPreviewEventId(event.id);
     setPreviewEvent(event);
+  };
+
+  const handleShare = (e: React.MouseEvent, event: Event) => {
+    e.stopPropagation();
+    setShareEvent(event);
   };
 
   const toggleCategory = (id: string) => {
@@ -571,6 +578,17 @@ const DiscoverNoSignup = () => {
                                 </span>
                               )}
                             </div>
+                            
+                            {/* Share Button */}
+                            <div className="mt-3 flex items-center gap-2">
+                              <button
+                                onClick={(e) => handleShare(e, event)}
+                                className="flex items-center justify-center w-8 h-8 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground rounded-lg transition-colors"
+                                title="Share event"
+                              >
+                                <Share2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -601,6 +619,15 @@ const DiscoverNoSignup = () => {
                     />
                   );
                 })()}
+
+                {/* Share Event Modal */}
+                {shareEvent && (
+                  <ShareEventModal
+                    event={shareEvent}
+                    isOpen={!!shareEvent}
+                    onClose={() => setShareEvent(null)}
+                  />
+                )}
               </div>
             )}
           </div>

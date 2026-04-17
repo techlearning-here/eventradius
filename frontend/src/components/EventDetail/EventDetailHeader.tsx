@@ -4,9 +4,10 @@ import { ArrowLeft, Heart, Share2, Bookmark, LayoutGrid } from 'lucide-react';
 interface EventDetailHeaderProps {
   category?: string;
   onClose: () => void;
+  onShare?: () => void;
 }
 
-export const EventDetailHeader: React.FC<EventDetailHeaderProps> = ({ category, onClose }) => {
+export const EventDetailHeader: React.FC<EventDetailHeaderProps> = ({ category, onClose, onShare }) => {
   return (
     <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/60 px-4 sm:px-6 lg:px-8 py-3">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
@@ -54,6 +55,10 @@ export const EventDetailHeader: React.FC<EventDetailHeaderProps> = ({ category, 
             <Heart className="w-4 h-4 group-hover:scale-110 transition-transform" />
           </button>
           <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onShare?.();
+            }}
             className="group p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all duration-200"
             title="Share event"
           >

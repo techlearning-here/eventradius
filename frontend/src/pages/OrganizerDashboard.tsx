@@ -24,6 +24,7 @@ import { EventsList } from '@/components/OrganizerDashboard/EventsList';
 import { OrganizerEventsGrid } from '@/components/OrganizerDashboard/OrganizerEventsGrid';
 import { EventWizardOverlay } from '@/components/OrganizerDashboard/EventWizardOverlay';
 import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
+import { ShareEventModal } from '@/components/share/ShareEventModal';
 import { EventDetailInline } from '@/components/EventDetailInline';
 import { type Event, type RefundPolicy, type EventCreate } from '@/integrations/backend/api';
 import { Trash2, LayoutGrid, List } from 'lucide-react';
@@ -63,6 +64,7 @@ const OrganizerDashboard = () => {
   // Track which event is being previewed
   const [previewEventId, setPreviewEventId] = useState<string | null>(null);
   const [previewEvent, setPreviewEvent] = useState<Event | null>(null);
+  const [shareEvent, setShareEvent] = useState<Event | null>(null);
 
   // State for delete confirmation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -140,6 +142,10 @@ const OrganizerDashboard = () => {
     const timeout = setTimeout(fetchBulkParticipants, 50);
     return () => clearTimeout(timeout);
   }, [events]);
+
+  const handleShare = (event: Event) => {
+    setShareEvent(event);
+  };
 
   const handlePreviewEvent = (event: Event) => {
     const now = Date.now();
@@ -1117,6 +1123,7 @@ const OrganizerDashboard = () => {
                     onDelete={handleDelete}
                     onEdit={handleWizardEdit}
                     onView={handlePreviewEvent}
+                    onShare={handleShare}
                   />
                 )}
               </>
@@ -1263,6 +1270,15 @@ const OrganizerDashboard = () => {
               <div className="text-center py-12">
                 <p className="text-muted-foreground">This section is under development.</p>
               </div>
+            )}
+
+            {/* Share Event Modal */}
+            {shareEvent && (
+              <ShareEventModal
+                event={shareEvent}
+                isOpen={!!shareEvent}
+                onClose={() => setShareEvent(null)}
+              />
             )}
           </div>
         </div>

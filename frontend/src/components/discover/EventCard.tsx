@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarIcon, MapPin, Users, Clock, ArrowRight } from 'lucide-react';
+import { CalendarIcon, MapPin, Users, Clock, ArrowRight, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
+import { ShareEventModal } from '@/components/share/ShareEventModal';
 import { CATEGORIES } from '@/data/cities';
-import { type Event } from '@/integrations/backend/api';
+import { type Event } from '@/components/EventDetail/types';
 
 interface EventCardProps {
   event: Event;
@@ -15,6 +16,7 @@ interface EventCardProps {
 export const EventCard: React.FC<EventCardProps> = ({ event, onPreview, participantCounts }) => {
   const navigate = useNavigate();
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const catLabel = CATEGORIES.find(c => c.id === event.category)?.label || event.category;
 
   const handleEventClick = (e: React.MouseEvent) => {
@@ -30,6 +32,11 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPreview, particip
     setIsOverlayOpen(false);
   };
 
+  const handleShareClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsShareModalOpen(true);
+  };
+
   return (
     <div className="group cursor-pointer" onClick={handleEventClick}>
       {!onPreview && isOverlayOpen && (
@@ -40,6 +47,12 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPreview, particip
           eventData={event}
         />
       )}
+
+      <ShareEventModal
+        event={event}
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+      />
       
       {/* Main Card Content */}
       <div className="relative bg-background border border-border rounded-2xl overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 ease-out group-hover:-translate-y-2">
@@ -149,8 +162,16 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPreview, particip
             )}
           </div>
           
-          {/* Hover Action Button */}
-          <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          {/* Action Bar - Share & View */}
+          <div className="flex items-center justify-between pt-3 border-t border-border/60">
+            <button
+              onClick={handleShareClick}
+              className="flex items-center justify-center w-9 h-9 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground rounded-lg transition-colors"
+              title="Share event"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+            
             <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-md shadow-primary/25">
               <ArrowRight className="w-4 h-4" />
             </div>

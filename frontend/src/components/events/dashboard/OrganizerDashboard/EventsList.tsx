@@ -1,4 +1,4 @@
-import { MapPin, Trash2, MoreVertical, Edit, Eye } from 'lucide-react';
+import { MapPin, Trash2, MoreVertical, Edit, Eye, Share2 } from 'lucide-react';
 import { CATEGORIES } from '@/data/cities';
 import { useState } from 'react';
 import { EventDetailsDisplay } from '../../details/EventDetailsDisplay';
@@ -20,9 +20,10 @@ interface EventsListProps {
   onEdit?: (event: OrgEvent) => void;
   onView?: (event: OrgEvent) => void;
   onPreview?: (event: OrgEvent) => void;
+  onShare?: (event: OrgEvent) => void;
 }
 
-export const EventsList = ({ events, onDelete, onEdit, onView, onPreview }: EventsListProps) => {
+export const EventsList = ({ events, onDelete, onEdit, onView, onPreview, onShare }: EventsListProps) => {
   const [showMenu, setShowMenu] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
@@ -119,6 +120,18 @@ export const EventsList = ({ events, onDelete, onEdit, onView, onPreview }: Even
                       </button>
                     )}
                     
+                    {onShare && (
+                      <button
+                        onClick={() => {
+                          onShare(event);
+                          setShowMenu(null);
+                        }}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50 transition-colors"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        Share
+                      </button>
+                    )}
                     {canDelete(event.status) && (
                       <button
                         onClick={() => handleDelete(event.id)}

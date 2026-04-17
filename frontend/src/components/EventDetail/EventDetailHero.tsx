@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Globe, Users, Lock } from 'lucide-react';
+import { MapPin, Globe, Users, Lock, Share2 } from 'lucide-react';
 
 interface EventDetailHeroProps {
   image_url?: string;
@@ -7,14 +7,16 @@ interface EventDetailHeroProps {
   event_type?: string;
   is_public?: boolean;
   loading?: boolean;
+  onShare?: () => void;
 }
 
-export const EventDetailHero: React.FC<EventDetailHeroProps> = ({ 
+export const EventDetailHero: React.FC<EventDetailHeroProps> = ({
   image_url,
-  background_image_url, 
-  event_type, 
+  background_image_url,
+  event_type,
   is_public,
-  loading = false 
+  loading = false,
+  onShare
 }) => {
   // Priority: image_url (cover image) > background_image_url > gradient fallback
   const heroImageUrl = image_url || background_image_url;
@@ -82,6 +84,21 @@ export const EventDetailHero: React.FC<EventDetailHeroProps> = ({
                     <Lock className="w-3 h-3" />
                     Private
                   </span>
+                )}
+
+                {/* Share Button */}
+                {onShare && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onShare();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/95 dark:bg-white/10 backdrop-blur-md text-foreground hover:text-primary text-xs font-semibold rounded-full border border-white/20 shadow-lg transition-colors"
+                    title="Share event"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    Share
+                  </button>
                 )}
               </div>
             </div>

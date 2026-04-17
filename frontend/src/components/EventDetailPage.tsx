@@ -5,6 +5,7 @@ import { EventRegistration } from './EventRegistration';
 import { EventParticipation } from './EventParticipation';
 import { EventChat } from './EventChat';
 import { AuthSheet } from './AuthSheet';
+import { ShareEventModal } from './share/ShareEventModal';
 import { 
   EventDetailCloseButton,
   EventDetailHeader,
@@ -41,6 +42,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
   const [loading, setLoading] = useState(!eventData); // Skip loading if we have pre-loaded data
   const [error, setError] = useState<string | null>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const fetchEvent = useCallback(async () => {
     try {
@@ -163,14 +165,16 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
               <div className="h-full">
                 <EventDetailHeader 
                   category={event?.category} 
-                  onClose={onClose} 
+                  onClose={onClose}
+                  onShare={() => setIsShareModalOpen(true)}
                 />
-                <EventDetailHero 
+                <EventDetailHero
                   image_url={event?.image_url}
                   background_image_url={event?.background_image_url}
                   event_type={event?.event_type}
                   is_public={event?.is_public}
                   loading={loading}
+                  onShare={() => setIsShareModalOpen(true)}
                 />
                   <div className="px-2 py-4 sm:px-4 sm:py-6 md:px-6 md:py-8 lg:px-8 lg:py-10 xl:px-12 xl:py-12 w-full max-w-7xl">
                     <EventQuickInfo event={event} />
@@ -189,11 +193,6 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
                     />
                     <div className="space-y-4">
                       {/* Organizer Contact Section */}
-                      {console.log('[EventDetail2] Contact fields:', { 
-                        event_contact_phone: event.event_contact_phone, 
-                        event_contact_email: event.event_contact_email,
-                        event_contact_phone_country_code: event.event_contact_phone_country_code
-                      })}
                       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
                         <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                           <div className="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center">
@@ -365,6 +364,14 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
         ) : null}
 
         <AuthSheet isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+        
+        {event && (
+          <ShareEventModal
+            event={event}
+            isOpen={isShareModalOpen}
+            onClose={() => setIsShareModalOpen(false)}
+          />
+        )}
       </div>
     </div>,
     document.body

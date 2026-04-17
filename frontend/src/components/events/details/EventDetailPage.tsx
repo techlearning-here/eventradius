@@ -8,6 +8,7 @@ import { dummyEvents, isDummyEvent } from '@/components/EventDetail/data/dummyEv
 import { Navbar } from '../../layout/Navbar';
 import { SEOHead } from '../../layout/SEOHead';
 import { AuthSheet } from '../../auth/AuthSheet';
+import { ShareEventModal } from '@/components/share/ShareEventModal';
 import { EventChat } from '../EventChat';
 
 // Import modular section components
@@ -81,6 +82,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({
   const [organizerProfile, setOrganizerProfile] = useState<OrganizerProfile | null>(null);
   const [loading, setLoading] = useState(!(preloadedEventData || cachedEvent));
   const [error, setError] = useState<string | null>(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const fetchEvent = useCallback(async () => {
     try {
@@ -352,7 +354,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({
                   <RegistrationCard event={event} isRegistered={isRegistered} />
 
                   {/* Quick Actions */}
-                  <QuickActions />
+                  <QuickActions onShare={() => setIsShareModalOpen(true)} />
 
                   {/* Event Stats */}
                   <EventStats event={event} />
@@ -375,6 +377,14 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({
           ) : null}
         </div>
       </div>
+      
+      {event && (
+        <ShareEventModal
+          event={event}
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+        />
+      )}
     </div>,
     document.body
   );
