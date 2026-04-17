@@ -11,6 +11,7 @@ import { EventTypeSection } from './EventTypeSection';
 import { ImageUpload } from './ImageUpload';
 import { ReviewSection } from './ReviewSection';
 import { ContactInfo } from './ContactInfo';
+import { CoverImageSelector } from './CoverImageSelector';
 
 // Import new attribute collection components
 import { AudienceSection } from './AudienceSection';
@@ -513,23 +514,45 @@ export const EventWizard = ({ initialData, onPublish }: EventWizardProps) => {
           <div className="space-y-8">
             <BasicInfo
               eventName={formData.title}
+              subtitle={formData.subtitle || ''}
+              summary={formData.summary || ''}
               description={formData.description}
               isPaidEvent={formData.is_paid_event}
               ticketingUrl={formData.ticketing_website}
               language={formData.language || ''}
               category={formData.category || ''}
+              tags={formData.tags || []}
               onEventNameChange={(title) => updateFormData({ title })}
+              onSubtitleChange={(subtitle) => updateFormData({ subtitle })}
+              onSummaryChange={(summary) => updateFormData({ summary })}
               onDescriptionChange={(description) => updateFormData({ description })}
               onIsPaidEventChange={(is_paid_event) => updateFormData({ is_paid_event })}
               onTicketingUrlChange={(ticketing_website) => updateFormData({ ticketing_website })}
               onLanguageChange={(language) => updateFormData({ language })}
               onCategoryChange={(category) => updateFormData({ category })}
+              onTagsChange={(tags) => updateFormData({ tags })}
             />
-            <div className="flex justify-center">
-              <ImageUpload
-                imagePreview={formData.image_url}
-                onImageUpload={(file) => updateFormData({ image_file: file })}
-              />
+            {/* Event Image Section */}
+            <div className="mt-12 pt-8 border-t-2 border-gray-200">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+                  9
+                </div>
+                <h3 className="text-lg font-semibold">Event Image</h3>
+                <span className="text-gray-500 text-sm font-normal">(Optional)</span>
+              </div>
+              <p className="text-gray-600 mb-6 ml-10">
+                Choose a cover image that represents your event. Select from our gallery or upload your own.
+              </p>
+              <div className="ml-0 md:ml-10">
+                <CoverImageSelector
+                  selectedImageUrl={formData.image_url || null}
+                  onImageSelect={(url) => updateFormData({ image_url: url, image_file: null })}
+                  onImageUpload={(file) => updateFormData({ image_file: file, image_url: null })}
+                  eventCategory={formData.category || 'general'}
+                  eventType={formData.event_type}
+                />
+              </div>
             </div>
           </div>
         );
@@ -560,6 +583,7 @@ export const EventWizard = ({ initialData, onPublish }: EventWizardProps) => {
             venueBuildingName={formData.venue_building_name}
             onlineMeetingLink={formData.virtual_event_url}
             // Scheduling fields
+            timezone={formData.timezone || ''}
             singleEventDate={formData.single_event_date}
             singleEventStartTime={formData.single_event_start_time}
             singleEventEndTime={formData.single_event_end_time}
@@ -582,6 +606,7 @@ export const EventWizard = ({ initialData, onPublish }: EventWizardProps) => {
             onVenueCountryChange={(venue_country) => updateFormData({ venue_country })}
             onVenueBuildingNameChange={(venue_building_name) => updateFormData({ venue_building_name })}
             onOnlineMeetingLinkChange={(virtual_event_url) => updateFormData({ virtual_event_url })}
+            onTimezoneChange={(timezone) => updateFormData({ timezone })}
             // Scheduling handlers
             onSingleEventDateChange={(single_event_date) => updateFormData({ single_event_date })}
             onSingleEventStartTimeChange={(single_event_start_time) => updateFormData({ single_event_start_time })}

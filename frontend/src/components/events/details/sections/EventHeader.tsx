@@ -14,6 +14,9 @@ export const EventHeader: React.FC<EventHeaderProps> = ({
   onClose,
   formatLabel
 }) => {
+  // Priority: image_url (cover image) > background_image_url > fallback
+  const heroImageUrl = event.image_url || event.background_image_url;
+  
   // Debug log for tags and header fields
   useEffect(() => {
     console.log('[EventHeader] Debug - Header fields:', {
@@ -23,9 +26,10 @@ export const EventHeader: React.FC<EventHeaderProps> = ({
       is_public: event.is_public,
       tags: event.tags,
       tagsCount: event.tags?.length || 0,
+      hasCoverImage: !!event.image_url,
       hasBackgroundImage: !!event.background_image_url,
     });
-  }, [event.title, event.category, event.event_type, event.is_public, event.tags, event.background_image_url]);
+  }, [event.title, event.category, event.event_type, event.is_public, event.tags, event.image_url, event.background_image_url]);
   return (
     <>
       {/* Title Bar */}
@@ -67,8 +71,8 @@ export const EventHeader: React.FC<EventHeaderProps> = ({
         <div 
           className="absolute inset-0 bg-cover bg-center scale-105 transition-all duration-700"
           style={{ 
-            backgroundImage: event.background_image_url 
-              ? `url("${event.background_image_url}")` 
+            backgroundImage: heroImageUrl 
+              ? `url("${heroImageUrl}")` 
               : `url("https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=1200&h=600&fit=crop")`,
             backgroundSize: 'cover',
             backgroundPosition: 'center'

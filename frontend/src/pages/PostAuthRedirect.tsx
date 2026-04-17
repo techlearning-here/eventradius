@@ -21,18 +21,12 @@ export function PostAuthRedirect() {
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
-      console.log('PostAuthRedirect: checking user state', { 
-        userId: user?.id, 
-        authLoading 
-      });
-
       // Wait for auth to finish loading
       if (authLoading) {
         return;
       }
 
       if (!user) {
-        console.log('PostAuthRedirect: no user, redirecting to signin');
         navigate('/signin');
         return;
       }
@@ -42,17 +36,12 @@ export function PostAuthRedirect() {
         const prefs = await apiClient.getUserPreferences();
         const isOnboarded = prefs?.onboarding_completed === true;
         
-        console.log('PostAuthRedirect: onboarding status =', isOnboarded);
-        
         if (isOnboarded) {
-          console.log('PostAuthRedirect: user onboarded, going to /discover');
           navigate('/discover', { replace: true });
         } else {
-          console.log('PostAuthRedirect: user not onboarded, going to /onboarding');
           navigate('/onboarding', { replace: true });
         }
       } catch (err) {
-        console.error('PostAuthRedirect: error checking onboarding status', err);
         // Default to onboarding if we can't check
         navigate('/onboarding', { replace: true });
       } finally {

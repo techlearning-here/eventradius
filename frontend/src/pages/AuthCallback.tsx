@@ -17,29 +17,20 @@ const AuthCallback = () => {
         const result = await handleSimpleOAuthCallback();
 
         if (result.success) {
-          console.log('OAuth successful!', result.user);
-          console.log('User email:', result.user.email);
-          console.log('User metadata:', result.user.user_metadata);
-          console.log('App metadata:', result.user.app_metadata);
-
           // Clear any old cached user data to prevent stale user issues
           localStorage.removeItem('eventradius_user');
           localStorage.removeItem('eventradius_user_id');
-          console.log('Cleared old cached user data');
 
           // Mark that we just completed OAuth - this helps useAuthWithBackend skip heavy init
           sessionStorage.setItem('just_completed_oauth', 'true');
 
           // Redirect to PostAuthRedirect component which will decide where to go
-          console.log('OAuth successful, redirecting to decision component');
           navigate('/post-auth', { replace: true });
         } else {
-          console.error('OAuth failed:', result.error);
           navigate('/auth?error=auth_failed');
         }
 
       } catch (error) {
-        console.error('Auth callback error:', error);
         navigate('/auth?error=auth_failed');
       }
     };

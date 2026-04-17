@@ -3,6 +3,7 @@ import { EventTypeSection } from './EventTypeSection';
 import { ImageUpload } from './ImageUpload';
 import { ContactInfo } from './ContactInfo';
 import { ReviewSection } from './ReviewSection';
+import { CoverImageSelector } from './CoverImageSelector';
 import { EventFormData } from './EventWizard';
 
 import { WIZARD_SECTIONS } from './wizardConfig';
@@ -39,11 +40,27 @@ export const EventStepContent = ({ currentSubStepId, formData, updateFormData, g
             onCategoryChange={(category) => updateFormData({ category })}
             onTagsChange={(tags) => updateFormData({ tags })}
           />
-          <div className="flex justify-center">
-            <ImageUpload
-              imagePreview={formData.image_url}
-              onImageUpload={(file) => updateFormData({ image_file: file })}
-            />
+          {/* Event Image Section */}
+          <div className="mt-12 pt-8 border-t-2 border-gray-200">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+                5
+              </div>
+              <h3 className="text-lg font-semibold">Event Image</h3>
+              <span className="text-gray-500 text-sm font-normal">(Optional)</span>
+            </div>
+            <p className="text-gray-600 mb-6 ml-10">
+              Choose a cover image that represents your event. Select from our gallery or upload your own.
+            </p>
+            <div className="ml-0 md:ml-10">
+              <CoverImageSelector
+                selectedImageUrl={formData.image_url || null}
+                onImageSelect={(url) => updateFormData({ image_url: url, image_file: null })}
+                onImageUpload={(file) => updateFormData({ image_file: file, image_url: null })}
+                eventCategory={formData.category || 'general'}
+                eventType={formData.event_type}
+              />
+            </div>
           </div>
         </div>
       );
@@ -85,7 +102,6 @@ export const EventStepContent = ({ currentSubStepId, formData, updateFormData, g
           onEventTypeChange={(event_type) => updateFormData({ event_type })}
           onEventFormatChange={(event_format) => updateFormData({ event_format })}
           onVenueAddressChange={(venue_address) => updateFormData({ venue_address })}
-          timezone={formData.timezone || ''}
           onTimezoneChange={(timezone) => updateFormData({ timezone })}
           onVirtualEventUrlChange={(virtual_event_url) => updateFormData({ virtual_event_url })}
           onVirtualEventPlatformChange={(virtual_event_platform) => updateFormData({ virtual_event_platform })}

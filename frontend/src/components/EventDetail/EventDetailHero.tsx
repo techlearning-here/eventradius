@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin, Globe, Users, Lock } from 'lucide-react';
 
 interface EventDetailHeroProps {
+  image_url?: string;
   background_image_url?: string;
   event_type?: string;
   is_public?: boolean;
@@ -9,11 +10,14 @@ interface EventDetailHeroProps {
 }
 
 export const EventDetailHero: React.FC<EventDetailHeroProps> = ({ 
+  image_url,
   background_image_url, 
   event_type, 
   is_public,
   loading = false 
 }) => {
+  // Priority: image_url (cover image) > background_image_url > gradient fallback
+  const heroImageUrl = image_url || background_image_url;
   const getEventTypeIcon = () => {
     switch(event_type) {
       case 'in_person': return <MapPin className="w-3.5 h-3.5" />;
@@ -40,8 +44,8 @@ export const EventDetailHero: React.FC<EventDetailHeroProps> = ({
       <div 
         className="absolute inset-0 bg-cover bg-center scale-105 transition-transform duration-1000 hover:scale-110"
         style={{ 
-          backgroundImage: background_image_url 
-            ? `url("${background_image_url}")` 
+          backgroundImage: heroImageUrl 
+            ? `url("${heroImageUrl}")` 
             : 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.6) 50%, hsl(var(--primary)/0.3) 100%)',
           backgroundSize: 'cover',
           backgroundPosition: 'center'

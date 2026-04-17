@@ -12,6 +12,7 @@ import { ImageUpload } from './ImageUpload';
 import { ReviewSection } from './ReviewSection';
 import { ContactInfo } from './ContactInfo';
 import { EventPreview } from './EventPreview';
+import { CoverImageSelector } from './CoverImageSelector';
 
 // Types for enhanced event data - aligned with database schema
 export interface EventFormData {
@@ -227,14 +228,6 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
     max_participants: null,
     tags: [],
     ticket_pricing_description: '',
-    
-    // Media
-    image_url: '',
-    image_file: null,
-    
-    // Status
-    is_public: true,
-    status: 'draft',
     ...initialData,
   });
 
@@ -389,11 +382,27 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
               onLanguageChange={(language) => updateFormData({ language })}
               onEventStatusChange={(event_status) => updateFormData({ event_status })}
             />
-            <div className="flex justify-center">
-              <ImageUpload
-                imagePreview={formData.image_url}
-                onImageUpload={(file) => updateFormData({ image_file: file })}
-              />
+            {/* Event Image Section */}
+            <div className="mt-12 pt-8 border-t-2 border-gray-200">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+                  5
+                </div>
+                <h3 className="text-lg font-semibold">Event Image</h3>
+                <span className="text-gray-500 text-sm font-normal">(Optional)</span>
+              </div>
+              <p className="text-gray-600 mb-6 ml-10">
+                Choose a cover image that represents your event. Select from our gallery or upload your own.
+              </p>
+              <div className="ml-0 md:ml-10">
+                <CoverImageSelector
+                  selectedImageUrl={formData.image_url || null}
+                  onImageSelect={(url) => updateFormData({ image_url: url, image_file: null })}
+                  onImageUpload={(file) => updateFormData({ image_file: file, image_url: null })}
+                  eventCategory={formData.category || 'general'}
+                  eventType={formData.event_type}
+                />
+              </div>
             </div>
           </div>
         );

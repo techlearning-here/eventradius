@@ -394,19 +394,7 @@ export const BasicInfo = ({
           onLanguageChange={onLanguageChange}
         />
 
-        {/* Step 9: Event Image */}
-        <div className="space-y-5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center font-bold shadow-lg shadow-blue-200">
-              9
-            </div>
-            <h3 className="text-xl font-bold text-gray-900">Event Image</h3>
-          </div>
-          <p className="text-gray-600 font-medium">Upload a compelling image that represents your event</p>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 border border-purple-200 rounded-full">
-            <span className="text-purple-600 text-sm font-semibold">💡 Recommended: 1920×1080px</span>
-          </div>
-        </div>
+        {/* Note: Event Image is handled by CoverImageSelector in EventStepContent */}
       </div>
     </div>
   );

@@ -55,11 +55,21 @@ export const DateTimeSection = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white mb-2">Start Time</label>
+              <label className="block text-sm font-medium text-white mb-2">Start Time <span className="text-red-500">*</span></label>
               <input
                 type="time"
                 value={startTime}
-                onChange={(e) => onStartTimeChange(e.target.value)}
+                onChange={(e) => {
+                  const newStartTime = e.target.value;
+                  onStartTimeChange(newStartTime);
+                  // Auto-calculate end time as start time + 1 hour
+                  if (newStartTime) {
+                    const [hours, minutes] = newStartTime.split(':').map(Number);
+                    const endHours = (hours + 1) % 24;
+                    const endTimeStr = `${String(endHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                    onEndTimeChange(endTimeStr);
+                  }
+                }}
                 className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
               />
             </div>
@@ -88,13 +98,29 @@ export const DateTimeSection = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white mb-2">End Time</label>
+              <label className="block text-sm font-medium text-white mb-2">End Time <span className="text-red-500">*</span></label>
               <input
                 type="time"
                 value={endTime}
-                onChange={(e) => onEndTimeChange(e.target.value)}
-                className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
+                onChange={(e) => {
+                  const newEndTime = e.target.value;
+                  // Validation: end time must be after start time
+                  if (startDate && endDate && startDate.getTime() === endDate.getTime() && startTime && newEndTime <= startTime) {
+                    alert('End time must be after start time');
+                    return;
+                  }
+                  onEndTimeChange(newEndTime);
+                }}
+                className={cn(
+                  "w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-black bg-white",
+                  startTime && endTime && endTime <= startTime && startDate && endDate && startDate.getTime() === endDate.getTime()
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-gray-200 focus:ring-blue-500"
+                )}
               />
+              {startTime && endTime && endTime <= startTime && startDate && endDate && startDate.getTime() === endDate.getTime() && (
+                <p className="text-red-400 text-xs mt-1">End time must be after start time</p>
+              )}
             </div>
           </div>
         </div>
