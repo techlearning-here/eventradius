@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
 
 const Index = () => {
   const { id } = useParams();
-  const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+  const navigate = useNavigate();
+  const [isOverlayOpen, setIsOverlayOpen] = useState(true);
+
+  const handleClose = () => {
+    setIsOverlayOpen(false);
+    // Navigate to public discover page when overlay is closed (for shared links)
+    navigate('/discover-nosignup');
+  };
 
   return (
     <>
-      <EventDetailOverlay eventId={id || ''} isOpen={isOverlayOpen} onClose={() => setIsOverlayOpen(false)} />
+      <EventDetailOverlay eventId={id || ''} isOpen={isOverlayOpen} onClose={handleClose} />
     </>
   );
 };

@@ -7,13 +7,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEvents } from '@/hooks/useEvents';
 import { apiClient } from '@/integrations/backend/api';
-import { CalendarIcon, MapPin, Plus, ArrowRight, Building2, LayoutGrid, List, Users, RefreshCw } from 'lucide-react';
+import { CalendarIcon, MapPin, Plus, ArrowRight, Building2, LayoutGrid, List, Users, RefreshCw, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CATEGORIES } from '@/data/cities';
 import { SEOHead } from '@/components/SEOHead';
 import { EventCard } from '@/components/discover/EventCard';
 import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
+import { ShareEventModal } from '@/components/share/ShareEventModal';
 import { type Event } from '@/integrations/backend/api';
 
 // Global caches to persist data across page switches
@@ -73,6 +74,7 @@ const Discover = () => {
   // Track preview state
   const [previewEventId, setPreviewEventId] = useState<string | null>(null);
   const [previewEvent, setPreviewEvent] = useState<Event | null>(null);
+  const [shareEvent, setShareEvent] = useState<Event | null>(null);
   
   // Bulk participant counts for all events - reduces API calls from N to 1
   const [participantCounts, setParticipantCounts] = useState<Map<string, { interested: number; going: number }>>(cachedParticipantCounts || new Map());
@@ -123,6 +125,11 @@ const Discover = () => {
   const handlePreviewEvent = (event: Event) => {
     setPreviewEventId(event.id);
     setPreviewEvent(event);
+  };
+
+  const handleShare = (e: React.MouseEvent, event: Event) => {
+    e.stopPropagation();
+    setShareEvent(event);
   };
 
   useEffect(() => {
@@ -534,6 +541,17 @@ const Discover = () => {
                                 </span>
                               )}
                             </div>
+                            
+                            {/* Share Button */}
+                            <div className="mt-3 flex items-center gap-2">
+                              <button
+                                onClick={(e) => handleShare(e, event)}
+                                className="flex items-center justify-center w-8 h-8 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground rounded-lg transition-colors"
+                                title="Share event"
+                              >
+                                <Share2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -558,6 +576,15 @@ const Discover = () => {
                         counts: counts
                       } : null;
                     })()}
+                  />
+                )}
+
+                {/* Share Event Modal */}
+                {shareEvent && (
+                  <ShareEventModal
+                    event={shareEvent}
+                    isOpen={!!shareEvent}
+                    onClose={() => setShareEvent(null)}
                   />
                 )}
               </div>

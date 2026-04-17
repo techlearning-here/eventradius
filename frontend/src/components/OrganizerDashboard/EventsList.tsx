@@ -1,4 +1,4 @@
-import { MapPin, Trash2, Edit, Eye, Calendar, Clock, Users } from 'lucide-react';
+import { MapPin, Trash2, Edit, Eye, Calendar, Clock, Users, Share2 } from 'lucide-react';
 import { CATEGORIES } from '@/data/cities';
 import { useState } from 'react';
 import { type Event } from '@/integrations/backend/api';
@@ -9,9 +9,10 @@ interface EventsListProps {
   onDelete?: (id: string) => void;
   onEdit?: (event: Event) => void;
   onView?: (event: Event) => void;
+  onShare?: (event: Event) => void;
 }
 
-export const EventsList = ({ events, onDelete, onEdit, onView }: EventsListProps) => {
+export const EventsList = ({ events, onDelete, onEdit, onView, onShare }: EventsListProps) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const getStatusColor = (status?: string) => {
@@ -130,6 +131,15 @@ export const EventsList = ({ events, onDelete, onEdit, onView }: EventsListProps
                   title="Edit"
                 >
                   <Edit className="w-4 h-4" />
+                </button>
+              )}
+              {onShare && (
+                <button
+                  onClick={() => onShare(event)}
+                  className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200"
+                  title="Share"
+                >
+                  <Share2 className="w-4 h-4" />
                 </button>
               )}
               {onDelete && (
