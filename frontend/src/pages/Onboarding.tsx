@@ -50,12 +50,6 @@ const Onboarding = () => {
         is_organizer: isOrganizer,
       };
       
-      console.log('🚀 Sending preferences to API:', preferencesData);
-      console.log('🚀 is_organizer value being sent:', isOrganizer);
-      
-      // Set flag to prevent useEffect from redirecting during save
-      sessionStorage.setItem('onboarding_saving', 'true');
-      
       await apiClient.updateUserPreferences(preferencesData);
       
       toast.success('Preferences saved!');
@@ -65,16 +59,10 @@ const Onboarding = () => {
       
       // Navigate based on organizer status (we know onboarding is complete since we just saved)
       const destination = preferencesData.is_organizer ? '/organizer' : '/discover';
-      console.log('🧭 About to navigate, destination:', destination);
-      console.log('🧭 navigate function:', navigate);
-      console.log('🧭 typeof navigate:', typeof navigate);
       
       try {
-        console.log('🧭 Calling navigate...');
         navigate(destination, { replace: true });
-        console.log('✅ Navigation called successfully');
       } catch (navError) {
-        console.error('❌ Navigation failed:', navError);
         // Fallback to window.location if navigate fails
         window.location.href = destination;
       }

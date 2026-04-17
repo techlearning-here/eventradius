@@ -212,20 +212,7 @@ export const BasicInfo = ({
           onLanguageChange={onLanguageChange}
         />
 
-        {/* Step 5: Event Image */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
-              5
-            </div>
-            <h3 className="text-lg font-semibold">Event Image</h3>
-          </div>
-          <p className="text-white mb-4">Upload a compelling image that represents your event</p>
-          <p className="text-white text-xs mb-4">Recommended size: 1920x1080px</p>
-          <div className="flex flex-col gap-3 md:gap-4">
-            {/* Image upload will be handled by parent component */}
-          </div>
-        </div>
+        {/* Note: Event Image is handled by CoverImageSelector in parent component */}
       </div>
     </div>
   );

@@ -526,7 +526,17 @@ export const EventTypeSection = ({
                 <input
                   type="time"
                   value={singleEventStartTime}
-                  onChange={(e) => onSingleEventStartTimeChange(e.target.value)}
+                  onChange={(e) => {
+                    const newStartTime = e.target.value;
+                    onSingleEventStartTimeChange(newStartTime);
+                    // Auto-calculate end time as start time + 1 hour
+                    if (newStartTime) {
+                      const [hours, minutes] = newStartTime.split(':').map(Number);
+                      const endHours = (hours + 1) % 24;
+                      const endTimeStr = `${String(endHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                      onSingleEventEndTimeChange(endTimeStr);
+                    }
+                  }}
                   className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
                 />
               </div>
@@ -535,9 +545,23 @@ export const EventTypeSection = ({
                 <input
                   type="time"
                   value={singleEventEndTime}
-                  onChange={(e) => onSingleEventEndTimeChange(e.target.value)}
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
+                  onChange={(e) => {
+                    const newEndTime = e.target.value;
+                    // Validation: end time must be after start time (when same date)
+                    if (singleEventStartTime && newEndTime && newEndTime <= singleEventStartTime) {
+                      // Allow the change but it will show error styling
+                    }
+                    onSingleEventEndTimeChange(newEndTime);
+                  }}
+                  className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-black bg-white ${
+                    singleEventStartTime && singleEventEndTime && singleEventEndTime <= singleEventStartTime
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-gray-200 focus:ring-blue-500'
+                  }`}
                 />
+                {singleEventStartTime && singleEventEndTime && singleEventEndTime <= singleEventStartTime && (
+                  <p className="text-red-500 text-xs mt-1">End time must be after start time</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">Timezone <span className="text-red-500">*</span></label>

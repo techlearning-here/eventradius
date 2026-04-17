@@ -166,6 +166,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
                   onClose={onClose} 
                 />
                 <EventDetailHero 
+                  image_url={event?.image_url}
                   background_image_url={event?.background_image_url}
                   event_type={event?.event_type}
                   is_public={event?.is_public}
