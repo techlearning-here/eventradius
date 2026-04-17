@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils';
 interface OrganizerEventsGridProps {
   events: Event[];
   onEdit?: (event: Event) => void;
+  onQuickEdit?: (event: Event) => void;
+  onDetailedEdit?: (event: Event) => void;
   onDelete?: (eventId: string) => void;
   onPreview?: (event: Event) => void;
   viewMode?: 'grid' | 'list';
@@ -19,6 +21,8 @@ interface OrganizerEventsGridProps {
 export const OrganizerEventsGrid: React.FC<OrganizerEventsGridProps> = ({
   events,
   onEdit,
+  onQuickEdit,
+  onDetailedEdit,
   onDelete,
   onPreview,
   viewMode = 'grid',
@@ -100,6 +104,8 @@ export const OrganizerEventsGrid: React.FC<OrganizerEventsGridProps> = ({
               key={event.id}
               event={event}
               onEdit={onEdit}
+              onQuickEdit={onQuickEdit}
+              onDetailedEdit={onDetailedEdit}
               onDelete={onDelete}
               onPreview={onPreview}
               variant="default"
@@ -114,6 +120,8 @@ export const OrganizerEventsGrid: React.FC<OrganizerEventsGridProps> = ({
               key={event.id}
               event={event}
               onEdit={onEdit}
+              onQuickEdit={onQuickEdit}
+              onDetailedEdit={onDetailedEdit}
               onDelete={onDelete}
               onPreview={onPreview}
               variant="compact"

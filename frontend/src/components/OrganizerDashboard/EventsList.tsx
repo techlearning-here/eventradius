@@ -1,19 +1,35 @@
-import { MapPin, Trash2, Edit, Eye, Calendar, Clock, Users, Share2 } from 'lucide-react';
+import { MapPin, Trash2, Edit, Eye, Calendar, Clock, Users, Share2, ChevronDown, PenLine, ListTodo } from 'lucide-react';
 import { CATEGORIES } from '@/data/cities';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { type Event } from '@/integrations/backend/api';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface EventsListProps {
   events: Event[];
   onDelete?: (id: string) => void;
   onEdit?: (event: Event) => void;
+  onQuickEdit?: (event: Event) => void;
+  onDetailedEdit?: (event: Event) => void;
   onView?: (event: Event) => void;
   onShare?: (event: Event) => void;
 }
 
-export const EventsList = ({ events, onDelete, onEdit, onView, onShare }: EventsListProps) => {
+export const EventsList = ({ events, onDelete, onEdit, onQuickEdit, onDetailedEdit, onView, onShare }: EventsListProps) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const getStatusColor = (status?: string) => {
     switch (status) {
@@ -124,14 +140,53 @@ export const EventsList = ({ events, onDelete, onEdit, onView, onShare }: Events
                   <Eye className="w-4 h-4" />
                 </button>
               )}
-              {onEdit && (
-                <button
-                  onClick={() => onEdit(event)}
-                  className="p-2 rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-200"
-                  title="Edit"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
+              {(onEdit || (onQuickEdit && onDetailedEdit)) && (
+                <div className="relative" ref={openMenuId === event.id ? menuRef : undefined}>
+                  <button
+                    onClick={() => {
+                      if (onQuickEdit && onDetailedEdit) {
+                        setOpenMenuId(openMenuId === event.id ? null : event.id);
+                      } else if (onEdit) {
+                        onEdit(event);
+                      }
+                    }}
+                    className="p-2 rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-200 flex items-center gap-0.5"
+                    title="Edit Options"
+                  >
+                    <Edit className="w-4 h-4" />
+                    {(onQuickEdit && onDetailedEdit) && (
+                      <ChevronDown className={cn("w-3 h-3 transition-transform", openMenuId === event.id && "rotate-180")} />
+                    )}
+                  </button>
+
+                  {/* Edit Options Dropdown */}
+                  {openMenuId === event.id && onQuickEdit && onDetailedEdit && (
+                    <div className="absolute right-0 top-full mt-1 w-40 bg-popover border border-border rounded-lg shadow-lg z-50 py-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onQuickEdit(event);
+                          setOpenMenuId(null);
+                        }}
+                        className="w-full px-3 py-2 text-sm text-left hover:bg-accent flex items-center gap-2"
+                      >
+                        <PenLine className="w-4 h-4 text-amber-500" />
+                        <span>Quick Edit</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDetailedEdit(event);
+                          setOpenMenuId(null);
+                        }}
+                        className="w-full px-3 py-2 text-sm text-left hover:bg-accent flex items-center gap-2"
+                      >
+                        <ListTodo className="w-4 h-4 text-blue-500" />
+                        <span>Detailed Edit</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
               {onShare && (
                 <button

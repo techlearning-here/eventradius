@@ -23,6 +23,7 @@ import { SectionHeader } from '@/components/OrganizerDashboard/SectionHeader';
 import { EventsList } from '@/components/OrganizerDashboard/EventsList';
 import { OrganizerEventsGrid } from '@/components/OrganizerDashboard/OrganizerEventsGrid';
 import { EventWizardOverlay } from '@/components/OrganizerDashboard/EventWizardOverlay';
+import { QuickCreateForm } from '@/components/OrganizerDashboard/QuickCreateForm';
 import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
 import { ShareEventModal } from '@/components/share/ShareEventModal';
 import { EventDetailInline } from '@/components/EventDetailInline';
@@ -76,6 +77,13 @@ const OrganizerDashboard = () => {
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [eventToRestore, setEventToRestore] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // State for Quick Create form
+  const [showQuickCreate, setShowQuickCreate] = useState(false);
+
+  // State for Quick Edit form
+  const [showQuickEdit, setShowQuickEdit] = useState(false);
+  const [quickEditEvent, setQuickEditEvent] = useState<Event | null>(null);
 
   // Helper to calculate days remaining until permanent deletion
   const getDaysRemaining = (deletedAt: string | undefined): number => {
@@ -850,6 +858,20 @@ const OrganizerDashboard = () => {
     setSidebarIconized(true);
   };
 
+  const handleQuickEdit = (event: Event) => {
+    setQuickEditEvent(event);
+    setShowQuickEdit(true);
+  };
+
+  const handleQuickEditClose = () => {
+    setShowQuickEdit(false);
+    setQuickEditEvent(null);
+  };
+
+  const handleDetailedEdit = (event: Event) => {
+    handleWizardEdit(event);
+  };
+
   const fetchFullEventDetails = async (eventId: string) => {
     try {
       const fullEvent = await apiClient.getEvent(eventId);
@@ -1037,6 +1059,22 @@ const OrganizerDashboard = () => {
             <SectionHeader
               activeSection={activeSection}
               onCreateEvent={handleWizardOpen}
+              onQuickCreate={() => setShowQuickCreate(true)}
+            />
+
+            {/* Quick Create Form Modal */}
+            <QuickCreateForm
+              isOpen={showQuickCreate}
+              onClose={() => setShowQuickCreate(false)}
+              onSuccess={fetchEvents}
+            />
+
+            {/* Quick Edit Form Modal */}
+            <QuickCreateForm
+              isOpen={showQuickEdit}
+              onClose={handleQuickEditClose}
+              onSuccess={fetchEvents}
+              editingEvent={quickEditEvent}
             />
 
             {/* EventWizard Overlay */}
@@ -1111,6 +1149,8 @@ const OrganizerDashboard = () => {
                       events={events}
                       onDelete={handleDelete}
                       onEdit={handleWizardEdit}
+                      onQuickEdit={handleQuickEdit}
+                      onDetailedEdit={handleDetailedEdit}
                       onPreview={handlePreviewEvent}
                       viewMode="grid"
                       isLoading={loading}
@@ -1122,6 +1162,8 @@ const OrganizerDashboard = () => {
                     events={events}
                     onDelete={handleDelete}
                     onEdit={handleWizardEdit}
+                    onQuickEdit={handleQuickEdit}
+                    onDetailedEdit={handleDetailedEdit}
                     onView={handlePreviewEvent}
                     onShare={handleShare}
                   />

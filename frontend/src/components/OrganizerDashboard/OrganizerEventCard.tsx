@@ -11,6 +11,8 @@ import { EventCardContainer } from './EventCardContainer';
 interface OrganizerEventCardProps {
   event: Event;
   onEdit?: (event: Event) => void;
+  onQuickEdit?: (event: Event) => void;
+  onDetailedEdit?: (event: Event) => void;
   onDelete?: (eventId: string) => void;
   onPreview?: (event: Event) => void;
   variant?: 'default' | 'compact';
@@ -20,11 +22,13 @@ interface OrganizerEventCardProps {
 export const OrganizerEventCard = ({
   event,
   onEdit,
+  onQuickEdit,
+  onDetailedEdit,
   onDelete,
   onPreview,
   variant = 'default',
   participantCounts
-}) => {
+}: OrganizerEventCardProps) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const catLabel = CATEGORIES.find(c => c.id === event.category)?.label || event.category;
@@ -41,6 +45,14 @@ export const OrganizerEventCard = ({
     onEdit?.(event);
   };
 
+  const handleQuickEdit = () => {
+    onQuickEdit?.(event);
+  };
+
+  const handleDetailedEdit = () => {
+    onDetailedEdit?.(event);
+  };
+
   const handleDelete = () => {
     onDelete?.(event.id);
   };
@@ -51,12 +63,17 @@ export const OrganizerEventCard = ({
 
   const isCompact = variant === 'compact';
 
+  const isQuickCreated = event.tags?.includes('quick-created');
+
   return (
     <>
       <EventCardContainer
         onPreview={handlePreview}
         onEdit={onEdit ? handleEdit : undefined}
+        onQuickEdit={onQuickEdit ? handleQuickEdit : undefined}
+        onDetailedEdit={onDetailedEdit ? handleDetailedEdit : undefined}
         onDelete={onDelete ? handleDelete : undefined}
+        isQuickCreated={isQuickCreated}
         className={cn(
           isCompact ? "hover:shadow-md" : "hover:shadow-xl hover:-translate-y-1"
         )}
@@ -110,6 +127,11 @@ export const OrganizerEventCard = ({
                 <span className="text-[10px] uppercase font-medium text-muted-foreground">{catLabel}</span>
                 {!event.is_paid_event && (
                   <span className="text-[10px] font-semibold text-green-500">FREE</span>
+                )}
+                {event.tags?.includes('quick-created') && (
+                  <span className="text-[10px] font-semibold text-amber-500 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
+                    Quick
+                  </span>
                 )}
               </div>
               <div className="text-[10px] text-muted-foreground">
