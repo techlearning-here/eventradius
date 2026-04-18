@@ -33,6 +33,7 @@ interface EventTypeSectionProps {
   onlineMeetingLink?: string;
   // Scheduling fields based on event format
   singleEventDate?: string;
+  singleEventEndDate?: string;
   singleEventStartTime?: string;
   singleEventEndTime?: string;
   recurringEventDay?: string;
@@ -62,6 +63,7 @@ interface EventTypeSectionProps {
   onOnlineMeetingLinkChange: (value: string) => void;
   // Scheduling field handlers
   onSingleEventDateChange: (value: string) => void;
+  onSingleEventEndDateChange: (value: string) => void;
   onSingleEventStartTimeChange: (value: string) => void;
   onSingleEventEndTimeChange: (value: string) => void;
   onRecurringEventDayChange: (value: string) => void;
@@ -88,6 +90,7 @@ export const EventTypeSection = ({
   onlineMeetingLink = '',
   // Scheduling fields
   singleEventDate = '',
+  singleEventEndDate = '',
   singleEventStartTime = '',
   singleEventEndTime = '',
   recurringEventDay = '',
@@ -111,6 +114,7 @@ export const EventTypeSection = ({
   onOnlineMeetingLinkChange,
   // Scheduling handlers
   onSingleEventDateChange,
+  onSingleEventEndDateChange,
   onSingleEventStartTimeChange,
   onSingleEventEndTimeChange,
   onRecurringEventDayChange,
@@ -490,14 +494,24 @@ export const EventTypeSection = ({
               </div>
               <h3 className="text-lg font-semibold">Event Date & Time <span className="text-red-500">*</span></h3>
             </div>
-            <p className="text-gray-900 mb-4">Set the specific date and time for your single event</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <p className="text-gray-900 mb-4">Set the start date, end date, and times for your event</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">Event Date <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-900 mb-2">Start Date <span className="text-red-500">*</span></label>
                 <input
                   type="date"
                   value={singleEventDate}
                   onChange={(e) => onSingleEventDateChange(e.target.value)}
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">End Date <span className="text-red-500">*</span></label>
+                <input
+                  type="date"
+                  value={singleEventEndDate}
+                  onChange={(e) => onSingleEventEndDateChange(e.target.value)}
                   className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
                 />
               </div>

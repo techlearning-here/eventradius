@@ -23,11 +23,13 @@ import { SectionHeader } from '@/components/OrganizerDashboard/SectionHeader';
 import { EventsList } from '@/components/OrganizerDashboard/EventsList';
 import { OrganizerEventsGrid } from '@/components/OrganizerDashboard/OrganizerEventsGrid';
 import { EventWizardOverlay } from '@/components/OrganizerDashboard/EventWizardOverlay';
+import { QuickCreateForm } from '@/components/OrganizerDashboard/QuickCreateForm';
 import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
 import { ShareEventModal } from '@/components/share/ShareEventModal';
 import { EventDetailInline } from '@/components/EventDetailInline';
 import { type Event, type RefundPolicy, type EventCreate } from '@/integrations/backend/api';
 import { Trash2, LayoutGrid, List } from 'lucide-react';
+import { format } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -76,6 +78,13 @@ const OrganizerDashboard = () => {
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [eventToRestore, setEventToRestore] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // State for Quick Create form
+  const [showQuickCreate, setShowQuickCreate] = useState(false);
+
+  // State for Quick Edit form
+  const [showQuickEdit, setShowQuickEdit] = useState(false);
+  const [quickEditEvent, setQuickEditEvent] = useState<Event | null>(null);
 
   // Helper to calculate days remaining until permanent deletion
   const getDaysRemaining = (deletedAt: string | undefined): number => {
@@ -850,6 +859,20 @@ const OrganizerDashboard = () => {
     setSidebarIconized(true);
   };
 
+  const handleQuickEdit = (event: Event) => {
+    setQuickEditEvent(event);
+    setShowQuickEdit(true);
+  };
+
+  const handleQuickEditClose = () => {
+    setShowQuickEdit(false);
+    setQuickEditEvent(null);
+  };
+
+  const handleDetailedEdit = (event: Event) => {
+    handleWizardEdit(event);
+  };
+
   const fetchFullEventDetails = async (eventId: string) => {
     try {
       const fullEvent = await apiClient.getEvent(eventId);
@@ -878,6 +901,11 @@ const OrganizerDashboard = () => {
       // Map dates from ISO strings to Date objects
       start_time: fullEventDetails.start_time ? new Date(fullEventDetails.start_time) : null,
       end_time: fullEventDetails.end_time ? new Date(fullEventDetails.end_time) : null,
+      // Format-specific date fields for EventWizard Type & Format section
+      single_event_date: fullEventDetails.start_time ? format(new Date(fullEventDetails.start_time), 'yyyy-MM-dd') : '',
+      single_event_start_time: fullEventDetails.start_time ? format(new Date(fullEventDetails.start_time), 'HH:mm') : '',
+      single_event_end_date: fullEventDetails.end_time ? format(new Date(fullEventDetails.end_time), 'yyyy-MM-dd') : '',
+      single_event_end_time: fullEventDetails.end_time ? format(new Date(fullEventDetails.end_time), 'HH:mm') : '',
       // Language
       language: fullEventDetails.language || 'en',
       // Type & Format fields
@@ -1037,7 +1065,30 @@ const OrganizerDashboard = () => {
             <SectionHeader
               activeSection={activeSection}
               onCreateEvent={handleWizardOpen}
+              onQuickCreate={() => setShowQuickCreate(true)}
             />
+
+            {/* Quick Create Form Modal */}
+            <QuickCreateForm
+              isOpen={showQuickCreate}
+              onClose={() => setShowQuickCreate(false)}
+              onSuccess={fetchEvents}
+              onDetailedEdit={handleWizardEdit}
+            />
+
+            {/* Quick Edit Form Modal */}
+            {quickEditEvent && (
+              <QuickCreateForm
+                isOpen={showQuickEdit}
+                onClose={() => {
+                  setShowQuickEdit(false);
+                  setQuickEditEvent(null);
+                }}
+                onSuccess={fetchEvents}
+                editingEvent={quickEditEvent}
+                onDetailedEdit={handleWizardEdit}
+              />
+            )}
 
             {/* EventWizard Overlay */}
             <EventWizardOverlay
@@ -1111,6 +1162,8 @@ const OrganizerDashboard = () => {
                       events={events}
                       onDelete={handleDelete}
                       onEdit={handleWizardEdit}
+                      onQuickEdit={handleQuickEdit}
+                      onDetailedEdit={handleDetailedEdit}
                       onPreview={handlePreviewEvent}
                       viewMode="grid"
                       isLoading={loading}
@@ -1122,6 +1175,8 @@ const OrganizerDashboard = () => {
                     events={events}
                     onDelete={handleDelete}
                     onEdit={handleWizardEdit}
+                    onQuickEdit={handleQuickEdit}
+                    onDetailedEdit={handleDetailedEdit}
                     onView={handlePreviewEvent}
                     onShare={handleShare}
                   />

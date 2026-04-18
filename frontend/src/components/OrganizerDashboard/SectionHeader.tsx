@@ -1,8 +1,9 @@
-import { Plus } from 'lucide-react';
+import { Plus, Zap } from 'lucide-react';
 
 interface SectionHeaderProps {
   activeSection: string;
   onCreateEvent?: () => void;
+  onQuickCreate?: () => void;
 }
 
 const sectionInfo = {
@@ -53,7 +54,7 @@ const sectionInfo = {
   }
 };
 
-export const SectionHeader = ({ activeSection, onCreateEvent }: SectionHeaderProps) => {
+export const SectionHeader = ({ activeSection, onCreateEvent, onQuickCreate }: SectionHeaderProps) => {
   const currentSection = sectionInfo[activeSection as keyof typeof sectionInfo];
 
   return (
@@ -63,19 +64,39 @@ export const SectionHeader = ({ activeSection, onCreateEvent }: SectionHeaderPro
           <h1 className="text-3xl font-bold mb-2">{currentSection?.title}</h1>
           <p className="text-muted-foreground text-sm">{currentSection?.description}</p>
         </div>
-        {currentSection?.showCreateButton && onCreateEvent && (
-          <button
-            onClick={onCreateEvent}
-            className="group relative flex items-center gap-2.5 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold text-sm rounded-lg shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:from-emerald-400 hover:to-teal-500 active:scale-95 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all duration-200 overflow-hidden w-fit"
-          >
-            <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-            <div className="relative flex items-center gap-2">
-              <div className="w-6 h-6 bg-white/20 rounded-md flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-colors">
-                <Plus className="w-4 h-4" />
-              </div>
-              <span>Create Event</span>
-            </div>
-          </button>
+        {currentSection?.showCreateButton && (
+          <div className="flex flex-wrap gap-3">
+            {/* Quick Create Button */}
+            {onQuickCreate && (
+              <button
+                onClick={onQuickCreate}
+                className="group relative flex items-center gap-2.5 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-sm rounded-lg shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/40 hover:from-amber-400 hover:to-orange-400 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-all duration-200 overflow-hidden w-fit"
+              >
+                <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                <div className="relative flex items-center gap-2">
+                  <div className="w-6 h-6 bg-white/20 rounded-md flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+                    <Zap className="w-4 h-4" />
+                  </div>
+                  <span>Quick Create</span>
+                </div>
+              </button>
+            )}
+            {/* Full Create Event Button */}
+            {onCreateEvent && (
+              <button
+                onClick={onCreateEvent}
+                className="group relative flex items-center gap-2.5 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold text-sm rounded-lg shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:from-emerald-400 hover:to-teal-500 active:scale-95 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all duration-200 overflow-hidden w-fit"
+              >
+                <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                <div className="relative flex items-center gap-2">
+                  <div className="w-6 h-6 bg-white/20 rounded-md flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+                    <Plus className="w-4 h-4" />
+                  </div>
+                  <span>Create Event</span>
+                </div>
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>
