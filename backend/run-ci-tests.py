@@ -41,7 +41,7 @@ def run_ci_tests():
         "pytest",
         *stable_tests,
         "--cov=api",
-        "--cov=config", 
+        "--cov=config",
         "--cov-report=xml",
         "--cov-report=html",
         "--tb=short",

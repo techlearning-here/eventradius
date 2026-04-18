@@ -55,20 +55,26 @@ app.add_middleware(
     max_age=3600,
 )
 
+
 # Debug middleware to log all requests
 @app.middleware("http")
 async def log_requests(request, call_next):
     # Skip logging for CORS preflight requests to reduce noise
     if request.method == "OPTIONS":
         return await call_next(request)
-    logger.info(f"[{request.method}] {request.url.path} - Origin: {request.headers.get('origin', 'none')}")
+    logger.info(
+        f"[{request.method}] {request.url.path} - Origin: {request.headers.get('origin', 'none')}"
+    )
     try:
         response = await call_next(request)
-        logger.info(f"[{request.method}] {request.url.path} - Status: {response.status_code}")
+        logger.info(
+            f"[{request.method}] {request.url.path} - Status: {response.status_code}"
+        )
         return response
     except Exception as e:
         logger.error(f"[{request.method}] {request.url.path} - Error: {e}")
         raise
+
 
 from api.auth import router as auth_router
 
@@ -77,7 +83,6 @@ from api.events import router as events_router
 from api.users import router as users_router
 from api.verification import router as verification_router
 from api.organizers import router as organizers_router
-
 
 # Include routers first
 app.include_router(events_router)
@@ -96,10 +101,8 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Exception on {request.method} {request.url.path}: {exc}")
     logger.error(f"Request headers: {dict(request.headers)}")
     # Return 500 for server errors, not 400
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error"}
-    )
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
 
 # Health check endpoint
 @app.get("/")
