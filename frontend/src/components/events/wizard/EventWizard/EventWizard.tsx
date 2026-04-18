@@ -53,6 +53,7 @@ export interface EventFormData {
   
   // Scheduling fields based on event format
   single_event_date?: string;
+  single_event_end_date?: string;
   single_event_start_time?: string;
   single_event_end_time?: string;
   recurring_event_day?: string;
@@ -195,6 +196,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
     
     // Scheduling fields
     single_event_date: '',
+    single_event_end_date: '',
     single_event_start_time: '',
     single_event_end_time: '',
     recurring_event_day: '',
@@ -432,6 +434,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
             onlineMeetingLink={formData.virtual_event_url}
             // Scheduling fields
             singleEventDate={formData.single_event_date}
+            singleEventEndDate={formData.single_event_end_date}
             singleEventStartTime={formData.single_event_start_time}
             singleEventEndTime={formData.single_event_end_time}
             recurringEventDay={formData.recurring_event_day}
@@ -455,6 +458,7 @@ export const EventWizard = ({ initialData, onSave, onPublish }: EventWizardProps
             onOnlineMeetingLinkChange={(virtual_event_url) => updateFormData({ virtual_event_url })}
             // Scheduling handlers
             onSingleEventDateChange={(single_event_date) => updateFormData({ single_event_date })}
+            onSingleEventEndDateChange={(single_event_end_date) => updateFormData({ single_event_end_date })}
             onSingleEventStartTimeChange={(single_event_start_time) => updateFormData({ single_event_start_time })}
             onSingleEventEndTimeChange={(single_event_end_time) => updateFormData({ single_event_end_time })}
             onRecurringEventDayChange={(recurring_event_day) => updateFormData({ recurring_event_day })}

@@ -29,6 +29,7 @@ import { ShareEventModal } from '@/components/share/ShareEventModal';
 import { EventDetailInline } from '@/components/EventDetailInline';
 import { type Event, type RefundPolicy, type EventCreate } from '@/integrations/backend/api';
 import { Trash2, LayoutGrid, List } from 'lucide-react';
+import { format } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -900,6 +901,11 @@ const OrganizerDashboard = () => {
       // Map dates from ISO strings to Date objects
       start_time: fullEventDetails.start_time ? new Date(fullEventDetails.start_time) : null,
       end_time: fullEventDetails.end_time ? new Date(fullEventDetails.end_time) : null,
+      // Format-specific date fields for EventWizard Type & Format section
+      single_event_date: fullEventDetails.start_time ? format(new Date(fullEventDetails.start_time), 'yyyy-MM-dd') : '',
+      single_event_start_time: fullEventDetails.start_time ? format(new Date(fullEventDetails.start_time), 'HH:mm') : '',
+      single_event_end_date: fullEventDetails.end_time ? format(new Date(fullEventDetails.end_time), 'yyyy-MM-dd') : '',
+      single_event_end_time: fullEventDetails.end_time ? format(new Date(fullEventDetails.end_time), 'HH:mm') : '',
       // Language
       language: fullEventDetails.language || 'en',
       // Type & Format fields
@@ -1067,15 +1073,22 @@ const OrganizerDashboard = () => {
               isOpen={showQuickCreate}
               onClose={() => setShowQuickCreate(false)}
               onSuccess={fetchEvents}
+              onDetailedEdit={handleWizardEdit}
             />
 
             {/* Quick Edit Form Modal */}
-            <QuickCreateForm
-              isOpen={showQuickEdit}
-              onClose={handleQuickEditClose}
-              onSuccess={fetchEvents}
-              editingEvent={quickEditEvent}
-            />
+            {quickEditEvent && (
+              <QuickCreateForm
+                isOpen={showQuickEdit}
+                onClose={() => {
+                  setShowQuickEdit(false);
+                  setQuickEditEvent(null);
+                }}
+                onSuccess={fetchEvents}
+                editingEvent={quickEditEvent}
+                onDetailedEdit={handleWizardEdit}
+              />
+            )}
 
             {/* EventWizard Overlay */}
             <EventWizardOverlay

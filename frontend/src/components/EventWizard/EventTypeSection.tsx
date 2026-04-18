@@ -33,6 +33,7 @@ interface EventTypeSectionProps {
   onlineMeetingLink?: string;
   // Scheduling fields based on event format
   singleEventDate?: string;
+  singleEventEndDate?: string;
   singleEventStartTime?: string;
   singleEventEndTime?: string;
   recurringEventDay?: string;
@@ -67,6 +68,7 @@ interface EventTypeSectionProps {
   onOnlineMeetingLinkChange: (value: string) => void;
   // Scheduling field handlers
   onSingleEventDateChange: (value: string) => void;
+  onSingleEventEndDateChange: (value: string) => void;
   onSingleEventStartTimeChange: (value: string) => void;
   onSingleEventEndTimeChange: (value: string) => void;
   onRecurringEventDayChange: (value: string) => void;
@@ -98,6 +100,7 @@ export const EventTypeSection = ({
   onlineMeetingLink = '',
   // Scheduling fields
   singleEventDate = '',
+  singleEventEndDate = '',
   singleEventStartTime = '',
   singleEventEndTime = '',
   recurringEventDay = '',
@@ -126,6 +129,7 @@ export const EventTypeSection = ({
   onOnlineMeetingLinkChange,
   // Scheduling handlers
   onSingleEventDateChange,
+  onSingleEventEndDateChange,
   onSingleEventStartTimeChange,
   onSingleEventEndTimeChange,
   onRecurringEventDayChange,
@@ -510,61 +514,67 @@ export const EventTypeSection = ({
               </div>
               <h3 className="text-xl font-bold text-gray-900">Event Date & Time <span className="text-red-500">*</span></h3>
             </div>
-            <p className="text-gray-600 font-medium mb-6">Set the specific date and time for your single event</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Event Date <span className="text-red-500">*</span></label>
+            <p className="text-gray-600 font-medium mb-6">Set the start and end date/time for your event</p>
+            {/* Start and End DateTime Row - Using datetime-local like Doors Open Time */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Start Date & Time <span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="date"
-                  value={singleEventDate}
-                  onChange={(e) => onSingleEventDateChange(e.target.value)}
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Start Time <span className="text-red-500">*</span></label>
-                <input
-                  type="time"
-                  value={singleEventStartTime}
+                  type="datetime-local"
+                  value={singleEventDate && singleEventStartTime ? `${singleEventDate}T${singleEventStartTime}` : ''}
                   onChange={(e) => {
-                    const newStartTime = e.target.value;
-                    onSingleEventStartTimeChange(newStartTime);
-                    // Auto-calculate end time as start time + 1 hour
-                    if (newStartTime) {
-                      const [hours, minutes] = newStartTime.split(':').map(Number);
-                      const endHours = (hours + 1) % 24;
-                      const endTimeStr = `${String(endHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-                      onSingleEventEndTimeChange(endTimeStr);
+                    const value = e.target.value;
+                    if (value) {
+                      const [date, time] = value.split('T');
+                      onSingleEventDateChange(date);
+                      onSingleEventStartTimeChange(time);
+                      // Auto-populate end date/time as start + 1 hour if not already set
+                      if (!singleEventEndDate || !singleEventEndTime) {
+                        const [hours, minutes] = time.split(':').map(Number);
+                        const endHours = (hours + 1) % 24;
+                        const endTimeStr = `${String(endHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                        onSingleEventEndDateChange(date);
+                        onSingleEventEndTimeChange(endTimeStr);
+                      }
                     }
                   }}
                   className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">End Time <span className="text-red-500">*</span></label>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  End Date & Time <span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="time"
-                  value={singleEventEndTime}
+                  type="datetime-local"
+                  value={singleEventEndDate && singleEventEndTime ? `${singleEventEndDate}T${singleEventEndTime}` : ''}
                   onChange={(e) => {
-                    const newEndTime = e.target.value;
-                    // Validation: end time must be after start time (when same date)
-                    if (singleEventStartTime && newEndTime && newEndTime <= singleEventStartTime) {
-                      // Allow the change but it will show error styling
+                    const value = e.target.value;
+                    if (value) {
+                      const [date, time] = value.split('T');
+                      onSingleEventEndDateChange(date);
+                      onSingleEventEndTimeChange(time);
                     }
-                    onSingleEventEndTimeChange(newEndTime);
                   }}
                   className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-black bg-white ${
+                    singleEventDate && singleEventEndDate && singleEventDate === singleEventEndDate &&
                     singleEventStartTime && singleEventEndTime && singleEventEndTime <= singleEventStartTime
                       ? 'border-red-500 focus:ring-red-500'
                       : 'border-gray-200 focus:ring-blue-500'
                   }`}
                 />
-                {singleEventStartTime && singleEventEndTime && singleEventEndTime <= singleEventStartTime && (
+                {singleEventDate && singleEventEndDate && singleEventDate === singleEventEndDate &&
+                  singleEventStartTime && singleEventEndTime && singleEventEndTime <= singleEventStartTime && (
                   <p className="text-red-500 text-xs mt-1">End time must be after start time</p>
                 )}
               </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Timezone <span className="text-red-500">*</span></label>
+            </div>
+            {/* Timezone Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-bold text-gray-700 whitespace-nowrap">Timezone <span className="text-red-500">*</span></label>
                 <select
                   value={timezone}
                   onChange={(e) => onTimezoneChange(e.target.value)}

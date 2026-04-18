@@ -16,6 +16,7 @@ interface QuickCreateFormProps {
   onClose: () => void;
   onSuccess?: () => void;
   editingEvent?: Event | null;
+  onDetailedEdit?: (event: Event) => void;
 }
 
 interface QuickCreateData {
@@ -37,7 +38,7 @@ const DEFAULT_IMAGES = [
   'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=400&fit=crop',
 ];
 
-export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent }: QuickCreateFormProps) => {
+export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDetailedEdit }: QuickCreateFormProps) => {
   const navigate = useNavigate();
   const { createEvent, updateEvent } = useEventActions();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -120,15 +121,20 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent }: Qu
         if (result) {
           toast.success(
             <div className="space-y-1">
-              <p className="font-medium">Event updated! 🎉</p>
-              <p className="text-xs text-gray-200">
+              <p className="font-medium text-inherit">Event updated! 🎉</p>
+              <p className="text-xs text-inherit opacity-90">
                 Quick edit saved.{' '}
-                <button
-                  onClick={() => navigate(`/event/${editingEvent.id}/edit`)}
-                  className="underline font-medium hover:text-white"
-                >
-                  Full edit →
-                </button>
+                {onDetailedEdit && editingEvent && (
+                  <button
+                    onClick={() => {
+                      onDetailedEdit(editingEvent);
+                      toast.dismiss();
+                    }}
+                    className="underline font-medium hover:opacity-80 text-inherit"
+                  >
+                    Full edit →
+                  </button>
+                )}
               </p>
             </div>,
             { duration: 4000 }
@@ -170,17 +176,32 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent }: Qu
         const result = await createEvent(eventData);
 
         if (result) {
+          // Construct a minimal Event object for detailed edit
+          const createdEvent: Event = {
+            ...result,
+            start_time: result.start_time || formData.start_time?.toISOString() || new Date().toISOString(),
+            end_time: result.end_time || formData.end_time?.toISOString() || new Date().toISOString(),
+            location: result.location || formData.location,
+            description: result.description || formData.description,
+            category: result.category || 'general',
+          };
+
           toast.success(
             <div className="space-y-1">
-              <p className="font-medium">Event created and published! 🎉</p>
-              <p className="text-xs text-gray-200">
+              <p className="font-medium text-inherit">Event created and published! 🎉</p>
+              <p className="text-xs text-inherit opacity-90">
                 Created in Quick Mode.{' '}
-                <button
-                  onClick={() => navigate(`/event/${result.id}/edit`)}
-                  className="underline font-medium hover:text-white"
-                >
-                  Add more details →
-                </button>
+                {onDetailedEdit && (
+                  <button
+                    onClick={() => {
+                      onDetailedEdit(createdEvent);
+                      toast.dismiss(); // Dismiss the toast after clicking
+                    }}
+                    className="underline font-medium hover:opacity-80 text-inherit"
+                  >
+                    Add more details →
+                  </button>
+                )}
               </p>
             </div>,
             { duration: 6000 }
@@ -203,6 +224,13 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent }: Qu
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  };
+
+  // Format Time to HH:MM string (local timezone)
+  const formatTimeLocal = (date: Date): string => {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
   };
 
   // Parse date string safely (handles both YYYY-MM-DD and potential locale formats)
@@ -383,77 +411,57 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent }: Qu
 
           {/* Date & Time */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium">
-              <Calendar className="w-4 h-4 inline mr-1" />
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
               Date & Time <span className="text-red-500">*</span>
-            </Label>
+            </label>
             
-            {/* Start Time */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Input
-                  type="date"
-                  min={formatDateLocal(new Date())}
-                  value={formData.start_time ? formatDateLocal(formData.start_time) : defaultDate}
-                  onChange={(e) => {
-                    const timeStr = formData.start_time 
-                      ? `${String(formData.start_time.getHours()).padStart(2, '0')}:${String(formData.start_time.getMinutes()).padStart(2, '0')}`
-                      : defaultTime;
-                    handleDateChange('start_time', e.target.value, timeStr);
-                  }}
-                  className={errors.start_time ? 'border-red-500' : ''}
-                />
-                <p className="text-xs text-gray-500 mt-1">Start Date <span className="text-red-500">*</span></p>
-              </div>
-              <div>
-                <Input
-                  type="time"
-                  value={formData.start_time 
-                    ? `${String(formData.start_time.getHours()).padStart(2, '0')}:${String(formData.start_time.getMinutes()).padStart(2, '0')}`
-                    : defaultTime}
-                  onChange={(e) => {
-                    const dateStr = formData.start_time ? formatDateLocal(formData.start_time) : defaultDate;
-                    handleDateChange('start_time', dateStr, e.target.value);
-                  }}
-                  className={errors.start_time ? 'border-red-500' : ''}
-                />
-                <p className="text-xs text-gray-500 mt-1">Start Time <span className="text-red-500">*</span></p>
-              </div>
+            {/* Start Date & Time - Using datetime-local */}
+            <div>
+              <Input
+                type="datetime-local"
+                value={formData.start_time 
+                  ? `${formatDateLocal(formData.start_time)}T${formatTimeLocal(formData.start_time)}`
+                  : `${defaultDate}T${defaultTime}`}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value) {
+                    const [dateStr, timeStr] = value.split('T');
+                    handleDateChange('start_time', dateStr, timeStr);
+                    // Auto-populate end time if not set (+1 hour)
+                    if (!formData.end_time) {
+                      const [hours, minutes] = timeStr.split(':').map(Number);
+                      const endHours = (hours + 1) % 24;
+                      const endTimeStr = `${String(endHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                      handleDateChange('end_time', dateStr, endTimeStr);
+                    }
+                  }
+                }}
+                className={errors.start_time ? 'border-red-500' : ''}
+              />
+              <p className="text-xs text-gray-500 mt-1">Start Date & Time <span className="text-red-500">*</span></p>
+            </div>
+            {/* End Date & Time - Using datetime-local */}
+            <div>
+              <Input
+                type="datetime-local"
+                value={formData.end_time
+                  ? `${formatDateLocal(formData.end_time)}T${formatTimeLocal(formData.end_time)}`
+                  : formData.start_time
+                    ? `${formatDateLocal(formData.start_time)}T${formatTimeLocal(new Date(new Date(formData.start_time).getTime() + 60 * 60 * 1000))}`
+                    : `${defaultDate}T${defaultEndTime}`}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value) {
+                    const [dateStr, timeStr] = value.split('T');
+                    handleDateChange('end_time', dateStr, timeStr);
+                  }
+                }}
+                className={errors.end_time ? 'border-red-500' : ''}
+              />
+              <p className="text-xs text-gray-500 mt-1">End Date & Time <span className="text-red-500">*</span></p>
             </div>
             {errors.start_time && <p className="text-xs text-red-500">{errors.start_time}</p>}
-            
-            {/* End Time */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Input
-                  type="date"
-                  min={formData.start_time ? formatDateLocal(formData.start_time) : formatDateLocal(new Date())}
-                  value={formData.end_time ? formatDateLocal(formData.end_time) : defaultDate}
-                  onChange={(e) => {
-                    const timeStr = formData.end_time 
-                      ? `${String(formData.end_time.getHours()).padStart(2, '0')}:${String(formData.end_time.getMinutes()).padStart(2, '0')}`
-                      : defaultEndTime;
-                    handleDateChange('end_time', e.target.value, timeStr);
-                  }}
-                  className={errors.end_time ? 'border-red-500' : ''}
-                />
-                <p className="text-xs text-gray-500 mt-1">End Date <span className="text-red-500">*</span></p>
-              </div>
-              <div>
-                <Input
-                  type="time"
-                  value={formData.end_time 
-                    ? `${String(formData.end_time.getHours()).padStart(2, '0')}:${String(formData.end_time.getMinutes()).padStart(2, '0')}`
-                    : defaultEndTime}
-                  onChange={(e) => {
-                    const dateStr = formData.end_time ? formatDateLocal(formData.end_time) : defaultDate;
-                    handleDateChange('end_time', dateStr, e.target.value);
-                  }}
-                  className={errors.end_time ? 'border-red-500' : ''}
-                />
-                <p className="text-xs text-gray-500 mt-1">End Time <span className="text-red-500">*</span></p>
-              </div>
-            </div>
             {errors.end_time && <p className="text-xs text-red-500">{errors.end_time}</p>}
           </div>
 
