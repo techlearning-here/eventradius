@@ -144,6 +144,11 @@ class EventAttributes(BaseModel):
     ] = None
     group_discounts: Optional[bool] = None
 
+    # Quick Create fields
+    ticket_price: Optional[float] = Field(None, ge=0)
+    require_approval: Optional[bool] = None
+    enable_waitlist: Optional[bool] = None
+
 
 class EventCreate(EventBase, EventAttributes):
     pass
@@ -182,6 +187,11 @@ class EventUpdate(BaseModel):
     accessibility_options: Optional[str] = None
     custom_refund_policy: Optional[str] = None
     ticket_pricing_description: Optional[str] = None
+
+    # Quick Create fields
+    ticket_price: Optional[float] = Field(None, ge=0)
+    require_approval: Optional[bool] = None
+    enable_waitlist: Optional[bool] = None
 
     # New attributes
     age_categories: Optional[List[str]] = None
@@ -239,6 +249,12 @@ class EventUpdate(BaseModel):
         ]
     ] = None
     group_discounts: Optional[bool] = None
+
+    # Quick Create fields
+    ticket_price: Optional[float] = None
+    require_approval: Optional[bool] = None
+    enable_waitlist: Optional[bool] = None
+
     # Venue fields
     venue_street: Optional[str] = None
     venue_city: Optional[str] = None

@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { X, Sparkles, MapPin, Video, Calendar, Clock, ChevronRight } from 'lucide-react';
+import { X, Sparkles, MapPin, Video, Calendar, Clock, ChevronRight, Ticket, UserCheck, Users, Pencil, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +28,11 @@ interface QuickCreateData {
   location: string;
   virtual_event_url: string;
   image_url: string;
+  ticket_price: number;
+  require_approval: boolean;
+  max_participants: number | undefined;
+  enable_capacity_limit: boolean;
+  enable_waitlist: boolean;
 }
 
 const DEFAULT_IMAGES = [
@@ -43,6 +48,17 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDe
   const { createEvent, updateEvent } = useEventActions();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showImageSelector, setShowImageSelector] = useState(false);
+  const [showCapacityModal, setShowCapacityModal] = useState(false);
+  const [capacityTemp, setCapacityTemp] = useState({
+    enableLimit: false,
+    maxParticipants: 50,
+    enableWaitlist: false,
+  });
+  // Address autocomplete state
+  const [addressSuggestions, setAddressSuggestions] = useState<Array<{display_name: string; place_id: number}>>([]);
+  const [showAddressDropdown, setShowAddressDropdown] = useState(false);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const addressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isEditMode = !!editingEvent;
 
   const [formData, setFormData] = useState<QuickCreateData>({
@@ -54,6 +70,11 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDe
     location: '',
     virtual_event_url: '',
     image_url: DEFAULT_IMAGES[0],
+    ticket_price: 0,
+    require_approval: false,
+    max_participants: undefined,
+    enable_capacity_limit: false,
+    enable_waitlist: false,
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof QuickCreateData, string>>>({});
@@ -89,6 +110,25 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDe
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  // Address autocomplete using Nominatim (OpenStreetMap)
+  const searchAddress = async (query: string) => {
+    if (!query || query.length < 3) return;
+    
+    setIsSearchingAddress(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`
+      );
+      const data = await response.json();
+      setAddressSuggestions(data);
+      setShowAddressDropdown(true);
+    } catch (error) {
+      console.error('Address search error:', error);
+    } finally {
+      setIsSearchingAddress(false);
     }
   };
 
@@ -409,6 +449,90 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDe
             </div>
           </div>
 
+          {/* Event Options */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Event Options</Label>
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-4">
+              {/* Ticket Price */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Ticket className="w-5 h-5 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Ticket Price</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {formData.ticket_price > 0 ? `$${formData.ticket_price}` : 'Free'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const price = prompt('Enter ticket price (0 for free):', formData.ticket_price.toString());
+                      if (price !== null) {
+                        const numPrice = parseFloat(price);
+                        if (!isNaN(numPrice) && numPrice >= 0) {
+                          handleInputChange('ticket_price', numPrice);
+                        }
+                      }
+                    }}
+                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                  >
+                    <Pencil className="w-4 h-4 text-gray-400" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Require Approval */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <UserCheck className="w-5 h-5 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Require Approval</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleInputChange('require_approval', !formData.require_approval)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    formData.require_approval
+                      ? 'bg-emerald-500'
+                      : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      formData.require_approval ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Capacity */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Capacity</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {formData.enable_capacity_limit ? formData.max_participants : 'Unlimited'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCapacityTemp({
+                        enableLimit: formData.enable_capacity_limit,
+                        maxParticipants: formData.max_participants || 50,
+                        enableWaitlist: formData.enable_waitlist,
+                      });
+                      setShowCapacityModal(true);
+                    }}
+                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                  >
+                    <Pencil className="w-4 h-4 text-gray-400" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Date & Time */}
           <div className="space-y-3">
             <label className="text-sm font-medium flex items-center gap-2">
@@ -475,13 +599,62 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDe
               )}
             </Label>
             {formData.event_type === 'in_person' ? (
-              <Input
-                id="location"
-                placeholder="e.g., Central Park, New York"
-                value={formData.location}
-                onChange={(e) => handleInputChange('location', e.target.value)}
-                className={errors.location ? 'border-red-500' : ''}
-              />
+              <div className="relative">
+                <Input
+                  id="location"
+                  placeholder="e.g., Central Park, New York"
+                  value={formData.location}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    handleInputChange('location', value);
+                    // Debounced address search
+                    if (addressTimeoutRef.current) {
+                      clearTimeout(addressTimeoutRef.current);
+                    }
+                    if (value.length >= 3) {
+                      addressTimeoutRef.current = setTimeout(() => {
+                        searchAddress(value);
+                      }, 500);
+                    } else {
+                      setShowAddressDropdown(false);
+                    }
+                  }}
+                  onFocus={() => {
+                    if (addressSuggestions.length > 0) {
+                      setShowAddressDropdown(true);
+                    }
+                  }}
+                  onBlur={() => {
+                    // Delay hiding to allow click on suggestions
+                    setTimeout(() => setShowAddressDropdown(false), 200);
+                  }}
+                  className={errors.location ? 'border-red-500' : ''}
+                />
+                {isSearchingAddress && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                  </div>
+                )}
+                {/* Address Suggestions Dropdown */}
+                {showAddressDropdown && addressSuggestions.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-auto">
+                    {addressSuggestions.map((suggestion, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => {
+                          handleInputChange('location', suggestion.display_name);
+                          setShowAddressDropdown(false);
+                          setAddressSuggestions([]);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 transition-colors"
+                      >
+                        {suggestion.display_name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
               <Input
                 id="virtual_event_url"
@@ -602,6 +775,91 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDe
           </p>
         </CardContent>
       </Card>
+
+      {/* Capacity Modal */}
+      {showCapacityModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 space-y-6">
+            {/* Header */}
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                <Upload className="w-6 h-6 text-gray-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Max Capacity</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Close registration when reaching the capacity. Only approved guests count towards it.
+                </p>
+              </div>
+            </div>
+
+            {/* Limit Event Capacity Toggle */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Limit Event Capacity</span>
+              <button
+                type="button"
+                onClick={() => setCapacityTemp(prev => ({ ...prev, enableLimit: !prev.enableLimit }))}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  capacityTemp.enableLimit ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    capacityTemp.enableLimit ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Max Capacity Input */}
+            {capacityTemp.enableLimit && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Max Capacity</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={capacityTemp.maxParticipants}
+                  onChange={(e) => setCapacityTemp(prev => ({ ...prev, maxParticipants: parseInt(e.target.value) || 1 }))}
+                  className="w-full"
+                />
+              </div>
+            )}
+
+            {/* Waitlist Toggle */}
+            {capacityTemp.enableLimit && (
+              <div className="flex items-center justify-between pt-2 border-t">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Over-Capacity Waitlist</span>
+                <button
+                  type="button"
+                  onClick={() => setCapacityTemp(prev => ({ ...prev, enableWaitlist: !prev.enableWaitlist }))}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    capacityTemp.enableWaitlist ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      capacityTemp.enableWaitlist ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
+
+            {/* Confirm Button */}
+            <Button
+              onClick={() => {
+                handleInputChange('enable_capacity_limit', capacityTemp.enableLimit);
+                handleInputChange('max_participants', capacityTemp.enableLimit ? capacityTemp.maxParticipants : undefined);
+                handleInputChange('enable_waitlist', capacityTemp.enableLimit && capacityTemp.enableWaitlist);
+                setShowCapacityModal(false);
+              }}
+              className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium py-3 rounded-xl"
+            >
+              Confirm
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
