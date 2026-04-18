@@ -10,6 +10,11 @@ export interface Event {
   max_participants?: number;
   is_public: boolean;
   organizer_id: string;
+  
+  // Quick Create fields
+  ticket_price?: number;
+  require_approval?: boolean;
+  enable_waitlist?: boolean;
   created_at: string;
   updated_at: string;
   current_participants?: number;

@@ -1,4 +1,6 @@
 import { Monitor, Users, Wifi, Calendar, Repeat, Grid3X3 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Ticket, UserCheck, Users, Pencil } from 'lucide-react';
 
 /**
  * EventTypeSection features documentation
@@ -55,7 +57,18 @@ interface EventTypeSectionProps {
   onVenueAddressChange: (value: string) => void;
   // Structured venue field handlers
   onVenueStreetChange: (value: string) => void;
-  onVenueCityChange: (value: string) => void;
+  onTimezoneChange: (timezone: string) => void;
+  // Event Options
+  ticketPrice?: number;
+  requireApproval?: boolean;
+  enableCapacityLimit?: boolean;
+  maxParticipants?: number;
+  enableWaitlist?: boolean;
+  onTicketPriceChange: (price: number) => void;
+  onRequireApprovalChange: (value: boolean) => void;
+  onEnableCapacityLimitChange: (value: boolean) => void;
+  onMaxParticipantsChange: (value: number | undefined) => void;
+  onEnableWaitlistChange: (value: boolean) => void;
   onVenueStateChange: (value: string) => void;
   onVenueZipCodeChange: (value: string) => void;
   onVenueCountryChange: (value: string) => void;
@@ -126,7 +139,26 @@ export const EventTypeSection = ({
   onRecurringDailyTypeChange,
   onRecurringExcludedDaysChange,
   onMultiDateEventsChange,
+  // Event Options
+  ticketPrice = 0,
+  requireApproval = false,
+  enableCapacityLimit = false,
+  maxParticipants,
+  enableWaitlist = false,
+  onTicketPriceChange,
+  onRequireApprovalChange,
+  onEnableCapacityLimitChange,
+  onMaxParticipantsChange,
+  onEnableWaitlistChange,
 }: EventTypeSectionProps) => {
+  // Capacity modal state
+  const [showCapacityModal, setShowCapacityModal] = useState(false);
+  const [capacityTemp, setCapacityTemp] = useState({
+    enableLimit: false,
+    maxParticipants: 50,
+    enableWaitlist: false,
+  });
+
   // Helper function to get ordinal suffix for numbers
   const getOrdinalSuffix = (num: number) => {
     const j = num % 10;
@@ -859,6 +891,176 @@ export const EventTypeSection = ({
           </div>
         )}
       </div>
+
+      {/* Event Options */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">Event Options</h3>
+        <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+          {/* Ticket Price */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Ticket className="w-5 h-5 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Ticket Price</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">
+                {ticketPrice > 0 ? `$${ticketPrice}` : 'Free'}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const price = prompt('Enter ticket price (0 for free):', ticketPrice.toString());
+                  if (price !== null) {
+                    const numPrice = parseFloat(price);
+                    if (!isNaN(numPrice) && numPrice >= 0) {
+                      onTicketPriceChange(numPrice);
+                    }
+                  }
+                }}
+                className="p-1 hover:bg-gray-200 rounded transition-colors"
+              >
+                <Pencil className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+          </div>
+
+          {/* Require Approval */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <UserCheck className="w-5 h-5 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Require Approval</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => onRequireApprovalChange(!requireApproval)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                requireApproval ? 'bg-emerald-500' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  requireApproval ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Capacity */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Users className="w-5 h-5 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Capacity</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">
+                {enableCapacityLimit ? maxParticipants : 'Unlimited'}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setCapacityTemp({
+                    enableLimit: enableCapacityLimit,
+                    maxParticipants: maxParticipants || 50,
+                    enableWaitlist: enableWaitlist,
+                  });
+                  setShowCapacityModal(true);
+                }}
+                className="p-1 hover:bg-gray-200 rounded transition-colors"
+              >
+                <Pencil className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Capacity Modal */}
+      {showCapacityModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-6">
+            {/* Header */}
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <Users className="w-6 h-6 text-gray-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Max Capacity</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Close registration when reaching the capacity. Only approved guests count towards it.
+                </p>
+              </div>
+            </div>
+
+            {/* Limit Event Capacity Toggle */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Limit Event Capacity</span>
+              <button
+                type="button"
+                onClick={() => setCapacityTemp(prev => ({ ...prev, enableLimit: !prev.enableLimit }))}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  capacityTemp.enableLimit ? 'bg-emerald-500' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    capacityTemp.enableLimit ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Max Capacity Input */}
+            {capacityTemp.enableLimit && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Max Capacity</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={capacityTemp.maxParticipants}
+                  onChange={(e) => setCapacityTemp(prev => ({ 
+                    ...prev, 
+                    maxParticipants: parseInt(e.target.value) || 1 
+                  }))}
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black bg-white"
+                />
+              </div>
+            )}
+
+            {/* Waitlist Toggle */}
+            {capacityTemp.enableLimit && (
+              <div className="flex items-center justify-between pt-2 border-t">
+                <span className="text-sm font-medium text-gray-700">Over-Capacity Waitlist</span>
+                <button
+                  type="button"
+                  onClick={() => setCapacityTemp(prev => ({ ...prev, enableWaitlist: !prev.enableWaitlist }))}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    capacityTemp.enableWaitlist ? 'bg-emerald-500' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      capacityTemp.enableWaitlist ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
+
+            {/* Confirm Button */}
+            <button
+              onClick={() => {
+                onEnableCapacityLimitChange(capacityTemp.enableLimit);
+                onMaxParticipantsChange(capacityTemp.enableLimit ? capacityTemp.maxParticipants : undefined);
+                onEnableWaitlistChange(capacityTemp.enableLimit && capacityTemp.enableWaitlist);
+                setShowCapacityModal(false);
+              }}
+              className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium py-3 rounded-xl"
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Event Type Tips */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
