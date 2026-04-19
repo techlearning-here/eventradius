@@ -1,12 +1,21 @@
-import { MapPin, Trash2, Edit, Eye, Calendar, Clock, Users, Share2, ChevronDown, PenLine, ListTodo } from 'lucide-react';
+import { MapPin, Trash2, Edit, Eye, Calendar, Clock, Users, Share2, ChevronDown, PenLine, ListTodo, CheckCircle, XCircle, ListOrdered } from 'lucide-react';
 import { CATEGORIES } from '@/data/cities';
 import { useState, useRef, useEffect } from 'react';
 import { type Event } from '@/integrations/backend/api';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
+interface ApprovalStats {
+  total: number;
+  pending: number;
+  approved: number;
+  waitlisted: number;
+  rejected: number;
+}
+
 interface EventsListProps {
   events: Event[];
+  approvalStats?: Record<string, ApprovalStats>;
   onDelete?: (id: string) => void;
   onEdit?: (event: Event) => void;
   onQuickEdit?: (event: Event) => void;
@@ -15,7 +24,8 @@ interface EventsListProps {
   onShare?: (event: Event) => void;
 }
 
-export const EventsList = ({ events, onDelete, onEdit, onQuickEdit, onDetailedEdit, onView, onShare }: EventsListProps) => {
+export const EventsList = ({ events, approvalStats, onDelete, onEdit, onQuickEdit, onDetailedEdit, onView, onShare }: EventsListProps) => {
+  console.log('EventsList received approvalStats:', approvalStats);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -127,6 +137,51 @@ export const EventsList = ({ events, onDelete, onEdit, onQuickEdit, onDetailedEd
                   </span>
                 )}
               </div>
+              {/* Approval Stats - only show for events requiring approval */}
+              {(() => {
+                console.log('Event:', event.id, 'require_approval:', event.require_approval, 'has stats:', !!approvalStats?.[event.id]);
+                return null;
+              })()}
+              {event.require_approval && approvalStats && approvalStats[event.id] && approvalStats[event.id].total > 0 && (
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  {(() => {
+                    const stats = approvalStats[event.id];
+                    console.log('Rendering stats for event', event.id, ':', stats);
+                    return (
+                      <>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 border border-gray-200 flex items-center gap-0.5">
+                          <Users className="w-3 h-3" />
+                          {stats.total}
+                        </span>
+                        {stats.pending > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200 flex items-center gap-0.5">
+                            <Clock className="w-3 h-3" />
+                            {stats.pending}
+                          </span>
+                        )}
+                        {stats.approved > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 border border-green-200 flex items-center gap-0.5">
+                            <CheckCircle className="w-3 h-3" />
+                            {stats.approved}
+                          </span>
+                        )}
+                        {stats.waitlisted > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200 flex items-center gap-0.5">
+                            <ListOrdered className="w-3 h-3" />
+                            {stats.waitlisted}
+                          </span>
+                        )}
+                        {stats.rejected > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200 flex items-center gap-0.5">
+                            <XCircle className="w-3 h-3" />
+                            {stats.rejected}
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}

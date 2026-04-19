@@ -51,7 +51,7 @@ export const RegistrationCard: React.FC<RegistrationCardProps> = ({ event, isReg
         </div>
       )}
       
-      <EventParticipation eventId={event.id} />
+      <EventParticipation event={event} />
       
       {/* External Ticketing Links for Paid Events */}
       {event.is_paid_event && (

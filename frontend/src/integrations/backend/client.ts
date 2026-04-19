@@ -10,6 +10,10 @@ import type {
   UserRole,
   EventMessage,
   RefundPolicy,
+  ApprovalRequestSubmit,
+  ApprovalRequestResponse,
+  ApprovalActionRequest,
+  MyApprovalStatusResponse,
 } from './types';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://eventradius-api.onrender.com';
@@ -423,6 +427,84 @@ class ApiClient {
   async unlinkOAuthAccount(): Promise<{ message: string }> {
     return this.request<{ message: string }>('/api/auth/oauth/unlink', {
       method: 'DELETE',
+    });
+  }
+
+  // Approval Flow Endpoints
+  async submitApprovalRequest(
+    eventId: string,
+    request: ApprovalRequestSubmit
+  ): Promise<ApprovalRequestResponse> {
+    return this.request<ApprovalRequestResponse>(`/api/events/${eventId}/request-approval`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async getMyApprovalStatus(
+    eventId: string,
+    email?: string
+  ): Promise<MyApprovalStatusResponse> {
+    const params = email ? `?email=${encodeURIComponent(email)}` : '';
+    return this.request<MyApprovalStatusResponse>(`/api/events/${eventId}/my-approval-status${params}`);
+  }
+
+  async getApprovalRequests(
+    eventId: string,
+    statusFilter?: 'pending' | 'approved' | 'rejected' | 'waitlisted' | 'cancellation_requested'
+  ): Promise<ApprovalRequestResponse[]> {
+    const params = statusFilter ? `?status_filter=${statusFilter}` : '';
+    return this.request<ApprovalRequestResponse[]>(`/api/events/${eventId}/approval-requests${params}`);
+  }
+
+  async processApprovalAction(
+    eventId: string,
+    participantId: string,
+    action: ApprovalActionRequest
+  ): Promise<ApprovalRequestResponse> {
+    return this.request<ApprovalRequestResponse>(`/api/events/${eventId}/approval/${participantId}/action`, {
+      method: 'POST',
+      body: JSON.stringify(action),
+    });
+  }
+
+  async promoteFromWaitlist(eventId: string): Promise<ApprovalRequestResponse> {
+    return this.request<ApprovalRequestResponse>(`/api/events/${eventId}/promote-from-waitlist`, {
+      method: 'POST',
+    });
+  }
+
+  // Debug: Delete all approval requests for an event
+  async deleteAllApprovalRequests(eventId: string): Promise<{ deleted_count: number; event_id: string }> {
+    return this.request<{ deleted_count: number; event_id: string }>(`/api/events/${eventId}/approval-requests`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Get approval stats for all my events
+  async getMyEventsApprovalStats(): Promise<Record<string, {
+    total: number;
+    pending: number;
+    approved: number;
+    waitlisted: number;
+    rejected: number;
+    cancellation_requested: number;
+  }>> {
+    return this.request('/api/events/my-events/approval-stats');
+  }
+
+  // Cancel approved event participation (immediate, no approval required)
+  async cancelParticipation(eventId: string, reason?: string): Promise<{
+    success: boolean;
+    participant_id: string;
+    removed: boolean;
+    promoted_from_waitlist: boolean;
+    promoted_participant_id?: string;
+    message: string;
+  }> {
+    return this.request(`/api/events/${eventId}/cancel-participation`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
     });
   }
 }

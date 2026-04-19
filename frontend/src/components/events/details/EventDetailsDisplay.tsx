@@ -3,7 +3,7 @@ import { EventMeta } from './EventMeta';
 import { EventHeader } from './EventHeader';
 import { EventDescription } from './EventDescription';
 import { EventLocation } from './EventLocation';
-import { EventParticipation } from './EventParticipation';
+import { EventParticipation } from '../EventParticipation';
 import { EventRegistration } from './EventRegistration';
 import { EventChat } from './EventChat';
 import { EventCountdown } from './EventCountdown';
@@ -134,7 +134,7 @@ export const EventDetailsDisplay: React.FC<EventDetailsDisplayProps> = ({
           <EventLocation address={event.address} onGetDirections={handleGetDirections} />
 
           {/* Participation */}
-          <EventParticipation eventId={event.id} onAuthRequired={handleAuthRequired} />
+          <EventParticipation eventId={event.id} event={event} onAuthRequired={handleAuthRequired} />
 
           {/* Chat for preview events */}
           {shouldShowChat && (

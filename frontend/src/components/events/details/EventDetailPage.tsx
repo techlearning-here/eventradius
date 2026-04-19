@@ -208,7 +208,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({
       try {
         // Use backend API to check registration
         const userEvents = await apiClient.getUserEvents();
-        const isEventRegistered = userEvents.some((e: Event) => e.id === eventId);
+        const isEventRegistered = userEvents.participating.some((e: Event) => e.id === eventId);
         setIsRegistered(isEventRegistered);
         // Cache the result
         registrationCache.set(cacheKey, { isRegistered: isEventRegistered, timestamp: Date.now() });

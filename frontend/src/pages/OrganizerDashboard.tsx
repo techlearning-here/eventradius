@@ -24,6 +24,7 @@ import { EventsList } from '@/components/OrganizerDashboard/EventsList';
 import { OrganizerEventsGrid } from '@/components/OrganizerDashboard/OrganizerEventsGrid';
 import { EventWizardOverlay } from '@/components/OrganizerDashboard/EventWizardOverlay';
 import { QuickCreateForm } from '@/components/OrganizerDashboard/QuickCreateForm';
+import { ApprovalRequestsDashboard } from '@/components/OrganizerDashboard/ApprovalRequestsDashboard';
 import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
 import { ShareEventModal } from '@/components/share/ShareEventModal';
 import { EventDetailInline } from '@/components/EventDetailInline';
@@ -55,6 +56,7 @@ const OrganizerDashboard = () => {
   const initialLoading = !cachedUserEvents;
   
   const [events, setEvents] = useState<Event[]>(initialEvents);
+  const [approvalStats, setApprovalStats] = useState<Record<string, { total: number; pending: number; approved: number; waitlisted: number; rejected: number }>>({});
   const [loading, setLoading] = useState(initialLoading);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
@@ -185,6 +187,19 @@ const OrganizerDashboard = () => {
       cachedUserEvents = eventsData;
       cachedUserEventsTimestamp = now;
       setEvents(eventsData);
+
+      // Fetch approval stats for events requiring approval
+      const hasApprovalEvents = eventsData.some(e => e.require_approval);
+      console.log('Has approval events:', hasApprovalEvents, eventsData.filter(e => e.require_approval).map(e => ({ id: e.id, title: e.title })));
+      if (hasApprovalEvents) {
+        try {
+          const stats = await apiClient.getMyEventsApprovalStats();
+          console.log('Fetched approval stats:', stats);
+          setApprovalStats(stats);
+        } catch (statsError) {
+          console.error('Failed to fetch approval stats:', statsError);
+        }
+      }
     } catch (error) {
       console.error('Failed to fetch events:', error);
       toast.error('Failed to load events');
@@ -1173,6 +1188,7 @@ const OrganizerDashboard = () => {
                 ) : (
                   <EventsList
                     events={events}
+                    approvalStats={approvalStats}
                     onDelete={handleDelete}
                     onEdit={handleWizardEdit}
                     onQuickEdit={handleQuickEdit}
@@ -1320,8 +1336,11 @@ const OrganizerDashboard = () => {
               </>
             )}
 
+            {/* Approval Requests Section */}
+            {activeSection === 'approvals' && <ApprovalRequestsDashboard />}
+
             {/* Placeholder for other sections */}
-            {activeSection !== 'events' && activeSection !== 'recycle-bin' && (
+            {activeSection !== 'events' && activeSection !== 'recycle-bin' && activeSection !== 'approvals' && (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">This section is under development.</p>
               </div>

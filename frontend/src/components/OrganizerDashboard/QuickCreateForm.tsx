@@ -154,6 +154,8 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDe
           virtual_event_url: formData.event_type === 'online' ? formData.virtual_event_url?.trim() : undefined,
           virtual_event_platform: formData.event_type === 'online' ? 'Zoom' : undefined,
           is_virtual: formData.event_type === 'online',
+          require_approval: formData.require_approval,
+          enable_waitlist: formData.enable_waitlist,
         };
 
         const result = await updateEvent(editingEvent.id, updateData);
@@ -211,6 +213,9 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDe
           tags: ['quick-created'],
           accessibility_options: undefined,
           is_virtual: formData.event_type === 'online',
+          // Approval flow settings
+          require_approval: formData.require_approval,
+          enable_waitlist: formData.enable_waitlist,
         };
 
         const result = await createEvent(eventData);
