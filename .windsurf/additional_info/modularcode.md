@@ -1,1 +1,0 @@
-Ensure to make modulatr react components. if the size of fronend code is big, ensure to refactore and make is small to medium size
