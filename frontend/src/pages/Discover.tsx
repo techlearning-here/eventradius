@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEvents } from '@/hooks/useEvents';
 import { apiClient } from '@/integrations/backend/api';
-import { CalendarIcon, MapPin, Plus, ArrowRight, Building2, LayoutGrid, List, Users, RefreshCw, Share2 } from 'lucide-react';
+import { CalendarIcon, MapPin, Plus, ArrowRight, Building2, LayoutGrid, List, Users, RefreshCw, Share2, Navigation } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { CATEGORIES } from '@/data/cities';
@@ -15,6 +15,8 @@ import { SEOHead } from '@/components/SEOHead';
 import { EventCard } from '@/components/discover/EventCard';
 import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
 import { ShareEventModal } from '@/components/share/ShareEventModal';
+import { LocationFilter } from '@/components/discovery/LocationFilter';
+import { formatDistance } from '@/hooks/useGeolocation';
 import { type Event } from '@/integrations/backend/api';
 
 // Global caches to persist data across page switches
@@ -70,6 +72,14 @@ const Discover = () => {
   const [prefs, setPrefs] = useState<UserPrefs | null>(cachedUserPrefs);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'card' | 'list'>('list');
+  
+  // Location-based discovery state
+  const [userLatitude, setUserLatitude] = useState<number | null>(null);
+  const [userLongitude, setUserLongitude] = useState<number | null>(null);
+  const [radius, setRadius] = useState(25);
+  const [useLocation, setUseLocation] = useState(false);
+  const [nearbyEvents, setNearbyEvents] = useState<Event[]>([]);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
   
   // Track preview state
   const [previewEventId, setPreviewEventId] = useState<string | null>(null);
@@ -185,6 +195,79 @@ const Discover = () => {
     setSelectedCategories(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
   };
 
+  // Handle location updates from LocationFilter component
+  const handleLocationChange = async (lat: number, lng: number) => {
+    console.log('[Discover] Location updated:', { lat, lng });
+    setUserLatitude(lat);
+    setUserLongitude(lng);
+    setUseLocation(true);
+    
+    // Save to user preferences
+    try {
+      await apiClient.updateUserLocation(lat, lng, prefs?.city || undefined, radius);
+    } catch (err) {
+      console.error('Failed to save location:', err);
+    }
+  };
+
+  // Handle radius changes
+  const handleRadiusChange = async (newRadius: number) => {
+    setRadius(newRadius);
+    if (useLocation && userLatitude && userLongitude) {
+      // Refetch with new radius
+      try {
+        await apiClient.updateUserLocation(userLatitude, userLongitude, prefs?.city || undefined, newRadius);
+      } catch (err) {
+        console.error('Failed to update radius:', err);
+      }
+    }
+  };
+
+  // Fetch nearby events when location is enabled
+  useEffect(() => {
+    const fetchNearbyEvents = async () => {
+      if (!useLocation || !userLatitude || !userLongitude) {
+        console.log('[Discover] Skipping nearby fetch - location not available:', { useLocation, userLatitude, userLongitude });
+        return;
+      }
+      
+      console.log('[Discover] Fetching nearby events:', { lat: userLatitude, lng: userLongitude, radius });
+      setNearbyLoading(true);
+      try {
+        const data = await apiClient.getNearbyEvents(userLatitude, userLongitude, radius);
+        console.log('[Discover] Nearby events received:', { count: data.length, events: data.map((e: Event & { distance_km?: number }) => ({ id: e.id, title: e.title, distance: e.distance_km })) });
+        setNearbyEvents(data);
+      } catch (err) {
+        console.error('[Discover] Error fetching nearby events:', err);
+        // Fall back to regular events
+        setNearbyEvents([]);
+      } finally {
+        setNearbyLoading(false);
+      }
+    };
+    
+    fetchNearbyEvents();
+  }, [useLocation, userLatitude, userLongitude, radius]);
+
+  // Load saved location from user preferences
+  useEffect(() => {
+    if (prefs?.latitude && prefs?.longitude) {
+      console.log('[Discover] Loading saved location from preferences:', { 
+        lat: prefs.latitude, 
+        lng: prefs.longitude, 
+        radius: prefs.distance_range 
+      });
+      setUserLatitude(prefs.latitude);
+      setUserLongitude(prefs.longitude);
+      if (prefs.distance_range) {
+        setRadius(prefs.distance_range);
+      }
+      setUseLocation(true);
+    } else {
+      console.log('[Discover] No saved location in preferences');
+    }
+  }, [prefs]);
+
   // Clear all caches and refetch
   const handleRefresh = async () => {
     // Clear local caches
@@ -199,13 +282,21 @@ const Discover = () => {
     }
   };
 
+  // Use nearby events when location is enabled and available, otherwise use all events
+  const baseEvents = useMemo(() => {
+    if (useLocation && nearbyEvents.length > 0) {
+      return nearbyEvents;
+    }
+    return events;
+  }, [useLocation, nearbyEvents, events]);
+
   const filteredEvents = useMemo(() => {
-    return events.filter((event) => {
+    return baseEvents.filter((event) => {
       const matchesDate = !date || (event.start_time && new Date(event.start_time).toDateString() === date.toDateString());
       const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(event.category || '');
       return matchesDate && matchesCategory;
     });
-  }, [events, date, selectedCategories]);
+  }, [baseEvents, date, selectedCategories]);
 
   return (
     <>
@@ -233,14 +324,23 @@ const Discover = () => {
               Find events that match your interests and connect with your community
             </p>
             
-            {/* Location indicator if user has preferences */}
-            {prefs?.city && (
+            {/* Location indicator if user has preferences or location is enabled */}
+            {(prefs?.city || useLocation) && (
               <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-lg backdrop-blur-sm">
-                <MapPin className="w-4 h-4 text-primary" />
+                <Navigation className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium text-foreground">
-                  Events near <span className="text-primary font-semibold">{prefs.city}</span>
+                  {useLocation ? (
+                    <>
+                      Events near <span className="text-primary font-semibold">your location</span>
+                      <span className="text-xs text-muted-foreground ml-2">(within {radius} km)</span>
+                    </>
+                  ) : prefs?.city ? (
+                    <>
+                      Events near <span className="text-primary font-semibold">{prefs.city}</span>
+                      <span className="text-xs text-muted-foreground ml-2">(within {prefs.distance_range} miles)</span>
+                    </>
+                  ) : null}
                 </span>
-                <span className="text-xs text-muted-foreground">(within {prefs.distance_range} miles)</span>
               </div>
             )}
           </div>
@@ -255,7 +355,20 @@ const Discover = () => {
                   <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Filter Events</h2>
                 </div>
                 
-                <div className="flex flex-wrap items-center gap-3">
+                {/* Location Filter */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <div className="lg:col-span-1">
+                    <LocationFilter
+                      radius={radius}
+                      onRadiusChange={handleRadiusChange}
+                      onLocationChange={handleLocationChange}
+                      userLatitude={userLatitude}
+                      userLongitude={userLongitude}
+                    />
+                  </div>
+                  
+                  <div className="lg:col-span-2">
+                    <div className="flex flex-wrap items-center gap-3">
                   <Popover>
                     <PopoverTrigger asChild>
                       <button className={cn(
@@ -325,6 +438,8 @@ const Discover = () => {
                     </div>
                   </div>
                 )}
+                </div>
+              </div>
               </div>
             </div>
           </div>

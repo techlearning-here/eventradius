@@ -19,6 +19,7 @@ from config.database import (
     insert_record,
     update_record,
 )
+from services.geocoding import geocode_event_address
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/events", tags=["events"])
@@ -477,6 +478,33 @@ async def _create_event_logic(event: EventCreate, user: dict) -> EventResponse:
         logger.info(f"  event_website: '{event_data.get('event_website')}'")
         logger.info(f"  is_paid_event: {event_data.get('is_paid_event')}")
         logger.info("=====================")
+
+        # Geocode address for in-person and hybrid events
+        event_type = event_data.get("event_type")
+        if event_type in ("in_person", "hybrid"):
+            venue_city = event_data.get("venue_city")
+            if venue_city:  # Only geocode if we have at least a city
+                try:
+                    geocoded = await geocode_event_address(
+                        street=event_data.get("venue_street"),
+                        city=venue_city,
+                        state=event_data.get("venue_state"),
+                        zip_code=event_data.get("venue_zip_code"),
+                        country=event_data.get("venue_country", "US"),
+                    )
+                    if geocoded:
+                        event_data["latitude"] = geocoded.latitude
+                        event_data["longitude"] = geocoded.longitude
+                        event_data["geolocation_accuracy"] = geocoded.accuracy
+                        event_data["geocoded_at"] = datetime.now().isoformat()
+                        logger.info(
+                            f"Geocoded event location: {geocoded.latitude}, {geocoded.longitude} "
+                            f"(accuracy: {geocoded.accuracy})"
+                        )
+                    else:
+                        logger.warning("Geocoding returned no results for event address")
+                except Exception as geo_err:
+                    logger.warning(f"Geocoding failed (non-blocking): {geo_err}")
 
         response = insert_record("events", event_data)
 
@@ -1911,4 +1939,235 @@ async def cancel_participation(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to cancel participation",
+        )
+
+
+# ============================================================================
+# GEOLOCATION & DISCOVERY ENDPOINTS
+# ============================================================================
+
+
+@router.get("/discover/nearby", response_model=List[EventResponse])
+async def get_nearby_events(
+    lat: float = Query(..., description="User latitude", ge=-90, le=90),
+    lng: float = Query(..., description="User longitude", ge=-180, le=180),
+    radius: int = Query(25, ge=1, le=500, description="Search radius in km"),
+    category: Optional[str] = None,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    user: Optional[dict] = Depends(optional_auth),
+):
+    """
+    Get events within specified radius from user location.
+    Uses optimized bounding box + haversine calculation via database function.
+    """
+    try:
+        # Call the database function for efficient radius filtering
+        result = call_rpc(
+            "events_within_radius_fast",
+            {
+                "user_lat": lat,
+                "user_lng": lng,
+                "radius_km": radius,
+                "max_results": limit + offset,
+            },
+        )
+
+        if not result.data:
+            return []
+
+        # Get full event details for filtered IDs
+        event_ids = [r["event_id"] for r in result.data[offset : offset + limit]]
+        distances = {r["event_id"]: r["distance_km"] for r in result.data}
+
+        if not event_ids:
+            return []
+
+        # Fetch full event details
+        table = get_table("events")
+        query = table.select("*").in_("id", event_ids)
+
+        if category:
+            query = query.eq("category", category)
+
+        query = query.is_("deleted_at", "null")
+        query = query.or_(
+            "status.eq.published,status.eq.upcoming,status.is.null"
+        )
+
+        response = query.execute()
+
+        # Add distance to each event
+        events = []
+        for event in response.data:
+            event["distance_km"] = distances.get(event["id"])
+            event["current_participants"] = 0
+            events.append(event)
+
+        # Sort by distance (already sorted by DB function, but re-sort to be safe)
+        events.sort(key=lambda x: x.get("distance_km", float("inf")))
+
+        return events
+
+    except Exception as e:
+        logger.error(f"Error fetching nearby events: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch nearby events",
+        )
+
+
+@router.get("/discover/nearby/summary")
+async def get_nearby_events_summary(
+    lat: float = Query(..., description="User latitude", ge=-90, le=90),
+    lng: float = Query(..., description="User longitude", ge=-180, le=180),
+    radius: int = Query(25, ge=1, le=500, description="Search radius in km"),
+    user: Optional[dict] = Depends(optional_auth),
+):
+    """
+    Get a summary of nearby events with counts by category.
+    Lightweight endpoint for map/discovery overview.
+    """
+    try:
+        result = call_rpc(
+            "events_within_radius_fast",
+            {
+                "user_lat": lat,
+                "user_lng": lng,
+                "radius_km": radius,
+                "max_results": 1000,  # Get more for summary stats
+            },
+        )
+
+        if not result.data:
+            return {
+                "total_events": 0,
+                "events_by_category": {},
+                "radius_km": radius,
+                "user_location": {"lat": lat, "lng": lng},
+            }
+
+        event_ids = [r["event_id"] for r in result.data]
+
+        # Get categories for these events
+        table = get_table("events")
+        response = (
+            table.select("id,category")
+            .in_("id", event_ids)
+            .is_("deleted_at", "null")
+            .or_("status.eq.published,status.eq.upcoming,status.is.null")
+            .execute()
+        )
+
+        # Count by category
+        category_counts = {}
+        for event in response.data:
+            cat = event.get("category") or "uncategorized"
+            category_counts[cat] = category_counts.get(cat, 0) + 1
+
+        return {
+            "total_events": len(response.data),
+            "events_by_category": category_counts,
+            "radius_km": radius,
+            "user_location": {"lat": lat, "lng": lng},
+        }
+
+    except Exception as e:
+        logger.error(f"Error fetching nearby events summary: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch nearby events summary",
+        )
+
+
+@router.post("/{event_id}/geocode")
+async def geocode_event_endpoint(
+    event_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """
+    Manually trigger geocoding for an existing event.
+    Only the event organizer can trigger this.
+    """
+    try:
+        # Fetch the event
+        event_response = fetch_single_record("events", event_id)
+        if not event_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+            )
+
+        event = event_response.data
+
+        # Verify user is organizer
+        if event.get("organizer_id") != user["id"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the event organizer can geocode this event",
+            )
+
+        # Skip online-only events
+        if event.get("event_type") == "online":
+            return {
+                "message": "Online events don't require geocoding",
+                "geocoded": False,
+            }
+
+        # Check if we have venue address data
+        venue_city = event.get("venue_city")
+        if not venue_city:
+            return {
+                "message": "No venue city provided, cannot geocode",
+                "geocoded": False,
+            }
+
+        # Geocode the address
+        geocoded = await geocode_event_address(
+            street=event.get("venue_street"),
+            city=venue_city,
+            state=event.get("venue_state"),
+            zip_code=event.get("venue_zip_code"),
+            country=event.get("venue_country", "US"),
+        )
+
+        if not geocoded:
+            return {
+                "message": "Geocoding returned no results",
+                "geocoded": False,
+            }
+
+        # Update event with coordinates
+        update_data = {
+            "latitude": geocoded.latitude,
+            "longitude": geocoded.longitude,
+            "geolocation_accuracy": geocoded.accuracy,
+            "geocoded_at": datetime.now().isoformat(),
+        }
+
+        update_response = update_record("events", event_id, update_data)
+
+        if not update_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update event with coordinates",
+            )
+
+        return {
+            "message": "Event geocoded successfully",
+            "geocoded": True,
+            "coordinates": {
+                "latitude": geocoded.latitude,
+                "longitude": geocoded.longitude,
+            },
+            "accuracy": geocoded.accuracy,
+            "formatted_address": geocoded.formatted_address,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error geocoding event {event_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to geocode event",
         )

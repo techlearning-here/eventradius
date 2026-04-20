@@ -128,6 +128,20 @@ class ApiClient {
     });
   }
 
+  // Geolocation: Get nearby events within radius
+  async getNearbyEvents(
+    lat: number,
+    lng: number,
+    radius: number = 25
+  ): Promise<Array<Event & { distance_km: number }>> {
+    const params = new URLSearchParams({
+      lat: lat.toString(),
+      lng: lng.toString(),
+      radius: radius.toString(),
+    });
+    return this.request(`/api/events/discover/nearby?${params}`);
+  }
+
   async getDeletedEvent(eventId: string): Promise<Event> {
     return this.request<Event>(`/api/events/deleted/${eventId}`);
   }
@@ -234,6 +248,57 @@ class ApiClient {
     return this.request<{ message: string }>('/api/users/me/preferences', {
       method: 'PUT',
       body: JSON.stringify(preferences),
+    });
+  }
+
+  // Geocode city name to coordinates (used during onboarding for custom cities)
+  async geocodeCity(city: string): Promise<{
+    name: string;
+    lat: number;
+    lng: number;
+    country: string;
+  }> {
+    const params = new URLSearchParams({ city });
+    return this.request(`/api/users/geocode/city?${params}`);
+  }
+
+  // Autocomplete city names as user types (Photon - free, no API key)
+  async autocompleteCities(query: string, limit: number = 5): Promise<{
+    cities: Array<{
+      name: string;
+      state: string;
+      country: string;
+      lat: number;
+      lng: number;
+      full_name: string;
+    }>;
+    query: string;
+    count: number;
+  }> {
+    const params = new URLSearchParams({ query, limit: limit.toString() });
+    return this.request(`/api/users/autocomplete/cities?${params}`);
+  }
+
+  // Geolocation endpoint - updates user location (frontend sends GPS coordinates, no Mapbox calls)
+  async updateUserLocation(
+    lat: number,
+    lng: number,
+    city?: string,
+    distanceRange?: number
+  ): Promise<{
+    message: string;
+    location: { lat: number; lng: number; city?: string };
+    distance_range: number;
+    data: UserPreferences;
+  }> {
+    return this.request('/api/users/me/location', {
+      method: 'PUT',
+      body: JSON.stringify({
+        lat,
+        lng,
+        city,
+        distance_range: distanceRange,
+      }),
     });
   }
 
