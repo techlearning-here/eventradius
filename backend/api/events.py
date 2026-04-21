@@ -19,6 +19,7 @@ from config.database import (
     insert_record,
     update_record,
 )
+
 # Note: Geocoding is done on frontend using Nominatim (OpenStreetMap)
 # Frontend sends lat/lng directly, no backend geocoding needed
 
@@ -488,8 +489,10 @@ async def _create_event_logic(event: EventCreate, user: dict) -> EventResponse:
         # Frontend sends latitude, longitude, and geolocation_accuracy directly
         # Backend just saves the provided coordinates
         logger.info(f"DEBUG: Received event_data keys: {list(event_data.keys())}")
-        logger.info(f"DEBUG: latitude={event_data.get('latitude')}, longitude={event_data.get('longitude')}, accuracy={event_data.get('geolocation_accuracy')}")
-        
+        logger.info(
+            f"DEBUG: latitude={event_data.get('latitude')}, longitude={event_data.get('longitude')}, accuracy={event_data.get('geolocation_accuracy')}"
+        )
+
         event_type = event_data.get("event_type")
         if event_type in ("in_person", "hybrid"):
             lat = event_data.get("latitude")
@@ -501,10 +504,12 @@ async def _create_event_logic(event: EventCreate, user: dict) -> EventResponse:
                 logger.info("No coordinates provided for event (optional)")
 
         response = insert_record("events", event_data)
-        
+
         logger.info(f"DEBUG: Insert response data: {response.data}")
         if response.data:
-            logger.info(f"DEBUG: Created event lat/lng: {response.data[0].get('latitude')}, {response.data[0].get('longitude')}")
+            logger.info(
+                f"DEBUG: Created event lat/lng: {response.data[0].get('latitude')}, {response.data[0].get('longitude')}"
+            )
 
         if not response.data:
             logger.error(f"Insert failed - no data returned. Response: {response}")
@@ -1989,9 +1994,7 @@ async def get_nearby_events(
             query = query.eq("category", category)
 
         query = query.is_("deleted_at", "null")
-        query = query.or_(
-            "status.eq.published,status.eq.upcoming,status.is.null"
-        )
+        query = query.or_("status.eq.published,status.eq.upcoming,status.is.null")
 
         response = query.execute()
 

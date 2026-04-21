@@ -6,10 +6,15 @@ import { EventDetailOverlay } from '@/components/events/details/EventDetailPage'
 import { ShareEventModal } from '@/components/share/ShareEventModal';
 import { CATEGORIES } from '@/data/cities';
 import { formatDistance } from '@/hooks/useGeolocation';
-import { type Event } from '@/components/EventDetail/types';
+import { type Event } from '@/components/events/details/types';
+
+// Event from API may have additional/looser typing than strict Event type
+type EventFromApi = Event & Record<string, unknown> & {
+  distance_km?: number;
+};
 
 interface EventCardProps {
-  event: any; // Event with optional distance_km from nearby API
+  event: EventFromApi;
   onPreview?: (event: Event) => void;
   participantCounts?: { interested: number; going: number };
 }

@@ -673,59 +673,56 @@ async def geocode_city(city: str):
     """
     Geocode a city name to latitude and longitude.
     Used during onboarding when user enters a custom city not in the hardcoded list.
-    
+
     Args:
         city: City name (e.g., "San Francisco, CA" or "Paris, France")
-    
+
     Returns:
         City name with coordinates {name, lat, lng, country}
     """
     try:
         logger.info(f"Geocoding city for onboarding: {city}")
-        
+
         geocoding_service = get_geocoding_service()
         result = await geocoding_service.geocode_freeform_address(city)
-        
+
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Could not find coordinates for city: {city}"
+                detail=f"Could not find coordinates for city: {city}",
             )
-        
+
         return {
             "name": result["name"],
             "lat": result["latitude"],
             "lng": result["longitude"],
-            "country": result.get("country", "")
+            "country": result.get("country", ""),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error geocoding city {city}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to geocode city"
+            detail="Failed to geocode city",
         )
 
 
 @router.get("/autocomplete/cities")
-async def autocomplete_cities(
-    query: str,
-    limit: int = 5
-):
+async def autocomplete_cities(query: str, limit: int = 5):
     """
     Autocomplete city names as user types.
     Uses Nominatim (OpenStreetMap) - free, no API key required.
     Rate limited to 1 request per second.
-    
+
     Args:
         query: Partial city name (e.g., "San Fra", "New Yo")
         limit: Maximum number of suggestions (1-10, default 5)
-    
+
     Returns:
         List of city suggestions with name, state, country, lat, lng
-        
+
     Example Response:
         [
             {
@@ -742,20 +739,16 @@ async def autocomplete_cities(
         # Validate inputs
         if not query or len(query) < 2:
             return {"cities": [], "query": query}
-        
+
         limit = max(1, min(limit, 10))  # Clamp between 1-10
-        
+
         logger.info(f"City autocomplete query: '{query}', limit: {limit}")
-        
+
         # Call Nominatim service (OpenStreetMap - free)
         results = await nominatim_service.autocomplete_cities(query, limit)
-        
-        return {
-            "cities": results,
-            "query": query,
-            "count": len(results)
-        }
-        
+
+        return {"cities": results, "query": query, "count": len(results)}
+
     except Exception as e:
         logger.error(f"Autocomplete error: {e}")
         # Return empty results on error (don't break UI)
@@ -763,7 +756,7 @@ async def autocomplete_cities(
             "cities": [],
             "query": query,
             "count": 0,
-            "error": "Service temporarily unavailable"
+            "error": "Service temporarily unavailable",
         }
 
 

@@ -232,9 +232,14 @@ const OrganizerDashboard = () => {
 
   // Load initial section on mount (only once)
   useEffect(() => {
-    if (user && !loadedSections.has('events')) {
-      fetchEvents();
-      setLoadedSections(prev => new Set(prev).add('events'));
+    if (user) {
+      setLoadedSections(prev => {
+        if (!prev.has('events')) {
+          fetchEvents();
+          return new Set(prev).add('events');
+        }
+        return prev;
+      });
     }
   }, [user]);
 
