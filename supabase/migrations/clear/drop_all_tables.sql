@@ -1,12 +1,186 @@
 -- =====================================================
--- DROP ALL EVENTRADIUS DATABASE OBJECTS
+-- DROP ALL EVENTRADIUS DATABASE OBJECTS - COMPREHENSIVE
 -- =====================================================
--- This script will drop all tables, types, and objects created by EventRadius
+-- This script will drop ALL EventRadius database objects:
+--   - Views
+--   - Triggers
+--   - RLS Policies  
+--   - Functions/Stored Procedures
+--   - Tables (with CASCADE for FK dependencies)
+--   - Custom Types/Enums
 -- WARNING: This will permanently delete all data!
 -- =====================================================
 
 -- =====================================================
--- 1. DROP TABLES (in reverse order of creation to handle dependencies)
+-- 1. DROP VIEWS FIRST (to avoid dependency issues)
+-- =====================================================
+
+DO $$
+DECLARE
+    view_record RECORD;
+BEGIN
+    -- Drop all EventRadius views
+    FOR view_record IN 
+        SELECT table_name 
+        FROM information_schema.views 
+        WHERE table_schema = 'public' 
+        AND table_name IN (
+            'events_with_participants',
+            'user_events_view', 
+            'events_enhanced_view',
+            'deleted_events_with_countdown',
+            'event_geolocation_stats',
+            'ticket_sales_view'
+        )
+    LOOP
+        EXECUTE format('DROP VIEW IF EXISTS public.%I CASCADE', view_record.table_name);
+        RAISE NOTICE 'Dropped view: %', view_record.table_name;
+    END LOOP;
+END $$;
+
+-- =====================================================
+-- 2. DROP TRIGGERS
+-- =====================================================
+
+DO $$
+DECLARE
+    trigger_record RECORD;
+BEGIN
+    -- Drop all triggers on auth.users
+    FOR trigger_record IN 
+        SELECT trigger_name 
+        FROM information_schema.triggers 
+        WHERE event_object_table = 'users' 
+        AND trigger_schema = 'public'
+    LOOP
+        EXECUTE format('DROP TRIGGER IF EXISTS %I ON auth.users CASCADE', trigger_record.trigger_name);
+        RAISE NOTICE 'Dropped trigger on auth.users: %', trigger_record.trigger_name;
+    END LOOP;
+END $$;
+
+-- Drop triggers on all public tables
+DO $$
+DECLARE
+    trigger_rec RECORD;
+BEGIN
+    FOR trigger_rec IN 
+        SELECT trigger_name, event_object_table
+        FROM information_schema.triggers 
+        WHERE trigger_schema = 'public'
+        AND event_object_table IN (
+            'profiles', 'events', 'user_preferences', 'venues',
+            'ticket_types', 'event_participants', 'event_venues',
+            'event_schedule', 'event_registrations', 'event_audit'
+        )
+    LOOP
+        EXECUTE format('DROP TRIGGER IF EXISTS %I ON public.%I CASCADE', trigger_rec.trigger_name, trigger_rec.event_object_table);
+        RAISE NOTICE 'Dropped trigger: % on %', trigger_rec.trigger_name, trigger_rec.event_object_table;
+    END LOOP;
+END $$;
+
+-- =====================================================
+-- 3. DROP RLS POLICIES
+-- =====================================================
+
+DO $$
+DECLARE
+    policy_record RECORD;
+BEGIN
+    FOR policy_record IN 
+        SELECT tablename, policyname 
+        FROM pg_policies 
+        WHERE schemaname = 'public'
+        AND tablename IN (
+            'profiles', 'user_roles', 'events', 'user_preferences',
+            'venues', 'event_participants', 'event_categories', 
+            'event_registrations', 'event_audit', 'event_venues',
+            'ticket_types', 'registration_fields', 'event_media',
+            'event_notifications', 'event_tags', 'event_schedule'
+        )
+    LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', policy_record.policyname, policy_record.tablename);
+        RAISE NOTICE 'Dropped policy: % on %', policy_record.policyname, policy_record.tablename;
+    END LOOP;
+END $$;
+
+-- =====================================================
+-- 4. DROP ALL FUNCTIONS
+-- =====================================================
+
+-- Use simpler approach: drop functions without parameters first, then with CASCADE
+DO $$
+DECLARE
+    func_name TEXT;
+    func_list TEXT[] := ARRAY[
+        -- Core utility functions
+        'update_updated_at_column',
+        'handle_new_user',
+        'has_role',
+        -- Event management functions
+        'update_participant_count',
+        'update_event_status',
+        'validate_event_data',
+        'validate_event_data_enhanced',
+        'validate_ticket_data',
+        'log_event_changes',
+        -- Geolocation functions (with specific signatures for array params)
+        'calculate_distance_km',
+        'events_within_radius',
+        'events_within_radius_fast',
+        'get_nearby_events_with_details',
+        -- Approval workflow functions
+        'submit_approval_request',
+        'process_cancellation_action',
+        'cancel_approved_participation',
+        -- Event lifecycle functions
+        'cleanup_old_deleted_events',
+        'cleanup_expired_deleted_events',
+        'get_days_until_deletion',
+        'permanently_delete_event',
+        'restore_event',
+        'restore_deleted_event',
+        'soft_delete_event',
+        'trigger_cleanup_on_event_access',
+        -- API functions
+        'assign_default_role',
+        'get_events_with_details',
+        'search_events',
+        'get_user_events',
+        'get_event_participants_with_profiles',
+        'get_popular_events',
+        'get_upcoming_user_events',
+        'register_user_for_event',
+        'unregister_user_from_event',
+        'check_event_capacity',
+        'is_user_registered_for_event',
+        'get_event_statistics',
+        'get_organizer_events',
+        'update_event_status_bulk',
+        'get_events_by_category',
+        'get_events_by_location',
+        'get_events_by_date_range',
+        'delete_expired_events',
+        'cleanup_soft_deleted_events',
+        'get_deleted_events',
+        'get_deleted_events_for_user',
+        'permanently_delete_user_event'
+    ];
+BEGIN
+    -- First pass: try to drop functions with CASCADE (handles dependencies)
+    FOREACH func_name IN ARRAY func_list
+    LOOP
+        BEGIN
+            EXECUTE format('DROP FUNCTION IF EXISTS public.%I CASCADE', func_name);
+            RAISE NOTICE 'Dropped function: %', func_name;
+        EXCEPTION WHEN OTHERS THEN
+            -- Function might have different signature, ignore error
+            RAISE NOTICE 'Could not drop function % (may not exist or different signature)', func_name;
+        END;
+    END LOOP;
+END $$;
+
+-- =====================================================
+-- 5. DROP TABLES (in reverse order of creation to handle dependencies)
 -- =====================================================
 
 -- Drop event-related tables first (due to foreign key dependencies)
@@ -95,115 +269,35 @@ BEGIN
 END $$;
 
 -- =====================================================
--- 2. DROP VIEWS
+-- 6. DROP ALL CUSTOM TYPES/ENUMS
 -- =====================================================
 
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.views WHERE table_schema = 'public' AND table_name = 'events_with_participants') THEN
-        DROP VIEW public.events_with_participants CASCADE;
-        RAISE NOTICE 'Dropped view: events_with_participants';
-    END IF;
+    -- Drop all custom enum types
+    DROP TYPE IF EXISTS public.app_role CASCADE;
+    RAISE NOTICE 'Dropped type: app_role';
     
-    IF EXISTS (SELECT 1 FROM information_schema.views WHERE table_schema = 'public' AND table_name = 'user_events_view') THEN
-        DROP VIEW public.user_events_view CASCADE;
-        RAISE NOTICE 'Dropped view: user_events_view';
-    END IF;
+    DROP TYPE IF EXISTS public.event_type CASCADE;
+    RAISE NOTICE 'Dropped type: event_type';
     
-    IF EXISTS (SELECT 1 FROM information_schema.views WHERE table_schema = 'public' AND table_name = 'events_enhanced_view') THEN
-        DROP VIEW public.events_enhanced_view CASCADE;
-        RAISE NOTICE 'Dropped view: events_enhanced_view';
-    END IF;
+    DROP TYPE IF EXISTS public.event_format CASCADE;
+    RAISE NOTICE 'Dropped type: event_format';
     
-    IF EXISTS (SELECT 1 FROM information_schema.views WHERE table_schema = 'public' AND table_name = 'deleted_events_with_countdown') THEN
-        DROP VIEW public.deleted_events_with_countdown CASCADE;
-        RAISE NOTICE 'Dropped view: deleted_events_with_countdown';
-    END IF;
+    DROP TYPE IF EXISTS public.event_privacy CASCADE;
+    RAISE NOTICE 'Dropped type: event_privacy';
+    
+    DROP TYPE IF EXISTS public.refund_policy CASCADE;
+    RAISE NOTICE 'Dropped type: refund_policy';
+    
+    DROP TYPE IF EXISTS public.currency_type CASCADE;
+    RAISE NOTICE 'Dropped type: currency_type';
 END $$;
 
 -- =====================================================
--- 3. DROP TYPES
+-- 7. DROP SPECIFIC NAMED RLS POLICIES
 -- =====================================================
-
--- Drop custom enum types
-DROP TYPE IF EXISTS public.app_role CASCADE;
-
--- =====================================================
--- 4. DROP FUNCTIONS AND TRIGGERS
--- =====================================================
-
--- Drop any custom functions with existence checking
-DO $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_schema = 'public' AND routine_name = 'handle_new_user') THEN
-        DROP FUNCTION public.handle_new_user() CASCADE;
-        RAISE NOTICE 'Dropped function: handle_new_user';
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_schema = 'public' AND routine_name = 'update_updated_at_column') THEN
-        DROP FUNCTION public.update_updated_at_column() CASCADE;
-        RAISE NOTICE 'Dropped function: update_updated_at_column';
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_schema = 'public' AND routine_name = 'update_participant_count') THEN
-        DROP FUNCTION public.update_participant_count() CASCADE;
-        RAISE NOTICE 'Dropped function: update_participant_count';
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_schema = 'public' AND routine_name = 'validate_event_data') THEN
-        DROP FUNCTION public.validate_event_data() CASCADE;
-        RAISE NOTICE 'Dropped function: validate_event_data';
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_schema = 'public' AND routine_name = 'validate_event_data_enhanced') THEN
-        DROP FUNCTION public.validate_event_data_enhanced() CASCADE;
-        RAISE NOTICE 'Dropped function: validate_event_data_enhanced';
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_schema = 'public' AND routine_name = 'validate_ticket_data') THEN
-        DROP FUNCTION public.validate_ticket_data() CASCADE;
-        RAISE NOTICE 'Dropped function: validate_ticket_data';
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_schema = 'public' AND routine_name = 'update_event_status') THEN
-        DROP FUNCTION public.update_event_status() CASCADE;
-        RAISE NOTICE 'Dropped function: update_event_status';
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_schema = 'public' AND routine_name = 'log_event_changes') THEN
-        DROP FUNCTION public.log_event_changes() CASCADE;
-        RAISE NOTICE 'Dropped function: log_event_changes';
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_schema = 'public' AND routine_name = 'cleanup_expired_deleted_events') THEN
-        DROP FUNCTION public.cleanup_expired_deleted_events() CASCADE;
-        RAISE NOTICE 'Dropped function: cleanup_expired_deleted_events';
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_schema = 'public' AND routine_name = 'permanently_delete_event') THEN
-        DROP FUNCTION public.permanently_delete_event(UUID, UUID) CASCADE;
-        RAISE NOTICE 'Dropped function: permanently_delete_event';
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_schema = 'public' AND routine_name = 'restore_deleted_event') THEN
-        DROP FUNCTION public.restore_deleted_event(UUID) CASCADE;
-        RAISE NOTICE 'Dropped function: restore_deleted_event';
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_schema = 'public' AND routine_name = 'get_days_until_deletion') THEN
-        DROP FUNCTION public.get_days_until_deletion(TIMESTAMP WITH TIME ZONE) CASCADE;
-        RAISE NOTICE 'Dropped function: get_days_until_deletion';
-    END IF;
-    
-    IF EXISTS (SELECT 1 FROM information_schema.routines WHERE routine_schema = 'public' AND routine_name = 'assign_default_role') THEN
-        DROP FUNCTION public.assign_default_role() CASCADE;
-        RAISE NOTICE 'Dropped function: assign_default_role';
-    END IF;
-END $$;
-
--- =====================================================
--- 5. DROP RLS POLICIES
--- =====================================================
+-- Additional cleanup for policies not caught by the bulk drop in section 3
 
 -- Drop Row Level Security policies with existence checking
 DO $$
@@ -268,20 +362,26 @@ BEGIN
 END $$;
 
 -- =====================================================
--- 6. RESET SEQUENCES
+-- 8. COMPLETION MESSAGE
 -- =====================================================
 
--- Reset any sequences (if using auto-increment IDs)
--- (Note: UUIDs don't use sequences, but keeping for completeness)
-
--- =====================================================
--- 7. COMPLETION MESSAGE
--- =====================================================
-
--- Display completion message
 DO $$
 BEGIN
+    RAISE NOTICE '';
     RAISE NOTICE '========================================';
-    RAISE NOTICE 'All EventRadius database objects dropped!';
+    RAISE NOTICE 'ALL EVENTRADIUS OBJECTS DROPPED!';
+    RAISE NOTICE '========================================';
+    RAISE NOTICE '';
+    RAISE NOTICE 'Dropped objects:';
+    RAISE NOTICE '  ✓ All views (6)';
+    RAISE NOTICE '  ✓ All triggers';
+    RAISE NOTICE '  ✓ All RLS policies';
+    RAISE NOTICE '  ✓ All functions/stored procedures (40+)';
+    RAISE NOTICE '  ✓ All tables (15)';
+    RAISE NOTICE '  ✓ All custom types/enums (6)';
+    RAISE NOTICE '';
+    RAISE NOTICE 'Database is now clean for fresh setup.';
+    RAISE NOTICE 'Run the consolidated migration to recreate everything.';
+    RAISE NOTICE '';
     RAISE NOTICE '========================================';
 END $$;
