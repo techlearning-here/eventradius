@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { CoverImageSelector } from '@/components/EventWizard/CoverImageSelector';
 import { useEventActions } from '@/hooks/useEvents';
+import { useAddressGeocoding } from '@/hooks/useAddressGeocoding';
 import { type RefundPolicy, type Event } from '@/integrations/backend/api';
 
 interface QuickCreateFormProps {
@@ -46,6 +47,7 @@ const DEFAULT_IMAGES = [
 export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDetailedEdit }: QuickCreateFormProps) => {
   const navigate = useNavigate();
   const { createEvent, updateEvent } = useEventActions();
+  const { geocodeAddress, result: geocodedLocation, loading: geocodingLoading } = useAddressGeocoding();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showImageSelector, setShowImageSelector] = useState(false);
   const [showCapacityModal, setShowCapacityModal] = useState(false);
@@ -133,12 +135,15 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDe
   };
 
   const handleSubmit = async () => {
+    console.log('🔥🔥🔥 QUICKCREATE HANDLESUBMIT STARTED 🔥🔥🔥');
+    
     if (!validateForm()) {
       toast.error('Please fill in all required fields');
       return;
     }
 
     setIsSubmitting(true);
+    console.log('🔥🔥🔥 Starting event creation with geocoding 🔥🔥🔥');
 
     try {
       if (isEditMode && editingEvent) {
@@ -186,6 +191,35 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDe
         }
       } else {
         // CREATE MODE: Create new event
+        // Geocode address if in-person event
+        let latitude: number | undefined;
+        let longitude: number | undefined;
+        let geolocation_accuracy: string | undefined;
+        
+        console.log('[QuickCreateForm] Checking geocoding conditions:', {
+          event_type: formData.event_type,
+          location: formData.location,
+          shouldGeocode: formData.event_type === 'in_person' && !!formData.location
+        });
+        
+        if (formData.event_type === 'in_person' && formData.location) {
+          console.log('[QuickCreateForm] Geocoding address:', formData.location);
+          const geocoded = await geocodeAddress({
+            address: formData.location, // Pass full address string
+          });
+          console.log('[QuickCreateForm] geocodeAddress returned:', geocoded);
+          if (geocoded) {
+            latitude = geocoded.latitude;
+            longitude = geocoded.longitude;
+            geolocation_accuracy = geocoded.accuracy;
+            console.log('[QuickCreateForm] Geocoded successfully:', { lat: latitude, lng: longitude, accuracy: geolocation_accuracy });
+          } else {
+            console.warn('[QuickCreateForm] Geocoding failed - no result');
+          }
+        } else {
+          console.log('[QuickCreateForm] Skipping geocoding - not in-person or no location');
+        }
+
         const eventData = {
           title: formData.title.trim(),
           description: formData.description?.trim() || `${formData.title.trim()} - Created with Quick Create`,
@@ -193,6 +227,10 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDe
           start_time: formData.start_time?.toISOString(),
           end_time: formData.end_time?.toISOString() || new Date(formData.start_time!.getTime() + 60 * 60 * 1000).toISOString(),
           event_type: formData.event_type || 'in_person',
+          // Geocoded coordinates
+          latitude,
+          longitude,
+          geolocation_accuracy,
           event_format: 'single' as const,
           event_privacy: 'public' as const,
           is_public: true,
@@ -217,6 +255,14 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDe
           require_approval: formData.require_approval,
           enable_waitlist: formData.enable_waitlist,
         };
+
+        console.log('[QuickCreateForm] Event data with coordinates:', {
+          title: eventData.title,
+          location: eventData.location,
+          latitude: eventData.latitude,
+          longitude: eventData.longitude,
+          geolocation_accuracy: eventData.geolocation_accuracy,
+        });
 
         const result = await createEvent(eventData);
 
@@ -256,7 +302,14 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDe
         }
       }
     } catch (error) {
-      console.error('Quick edit failed:', error);
+      console.error('=== QUICK CREATE ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      console.error('Full error:', error);
+      if (error instanceof Error && error.stack) {
+        console.error('Stack trace:', error.stack);
+      }
+      console.error('===========================');
       toast.error(isEditMode ? 'Failed to update event.' : 'Failed to create event.');
     } finally {
       setIsSubmitting(false);

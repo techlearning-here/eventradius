@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Calendar, MapPin, Users, Ticket, UserCheck, List } from 'lucide-react';
 import { Event } from '../types';
 
@@ -7,25 +7,6 @@ interface QuickInfoBarProps {
 }
 
 export const QuickInfoBar: React.FC<QuickInfoBarProps> = ({ event }) => {
-  // Debug log for quick info fields
-  useEffect(() => {
-    console.log('[QuickInfoBar] Debug - Quick info fields:', {
-      date: event.date,
-      start_time: event.start_time,
-      timezone: event.timezone,
-      location: event.location,
-      address: event.address,
-      current_participants: event.current_participants,
-      max_participants: event.max_participants,
-      category: event.category,
-      is_public: event.is_public,
-      ticket_price: event.ticket_price,
-      require_approval: event.require_approval,
-      enable_waitlist: event.enable_waitlist,
-    });
-  }, [event.date, event.start_time, event.timezone, event.location, event.address, 
-      event.current_participants, event.max_participants, event.category, event.is_public,
-      event.ticket_price, event.require_approval, event.enable_waitlist]);
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
       <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-4 text-center">

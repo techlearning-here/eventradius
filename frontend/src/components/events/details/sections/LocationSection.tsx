@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { MapPin } from 'lucide-react';
 import { Event } from '../types';
 
@@ -25,26 +25,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({ event, onGetDi
     simpleLocation.includes(event.venue_street || '') && 
     simpleLocation.includes(event.venue_city || '');
 
-  // Debug log for venue fields
-  useEffect(() => {
-    console.log('[LocationSection] Debug - Venue fields:', {
-      location: event.location,
-      address: event.address,
-      venue_building_name: event.venue_building_name,
-      venue_street: event.venue_street,
-      venue_city: event.venue_city,
-      venue_state: event.venue_state,
-      venue_zip_code: event.venue_zip_code,
-      venue_country: event.venue_country,
-      hasVenueDetails,
-      formattedVenueAddress,
-      isLocationRedundant,
-    });
-  }, [event.location, event.address, event.venue_building_name, event.venue_street, 
-      event.venue_city, event.venue_state, event.venue_zip_code, event.venue_country]);
-
   if (!event.location && !event.address && !hasVenueDetails) {
-    console.log('[LocationSection] No location data - returning null');
     return null;
   }
 
@@ -94,6 +75,18 @@ export const LocationSection: React.FC<LocationSectionProps> = ({ event, onGetDi
             >
               Get Directions
             </button>
+            
+            {/* DEBUG: Coordinates Display */}
+            {(event.latitude || event.longitude) && (
+              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-xs font-semibold text-amber-700 mb-1">📍 Debug Coordinates</p>
+                <div className="text-xs text-amber-600 font-mono space-y-0.5">
+                  <p>Lat: {event.latitude?.toFixed(6)}</p>
+                  <p>Lng: {event.longitude?.toFixed(6)}</p>
+                  <p>Accuracy: {event.geolocation_accuracy || 'N/A'}</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div className="rounded-xl overflow-hidden border border-border">

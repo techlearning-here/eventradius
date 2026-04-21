@@ -4,17 +4,38 @@ import { MapPin, Navigation, ExternalLink, Copy, CheckCircle2 } from 'lucide-rea
 interface EventDetailLocationProps {
   location?: string;
   address?: string;
+  latitude?: number;
+  longitude?: number;
+  geolocation_accuracy?: string;
   onGetDirections: () => void;
 }
 
 export const EventDetailLocation: React.FC<EventDetailLocationProps> = ({ 
   location, 
   address,
+  latitude,
+  longitude,
+  geolocation_accuracy,
   onGetDirections 
 }) => {
   const [copied, setCopied] = React.useState(false);
   const displayLocation = location || address;
-  if (!displayLocation) return null;
+  
+  // DEBUG: Log received props
+  console.log('[EventDetailLocation] Props received:', {
+    location,
+    address,
+    displayLocation,
+    latitude,
+    longitude,
+    geolocation_accuracy,
+    hasLocation: !!displayLocation
+  });
+  
+  if (!displayLocation) {
+    console.log('[EventDetailLocation] Returning null - no location data');
+    return null;
+  }
   
   const handleCopyAddress = () => {
     navigator.clipboard.writeText(displayLocation);
@@ -67,6 +88,18 @@ export const EventDetailLocation: React.FC<EventDetailLocationProps> = ({
                   )}
                 </button>
               </div>
+              
+              {/* DEBUG: Coordinates Display */}
+              {(latitude || longitude) && (
+                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-xs font-semibold text-amber-700 mb-1">📍 Debug Coordinates</p>
+                  <div className="text-xs text-amber-600 font-mono space-y-0.5">
+                    <p>Lat: {latitude?.toFixed(6)}</p>
+                    <p>Lng: {longitude?.toFixed(6)}</p>
+                    <p>Accuracy: {geolocation_accuracy || 'N/A'}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

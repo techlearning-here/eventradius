@@ -77,6 +77,10 @@ export interface Event {
   // New Event Attributes - Pricing
   refund_policy?: RefundPolicy;
   group_discounts?: boolean;
+  // Geocoded coordinates
+  latitude?: number;
+  longitude?: number;
+  geolocation_accuracy?: string;
 }
 
 export interface EventCreate {
@@ -167,6 +171,10 @@ export interface EventCreate {
   sub_category?: string;
   refund_policy?: RefundPolicy;
   group_discounts?: boolean;
+  // Geocoded coordinates
+  latitude?: number;
+  longitude?: number;
+  geolocation_accuracy?: string;
 }
 
 export interface EventUpdate {
@@ -241,6 +249,10 @@ export interface EventUpdate {
   sub_category?: string;
   refund_policy?: RefundPolicy;
   group_discounts?: boolean;
+  // Geocoded coordinates
+  latitude?: number;
+  longitude?: number;
+  geolocation_accuracy?: string;
 }
 
 export interface UserProfile {

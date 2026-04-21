@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Clock } from 'lucide-react';
 import { Event } from '../types';
 
@@ -7,18 +7,7 @@ interface TimingRegistrationSectionProps {
 }
 
 export const TimingRegistrationSection: React.FC<TimingRegistrationSectionProps> = ({ event }) => {
-  // Debug log for timing fields
-  useEffect(() => {
-    console.log('[TimingRegistrationSection] Debug - Timing fields:', {
-      timezone: event.timezone,
-      doors_open_time: event.doors_open_time,
-      registration_start_time: event.registration_start_time,
-      registration_end_time: event.registration_end_time,
-    });
-  }, [event.timezone, event.doors_open_time, event.registration_start_time, event.registration_end_time]);
-
   if (!event.timezone && !event.doors_open_time && !event.registration_start_time && !event.registration_end_time) {
-    console.log('[TimingRegistrationSection] No timing data - returning null');
     return null;
   }
 

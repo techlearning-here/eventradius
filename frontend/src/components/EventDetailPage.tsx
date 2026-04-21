@@ -189,6 +189,9 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
                     <EventDetailLocation 
                       location={event.location}
                       address={event.address}
+                      latitude={event.latitude}
+                      longitude={event.longitude}
+                      geolocation_accuracy={event.geolocation_accuracy}
                       onGetDirections={handleGetDirections}
                     />
                     <div className="space-y-4">

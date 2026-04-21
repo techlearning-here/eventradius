@@ -114,6 +114,10 @@ export interface Event {
   // New Event Attributes - Pricing
   refund_policy?: 'no_refunds' | 'refund_up_to_7_days' | 'refund_up_to_24_hours' | 'refund_up_to_1_hour' | 'custom';
   group_discounts?: boolean;
+  // Geocoded coordinates
+  latitude?: number;
+  longitude?: number;
+  geolocation_accuracy?: string;
 }
 
 export interface OrganizerProfile {

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Event, OrganizerProfile } from '../types';
 
 interface EventHeaderProps {
@@ -16,20 +16,6 @@ export const EventHeader: React.FC<EventHeaderProps> = ({
 }) => {
   // Priority: image_url (cover image) > background_image_url > fallback
   const heroImageUrl = event.image_url || event.background_image_url;
-  
-  // Debug log for tags and header fields
-  useEffect(() => {
-    console.log('[EventHeader] Debug - Header fields:', {
-      title: event.title,
-      category: event.category,
-      event_type: event.event_type,
-      is_public: event.is_public,
-      tags: event.tags,
-      tagsCount: event.tags?.length || 0,
-      hasCoverImage: !!event.image_url,
-      hasBackgroundImage: !!event.background_image_url,
-    });
-  }, [event.title, event.category, event.event_type, event.is_public, event.tags, event.image_url, event.background_image_url]);
   return (
     <>
       {/* Title Bar */}

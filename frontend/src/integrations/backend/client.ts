@@ -106,6 +106,19 @@ class ApiClient {
     });
   }
 
+  // Update event location coordinates (frontend geocodes via Nominatim)
+  async updateEventLocation(
+    eventId: string,
+    lat: number,
+    lng: number,
+    accuracy: string = 'rooftop'
+  ): Promise<{ message: string; updated: boolean; coordinates: { latitude: number; longitude: number }; accuracy: string }> {
+    return this.request(`/api/events/${eventId}/location`, {
+      method: 'PUT',
+      body: JSON.stringify({ lat, lng, accuracy }),
+    });
+  }
+
   async deleteEvent(eventId: string): Promise<{ message: string }> {
     return this.request<{ message: string }>(`/api/events/${eventId}`, {
       method: 'DELETE',

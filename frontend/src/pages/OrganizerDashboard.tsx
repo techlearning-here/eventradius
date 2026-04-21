@@ -62,6 +62,7 @@ const OrganizerDashboard = () => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingEventInitialData, setEditingEventInitialData] = useState<Partial<EventFormData> | null>(null);
   const [activeSection, setActiveSection] = useState('events');
+  const [loadedSections, setLoadedSections] = useState<Set<string>>(new Set());
   const [sidebarIconized, setSidebarIconized] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -208,9 +209,32 @@ const OrganizerDashboard = () => {
     }
   };
 
+  // Lazy load data when section changes
+  const handleSectionChange = (section: string) => {
+    setActiveSection(section);
+
+    // Only fetch data if section hasn't been loaded yet
+    if (!loadedSections.has(section)) {
+      switch (section) {
+        case 'events':
+          fetchEvents();
+          break;
+        case 'recycle-bin':
+          fetchDeletedEvents();
+          break;
+        case 'approvals':
+          // ApprovalRequestsDashboard handles its own data fetching
+          break;
+      }
+      setLoadedSections(prev => new Set(prev).add(section));
+    }
+  };
+
+  // Load initial section on mount (only once)
   useEffect(() => {
-    if (user) {
+    if (user && !loadedSections.has('events')) {
       fetchEvents();
+      setLoadedSections(prev => new Set(prev).add('events'));
     }
   }, [user]);
 
@@ -1056,7 +1080,12 @@ const OrganizerDashboard = () => {
     }
   };
 
-  if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  // Show loading only when actively fetching events with no data to display
+  // Auth loading shouldn't block UI if we have cached events
+  const hasEventsToShow = events.length > 0;
+  if (loading && !hasEventsToShow) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -1067,7 +1096,7 @@ const OrganizerDashboard = () => {
         {/* Left Sidebar */}
         <Sidebar
           activeSection={activeSection}
-          onSectionChange={setActiveSection}
+          onSectionChange={handleSectionChange}
           shouldCollapse={showCreateWizard || !!previewEventId}
           onCollapsedChange={setSidebarCollapsed}
           onLogout={signOut}

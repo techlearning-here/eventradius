@@ -19,7 +19,8 @@ from config.database import (
     insert_record,
     update_record,
 )
-from services.geocoding import geocode_event_address
+# Note: Geocoding is done on frontend using Nominatim (OpenStreetMap)
+# Frontend sends lat/lng directly, no backend geocoding needed
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/events", tags=["events"])
@@ -66,6 +67,10 @@ class EventBase(BaseModel):
     venue_zip_code: Optional[str] = None
     venue_country: Optional[str] = None
     venue_building_name: Optional[str] = None
+    # Geocoded coordinates (frontend sends these via Nominatim)
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    geolocation_accuracy: Optional[str] = None
     # Virtual event URL
     virtual_event_url: Optional[str] = None
     # Status
@@ -479,34 +484,27 @@ async def _create_event_logic(event: EventCreate, user: dict) -> EventResponse:
         logger.info(f"  is_paid_event: {event_data.get('is_paid_event')}")
         logger.info("=====================")
 
-        # Geocode address for in-person and hybrid events
+        # Note: Geocoding is now done on frontend using Nominatim (OpenStreetMap)
+        # Frontend sends latitude, longitude, and geolocation_accuracy directly
+        # Backend just saves the provided coordinates
+        logger.info(f"DEBUG: Received event_data keys: {list(event_data.keys())}")
+        logger.info(f"DEBUG: latitude={event_data.get('latitude')}, longitude={event_data.get('longitude')}, accuracy={event_data.get('geolocation_accuracy')}")
+        
         event_type = event_data.get("event_type")
         if event_type in ("in_person", "hybrid"):
-            venue_city = event_data.get("venue_city")
-            if venue_city:  # Only geocode if we have at least a city
-                try:
-                    geocoded = await geocode_event_address(
-                        street=event_data.get("venue_street"),
-                        city=venue_city,
-                        state=event_data.get("venue_state"),
-                        zip_code=event_data.get("venue_zip_code"),
-                        country=event_data.get("venue_country", "US"),
-                    )
-                    if geocoded:
-                        event_data["latitude"] = geocoded.latitude
-                        event_data["longitude"] = geocoded.longitude
-                        event_data["geolocation_accuracy"] = geocoded.accuracy
-                        event_data["geocoded_at"] = datetime.now().isoformat()
-                        logger.info(
-                            f"Geocoded event location: {geocoded.latitude}, {geocoded.longitude} "
-                            f"(accuracy: {geocoded.accuracy})"
-                        )
-                    else:
-                        logger.warning("Geocoding returned no results for event address")
-                except Exception as geo_err:
-                    logger.warning(f"Geocoding failed (non-blocking): {geo_err}")
+            lat = event_data.get("latitude")
+            lng = event_data.get("longitude")
+            if lat and lng:
+                logger.info(f"Event location provided by frontend: {lat}, {lng}")
+                event_data["geocoded_at"] = datetime.now().isoformat()
+            else:
+                logger.info("No coordinates provided for event (optional)")
 
         response = insert_record("events", event_data)
+        
+        logger.info(f"DEBUG: Insert response data: {response.data}")
+        if response.data:
+            logger.info(f"DEBUG: Created event lat/lng: {response.data[0].get('latitude')}, {response.data[0].get('longitude')}")
 
         if not response.data:
             logger.error(f"Insert failed - no data returned. Response: {response}")
@@ -2080,14 +2078,18 @@ async def get_nearby_events_summary(
         )
 
 
-@router.post("/{event_id}/geocode")
-async def geocode_event_endpoint(
+@router.put("/{event_id}/location")
+async def update_event_location(
     event_id: str,
+    lat: float = Body(..., embed=True, ge=-90, le=90),
+    lng: float = Body(..., embed=True, ge=-180, le=180),
+    accuracy: str = Body("rooftop", embed=True),
     user: dict = Depends(get_current_user),
 ):
     """
-    Manually trigger geocoding for an existing event.
-    Only the event organizer can trigger this.
+    Update event location coordinates.
+    Frontend geocodes using Nominatim, then sends lat/lng here.
+    Only the event organizer can update location.
     """
     try:
         # Fetch the event
@@ -2103,44 +2105,21 @@ async def geocode_event_endpoint(
         if event.get("organizer_id") != user["id"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only the event organizer can geocode this event",
+                detail="Only the event organizer can update this event",
             )
 
         # Skip online-only events
         if event.get("event_type") == "online":
             return {
-                "message": "Online events don't require geocoding",
-                "geocoded": False,
+                "message": "Online events don't require location",
+                "updated": False,
             }
 
-        # Check if we have venue address data
-        venue_city = event.get("venue_city")
-        if not venue_city:
-            return {
-                "message": "No venue city provided, cannot geocode",
-                "geocoded": False,
-            }
-
-        # Geocode the address
-        geocoded = await geocode_event_address(
-            street=event.get("venue_street"),
-            city=venue_city,
-            state=event.get("venue_state"),
-            zip_code=event.get("venue_zip_code"),
-            country=event.get("venue_country", "US"),
-        )
-
-        if not geocoded:
-            return {
-                "message": "Geocoding returned no results",
-                "geocoded": False,
-            }
-
-        # Update event with coordinates
+        # Update event with coordinates from frontend
         update_data = {
-            "latitude": geocoded.latitude,
-            "longitude": geocoded.longitude,
-            "geolocation_accuracy": geocoded.accuracy,
+            "latitude": lat,
+            "longitude": lng,
+            "geolocation_accuracy": accuracy,
             "geocoded_at": datetime.now().isoformat(),
         }
 
@@ -2149,25 +2128,24 @@ async def geocode_event_endpoint(
         if not update_response.data:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to update event with coordinates",
+                detail="Failed to update event location",
             )
 
         return {
-            "message": "Event geocoded successfully",
-            "geocoded": True,
+            "message": "Event location updated successfully",
+            "updated": True,
             "coordinates": {
-                "latitude": geocoded.latitude,
-                "longitude": geocoded.longitude,
+                "latitude": lat,
+                "longitude": lng,
             },
-            "accuracy": geocoded.accuracy,
-            "formatted_address": geocoded.formatted_address,
+            "accuracy": accuracy,
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error geocoding event {event_id}: {e}")
+        logger.error(f"Error updating event location {event_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to geocode event",
+            detail="Failed to update event location",
         )

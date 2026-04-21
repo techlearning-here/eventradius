@@ -150,6 +150,100 @@ class NominatimGeocodingService:
             logger.error(f"Nominatim geocode error: {e}")
             return None
     
+    async def geocode_address(
+        self,
+        street: Optional[str] = None,
+        city: Optional[str] = None,
+        state: Optional[str] = None,
+        zip_code: Optional[str] = None,
+        country: str = "US"
+    ) -> Optional[Dict]:
+        """
+        Geocode a full street address to coordinates.
+        Used for event venue geocoding.
+        
+        Args:
+            street: Street address (e.g., "123 Main St")
+            city: City name
+            state: State/Province
+            zip_code: ZIP/Postal code
+            country: Country code (default: US)
+            
+        Returns:
+            Dict with lat, lng, formatted_address, accuracy or None if not found
+        """
+        # Build query string from available components
+        parts = []
+        if street:
+            parts.append(street)
+        if city:
+            parts.append(city)
+        if state:
+            parts.append(state)
+        if zip_code:
+            parts.append(zip_code)
+        
+        if not parts:
+            return None
+        
+        query = ", ".join(parts)
+        
+        await self._rate_limit()
+        
+        try:
+            params = {
+                "q": query,
+                "format": "json",
+                "limit": 1,
+                "addressdetails": 1,
+                "accept-language": "en",
+            }
+            
+            logger.info(f"Nominatim geocoding address: {query}")
+            
+            response = await self.client.get(
+                f"{NOMINATIM_API_BASE}/search",
+                params=params
+            )
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if not data or len(data) == 0:
+                logger.warning(f"Nominatim: No results for address: {query}")
+                return None
+            
+            result = data[0]
+            
+            # Determine accuracy based on place type
+            place_type = result.get("type", "")
+            place_class = result.get("class", "")
+            
+            if place_type == "house" or place_type == "building":
+                accuracy = "rooftop"
+            elif place_type == "street":
+                accuracy = "interpolated"
+            elif place_type == "suburb" or place_type == "neighbourhood":
+                accuracy = "approximate"
+            else:
+                accuracy = "center"
+            
+            return {
+                "latitude": float(result.get("lat", 0)),
+                "longitude": float(result.get("lon", 0)),
+                "accuracy": accuracy,
+                "formatted_address": result.get("display_name", query),
+                "place_id": result.get("place_id"),
+                "place_type": place_type,
+            }
+            
+        except httpx.TimeoutException:
+            logger.warning(f"Nominatim timeout for address: {query}")
+            return None
+        except Exception as e:
+            logger.error(f"Nominatim address geocode error: {e}")
+            return None
+    
     async def close(self):
         """Close HTTP client."""
         await self.client.aclose()
@@ -168,3 +262,27 @@ async def autocomplete_cities(query: str, limit: int = 5) -> List[Dict]:
 async def geocode_city(city_name: str) -> Optional[Dict]:
     """Geocode a city name using Nominatim."""
     return await nominatim_service.geocode_city(city_name)
+
+
+async def geocode_event_address(
+    street: Optional[str] = None,
+    city: Optional[str] = None,
+    state: Optional[str] = None,
+    zip_code: Optional[str] = None,
+    country: str = "US",
+) -> Optional[Dict]:
+    """
+    Geocode event venue address using Nominatim (OpenStreetMap).
+    Free alternative to Mapbox - no API key required.
+    
+    Args:
+        street: Street address
+        city: City name
+        state: State/Province
+        zip_code: ZIP code
+        country: Country code
+        
+    Returns:
+        Dict with latitude, longitude, accuracy, formatted_address or None
+    """
+    return await nominatim_service.geocode_address(street, city, state, zip_code, country)
