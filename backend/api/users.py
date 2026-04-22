@@ -482,7 +482,7 @@ async def get_user_preferences(user: dict = Depends(get_current_user)):
             default_prefs = {
                 "user_id": user["id"],
                 "age_range": None,
-                "has_kids": False,
+                "has_kids": None,
                 "interests": [],
                 "city": None,
                 "latitude": None,
@@ -813,7 +813,7 @@ async def get_current_user_combined(user: dict = Depends(get_current_user)):
             preferences = {
                 "user_id": user["id"],
                 "age_range": None,
-                "has_kids": False,
+                "has_kids": None,
                 "interests": [],
                 "city": None,
                 "distance_range": 25,

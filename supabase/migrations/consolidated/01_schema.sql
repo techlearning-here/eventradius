@@ -224,7 +224,7 @@ CREATE TABLE IF NOT EXISTS public.user_preferences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL UNIQUE,
   age_range TEXT,
-  has_kids BOOLEAN DEFAULT false,
+  has_kids TEXT CHECK (has_kids IN ('yes', 'no', 'prefer_not_to_say')),
   interests TEXT[] DEFAULT '{}',
   city TEXT,
   latitude DOUBLE PRECISION,

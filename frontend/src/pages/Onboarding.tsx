@@ -14,7 +14,7 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [ageRange, setAgeRange] = useState('');
-  const [hasKids, setHasKids] = useState(false);
+  const [hasKids, setHasKids] = useState<'yes' | 'no' | 'prefer_not_to_say' | ''>('');
   const [isOrganizer] = useState<boolean>(false); // Default to event discoverer
   const [interests, setInterests] = useState<string[]>([]);
   const [citySearch, setCitySearch] = useState('');
@@ -79,7 +79,7 @@ const Onboarding = () => {
     try {
       const preferencesData = {
         age_range: ageRange || null,
-        has_kids: hasKids,
+        has_kids: hasKids || null,
         interests,
         city: `${cityToUse.name}, ${cityToUse.state}`,
         latitude: cityToUse.lat,
@@ -170,10 +170,11 @@ const Onboarding = () => {
                       <Heart className="w-4 h-4 text-teal-600" />
                       Do you have kids?
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       {[
-                        { label: 'Yes, I have kids', value: true },
-                        { label: 'No kids', value: false },
+                        { label: 'Yes, I have kids', value: 'yes' },
+                        { label: 'No kids', value: 'no' },
+                        { label: 'Prefer not to say', value: 'prefer_not_to_say' },
                       ].map(opt => (
                         <button
                           key={opt.label}

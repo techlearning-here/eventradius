@@ -343,6 +343,27 @@ const Discover = () => {
                 </span>
               </div>
             )}
+
+            {/* Debug: Location Info */}
+            {prefs && (
+              <div className="mt-4 inline-flex flex-col items-center gap-1 px-3 py-2 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg text-xs text-yellow-800 dark:text-yellow-400 font-mono">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-3 h-3" />
+                  <span>City: {prefs.city || 'N/A'}</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span>Lat: {prefs.latitude?.toFixed(4) || 'N/A'}</span>
+                  <span>Lon: {prefs.longitude?.toFixed(4) || 'N/A'}</span>
+                  <span>Radius: {prefs.distance_range} mi</span>
+                </div>
+                {useLocation && (userLatitude || userLongitude) && (
+                  <div className="flex items-center gap-4 pt-1 border-t border-yellow-200 dark:border-yellow-800 mt-1">
+                    <span className="text-green-600 dark:text-green-400">Live: {userLatitude?.toFixed(4)}, {userLongitude?.toFixed(4)}</span>
+                    <span>Using: {useLocation ? 'Live' : 'Prefs'}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </section>
 
