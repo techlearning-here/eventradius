@@ -107,7 +107,7 @@ erDiagram
         uuid id PK
         uuid user_id FK
         text age_range
-        boolean has_kids
+        text has_kids
         text[] interests
         text city
         double precision latitude

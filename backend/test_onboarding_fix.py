@@ -21,7 +21,7 @@ MOCK_USER = {
 # Mock preferences data
 TEST_PREFERENCES = {
     "age_range": "25-34",
-    "has_kids": False,
+    "has_kids": None,
     "interests": ["music", "sports"],
     "city": "New York, NY",
     "latitude": 40.7128,
@@ -114,7 +114,7 @@ async def test_scenario_3_get_preferences_creates_default():
                 {
                     "user_id": "test-user-123",
                     "age_range": None,
-                    "has_kids": False,
+                    "has_kids": None,
                     "interests": [],
                     "city": None,
                     "latitude": None,
@@ -136,7 +136,7 @@ async def test_scenario_4_get_preferences_returns_existing():
     existing_prefs = {
         "user_id": "test-user-123",
         "age_range": "35-44",
-        "has_kids": True,
+        "has_kids": "yes",
         "interests": ["family"],
         "city": "Boston, MA",
         "onboarding_completed": True,

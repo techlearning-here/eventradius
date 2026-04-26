@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Event } from '../types';
 
 interface AboutSectionProps {
@@ -6,18 +6,7 @@ interface AboutSectionProps {
 }
 
 export const AboutSection: React.FC<AboutSectionProps> = ({ event }) => {
-  // Debug log for new fields
-  useEffect(() => {
-    console.log('[AboutSection] Debug - New fields:', {
-      subtitle: event.subtitle,
-      summary: event.summary,
-      hasDescription: !!event.description,
-      descriptionLength: event.description?.length || 0,
-    });
-  }, [event.subtitle, event.summary, event.description]);
-
   if (!event.description && !event.subtitle && !event.summary) {
-    console.log('[AboutSection] No content to display - returning null');
     return null;
   }
 

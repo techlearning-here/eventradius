@@ -81,7 +81,7 @@ class TestUserPreferences:
         data = response.json()
         assert data["onboarding_completed"] is False
         assert data["distance_range"] == 25
-        assert data["has_kids"] is False
+        assert data["has_kids"] is None
 
         # Verify insert was called with default values
         mock_insert.assert_called_once()
@@ -105,7 +105,7 @@ class TestUserPreferences:
                 {
                     "user_id": "test-user-id",
                     "age_range": "25-34",
-                    "has_kids": False,
+                    "has_kids": None,
                     "interests": ["music"],
                     "city": "Boston, MA",
                     "latitude": 42.3601,
@@ -158,7 +158,7 @@ class TestUserPreferences:
 
         update_data = {
             "age_range": "35-44",
-            "has_kids": True,
+            "has_kids": "yes",
             "interests": ["sports", "family"],
             "city": "Chicago, IL",
             "latitude": 41.8781,

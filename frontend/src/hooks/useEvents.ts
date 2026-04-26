@@ -267,11 +267,29 @@ export const useEventActions = () => {
       setError(null);
       console.log('=== useEvents: Creating event ===', eventData.title);
       const newEvent = await apiClient.createEvent(eventData);
-      console.log('=== useEvents: Event created ===', newEvent);
+      console.log('=== useEvents: Event created ===');
+      console.log('Full event:', newEvent);
+      console.log('Coordinates:', {
+        latitude: newEvent.latitude,
+        longitude: newEvent.longitude,
+        geolocation_accuracy: newEvent.geolocation_accuracy,
+      });
       return newEvent;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create event';
-      console.error('=== useEvents: createEvent ERROR ===', errorMessage);
+      console.error('=== useEvents: createEvent ERROR ===');
+      console.error('Error message:', errorMessage);
+      console.error('Error object:', err);
+      if (err instanceof Error && err.stack) {
+        console.error('Stack:', err.stack);
+      }
+      // Check if error has response data
+      if (err && typeof err === 'object' && 'response' in err) {
+        const errorResponse = (err as { response?: { data?: unknown; status?: number } }).response;
+        console.error('Error response data:', errorResponse?.data);
+        console.error('Error response status:', errorResponse?.status);
+      }
+      console.error('====================================');
       setError(errorMessage);
       throw err; // Re-throw so caller can handle it
     } finally {

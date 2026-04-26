@@ -86,4 +86,8 @@ export interface Event {
   refund_policy?: string;
   group_discounts?: boolean;
   custom_refund_policy?: string;
+  // Geocoded coordinates
+  latitude?: number;
+  longitude?: number;
+  geolocation_accuracy?: string;
 }

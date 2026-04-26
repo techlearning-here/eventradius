@@ -26,6 +26,7 @@ export interface Event {
   ticket_price?: number;
   require_approval?: boolean;
   enable_waitlist?: boolean;
+  approval_instructions?: string;
   // New Event Attributes - Audience & Demographics
   age_categories?: string[];
   gender_preference?: string;
@@ -76,6 +77,10 @@ export interface Event {
   // New Event Attributes - Pricing
   refund_policy?: RefundPolicy;
   group_discounts?: boolean;
+  // Geocoded coordinates
+  latitude?: number;
+  longitude?: number;
+  geolocation_accuracy?: string;
 }
 
 export interface EventCreate {
@@ -166,6 +171,10 @@ export interface EventCreate {
   sub_category?: string;
   refund_policy?: RefundPolicy;
   group_discounts?: boolean;
+  // Geocoded coordinates
+  latitude?: number;
+  longitude?: number;
+  geolocation_accuracy?: string;
 }
 
 export interface EventUpdate {
@@ -240,6 +249,10 @@ export interface EventUpdate {
   sub_category?: string;
   refund_policy?: RefundPolicy;
   group_discounts?: boolean;
+  // Geocoded coordinates
+  latitude?: number;
+  longitude?: number;
+  geolocation_accuracy?: string;
 }
 
 export interface UserProfile {
@@ -288,4 +301,72 @@ export interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
   message?: string;
+}
+
+// Approval Flow Types
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'waitlisted';
+
+export interface ApprovalRequestSubmit {
+  requester_name: string;
+  requester_email: string;
+  requester_phone?: string;
+  requester_bio?: string;
+  requester_reason?: string;
+  requester_social_links?: {
+    linkedin?: string;
+    twitter?: string;
+    website?: string;
+    instagram?: string;
+  };
+}
+
+export interface ApprovalRequestResponse {
+  id: string;
+  event_id: string;
+  user_id?: string;
+  approval_status: ApprovalStatus;
+  requester_name?: string;
+  requester_email?: string;
+  requester_phone?: string;
+  requester_bio?: string;
+  requester_reason?: string;
+  requester_social_links?: {
+    linkedin?: string;
+    twitter?: string;
+    website?: string;
+    instagram?: string;
+  };
+  is_waitlisted: boolean;
+  waitlist_position?: number;
+  registered_at: string;
+  approved_at?: string;
+  rejection_reason?: string;
+}
+
+export interface ApprovalActionRequest {
+  action: 'approve' | 'reject' | 'waitlist';
+  rejection_reason?: string;
+}
+
+export interface MyApprovalStatusResponse {
+  has_requested: boolean;
+  approval_status?: ApprovalStatus;
+  is_waitlisted: boolean;
+  waitlist_position?: number;
+  rejection_reason?: string;
+  requested_at?: string;
+}
+
+export interface ApprovalRequestField {
+  required: boolean;
+  label: string;
+}
+
+export interface ApprovalRequestFields {
+  name: ApprovalRequestField;
+  email: ApprovalRequestField;
+  phone: ApprovalRequestField;
+  bio: ApprovalRequestField;
+  reason: ApprovalRequestField;
+  social_links: ApprovalRequestField;
 }

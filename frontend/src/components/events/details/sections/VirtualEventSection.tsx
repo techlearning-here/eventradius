@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Monitor, Globe, Lock } from 'lucide-react';
 import { Event } from '../types';
 
@@ -7,18 +7,7 @@ interface VirtualEventSectionProps {
 }
 
 export const VirtualEventSection: React.FC<VirtualEventSectionProps> = ({ event }) => {
-  // Debug log for virtual event fields
-  useEffect(() => {
-    console.log('[VirtualEventSection] Debug - Virtual event fields:', {
-      virtual_event_url: event.virtual_event_url,
-      virtual_event_platform: event.virtual_event_platform,
-      event_password: event.event_password ? '*** (hidden)' : undefined,
-      hasPassword: !!event.event_password,
-    });
-  }, [event.virtual_event_url, event.virtual_event_platform, event.event_password]);
-
   if (!event.virtual_event_url && !event.virtual_event_platform && !event.event_password) {
-    console.log('[VirtualEventSection] No virtual event data - returning null');
     return null;
   }
 

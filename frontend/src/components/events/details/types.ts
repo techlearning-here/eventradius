@@ -15,6 +15,7 @@ export interface Event {
   ticket_price?: number;
   require_approval?: boolean;
   enable_waitlist?: boolean;
+  approval_instructions?: string;
   created_at: string;
   updated_at: string;
   current_participants?: number;
@@ -111,8 +112,12 @@ export interface Event {
   format?: string;
   sub_category?: string;
   // New Event Attributes - Pricing
-  refund_policy?: string;
+  refund_policy?: 'no_refunds' | 'refund_up_to_7_days' | 'refund_up_to_24_hours' | 'refund_up_to_1_hour' | 'custom';
   group_discounts?: boolean;
+  // Geocoded coordinates
+  latitude?: number;
+  longitude?: number;
+  geolocation_accuracy?: string;
 }
 
 export interface OrganizerProfile {

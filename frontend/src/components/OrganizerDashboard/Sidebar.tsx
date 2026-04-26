@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, LogOut, CalendarDays, BarChart3, Users, Megaphone, CreditCard, FileText, Settings, HelpCircle, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, LogOut, CalendarDays, BarChart3, Users, Megaphone, CreditCard, FileText, Settings, HelpCircle, Trash2, ChevronLeft, ChevronRight, ClipboardCheck } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
 interface SidebarItem {
@@ -22,6 +22,7 @@ const sidebarItems: SidebarItem[] = [
   { id: 'events', label: 'My Events', icon: CalendarDays, color: 'text-blue-600', bgColor: 'bg-blue-100' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'text-purple-600', bgColor: 'bg-purple-100' },
   { id: 'attendees', label: 'Attendees', icon: Users, color: 'text-green-600', bgColor: 'bg-green-100' },
+  { id: 'approvals', label: 'Approval Requests', icon: ClipboardCheck, color: 'text-rose-600', bgColor: 'bg-rose-100' },
   { id: 'promotions', label: 'Promotions', icon: Megaphone, color: 'text-orange-600', bgColor: 'bg-orange-100' },
   { id: 'billing', label: 'Billing', icon: CreditCard, color: 'text-emerald-600', bgColor: 'bg-emerald-100' },
   { id: 'resources', label: 'Resources', icon: FileText, color: 'text-cyan-600', bgColor: 'bg-cyan-100' },

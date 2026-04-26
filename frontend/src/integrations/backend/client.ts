@@ -10,6 +10,10 @@ import type {
   UserRole,
   EventMessage,
   RefundPolicy,
+  ApprovalRequestSubmit,
+  ApprovalRequestResponse,
+  ApprovalActionRequest,
+  MyApprovalStatusResponse,
 } from './types';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://eventradius-api.onrender.com';
@@ -102,6 +106,19 @@ class ApiClient {
     });
   }
 
+  // Update event location coordinates (frontend geocodes via Nominatim)
+  async updateEventLocation(
+    eventId: string,
+    lat: number,
+    lng: number,
+    accuracy: string = 'rooftop'
+  ): Promise<{ message: string; updated: boolean; coordinates: { latitude: number; longitude: number }; accuracy: string }> {
+    return this.request(`/api/events/${eventId}/location`, {
+      method: 'PUT',
+      body: JSON.stringify({ lat, lng, accuracy }),
+    });
+  }
+
   async deleteEvent(eventId: string): Promise<{ message: string }> {
     return this.request<{ message: string }>(`/api/events/${eventId}`, {
       method: 'DELETE',
@@ -122,6 +139,20 @@ class ApiClient {
     return this.request<{ message: string; events: { id: string; title: string }[] }>('/api/events/seed-dummy-events', {
       method: 'POST',
     });
+  }
+
+  // Geolocation: Get nearby events within radius
+  async getNearbyEvents(
+    lat: number,
+    lng: number,
+    radius: number = 25
+  ): Promise<Array<Event & { distance_km: number }>> {
+    const params = new URLSearchParams({
+      lat: lat.toString(),
+      lng: lng.toString(),
+      radius: radius.toString(),
+    });
+    return this.request(`/api/events/discover/nearby?${params}`);
   }
 
   async getDeletedEvent(eventId: string): Promise<Event> {
@@ -230,6 +261,57 @@ class ApiClient {
     return this.request<{ message: string }>('/api/users/me/preferences', {
       method: 'PUT',
       body: JSON.stringify(preferences),
+    });
+  }
+
+  // Geocode city name to coordinates (used during onboarding for custom cities)
+  async geocodeCity(city: string): Promise<{
+    name: string;
+    lat: number;
+    lng: number;
+    country: string;
+  }> {
+    const params = new URLSearchParams({ city });
+    return this.request(`/api/users/geocode/city?${params}`);
+  }
+
+  // Autocomplete city names as user types (Photon - free, no API key)
+  async autocompleteCities(query: string, limit: number = 5): Promise<{
+    cities: Array<{
+      name: string;
+      state: string;
+      country: string;
+      lat: number;
+      lng: number;
+      full_name: string;
+    }>;
+    query: string;
+    count: number;
+  }> {
+    const params = new URLSearchParams({ query, limit: limit.toString() });
+    return this.request(`/api/users/autocomplete/cities?${params}`);
+  }
+
+  // Geolocation endpoint - updates user location (frontend sends GPS coordinates, no Mapbox calls)
+  async updateUserLocation(
+    lat: number,
+    lng: number,
+    city?: string,
+    distanceRange?: number
+  ): Promise<{
+    message: string;
+    location: { lat: number; lng: number; city?: string };
+    distance_range: number;
+    data: UserPreferences;
+  }> {
+    return this.request('/api/users/me/location', {
+      method: 'PUT',
+      body: JSON.stringify({
+        lat,
+        lng,
+        city,
+        distance_range: distanceRange,
+      }),
     });
   }
 
@@ -423,6 +505,84 @@ class ApiClient {
   async unlinkOAuthAccount(): Promise<{ message: string }> {
     return this.request<{ message: string }>('/api/auth/oauth/unlink', {
       method: 'DELETE',
+    });
+  }
+
+  // Approval Flow Endpoints
+  async submitApprovalRequest(
+    eventId: string,
+    request: ApprovalRequestSubmit
+  ): Promise<ApprovalRequestResponse> {
+    return this.request<ApprovalRequestResponse>(`/api/events/${eventId}/request-approval`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async getMyApprovalStatus(
+    eventId: string,
+    email?: string
+  ): Promise<MyApprovalStatusResponse> {
+    const params = email ? `?email=${encodeURIComponent(email)}` : '';
+    return this.request<MyApprovalStatusResponse>(`/api/events/${eventId}/my-approval-status${params}`);
+  }
+
+  async getApprovalRequests(
+    eventId: string,
+    statusFilter?: 'pending' | 'approved' | 'rejected' | 'waitlisted' | 'cancellation_requested'
+  ): Promise<ApprovalRequestResponse[]> {
+    const params = statusFilter ? `?status_filter=${statusFilter}` : '';
+    return this.request<ApprovalRequestResponse[]>(`/api/events/${eventId}/approval-requests${params}`);
+  }
+
+  async processApprovalAction(
+    eventId: string,
+    participantId: string,
+    action: ApprovalActionRequest
+  ): Promise<ApprovalRequestResponse> {
+    return this.request<ApprovalRequestResponse>(`/api/events/${eventId}/approval/${participantId}/action`, {
+      method: 'POST',
+      body: JSON.stringify(action),
+    });
+  }
+
+  async promoteFromWaitlist(eventId: string): Promise<ApprovalRequestResponse> {
+    return this.request<ApprovalRequestResponse>(`/api/events/${eventId}/promote-from-waitlist`, {
+      method: 'POST',
+    });
+  }
+
+  // Debug: Delete all approval requests for an event
+  async deleteAllApprovalRequests(eventId: string): Promise<{ deleted_count: number; event_id: string }> {
+    return this.request<{ deleted_count: number; event_id: string }>(`/api/events/${eventId}/approval-requests`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Get approval stats for all my events
+  async getMyEventsApprovalStats(): Promise<Record<string, {
+    total: number;
+    pending: number;
+    approved: number;
+    waitlisted: number;
+    rejected: number;
+    cancellation_requested: number;
+  }>> {
+    return this.request('/api/events/my-events/approval-stats');
+  }
+
+  // Cancel approved event participation (immediate, no approval required)
+  async cancelParticipation(eventId: string, reason?: string): Promise<{
+    success: boolean;
+    participant_id: string;
+    removed: boolean;
+    promoted_from_waitlist: boolean;
+    promoted_participant_id?: string;
+    message: string;
+  }> {
+    return this.request(`/api/events/${eventId}/cancel-participation`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
     });
   }
 }

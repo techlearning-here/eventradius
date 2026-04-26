@@ -11,6 +11,8 @@ from pydantic import BaseModel, EmailStr
 
 from config.auth import get_current_user
 from config.database import get_table, insert_record
+from services.geocoding import get_geocoding_service
+from services.nominatim_geocoding import nominatim_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -480,7 +482,7 @@ async def get_user_preferences(user: dict = Depends(get_current_user)):
             default_prefs = {
                 "user_id": user["id"],
                 "age_range": None,
-                "has_kids": False,
+                "has_kids": None,
                 "interests": [],
                 "city": None,
                 "latitude": None,
@@ -597,6 +599,167 @@ async def debug_user_preferences(user: dict = Depends(get_current_user)):
         return {"error": str(e), "user_id": user["id"]}
 
 
+@router.put("/me/location")
+async def update_user_location(
+    lat: float = Body(..., embed=True, ge=-90, le=90),
+    lng: float = Body(..., embed=True, ge=-180, le=180),
+    city: Optional[str] = Body(None, embed=True),
+    distance_range: Optional[int] = Body(None, embed=True, ge=1, le=500),
+    user: dict = Depends(get_current_user),
+):
+    """
+    Update user's location and search preferences for nearby event discovery.
+
+    Frontend sends browser GPS coordinates (no Mapbox calls from frontend).
+    Only backend uses Mapbox for geocoding event addresses.
+
+    Args:
+        lat: User's latitude coordinate (from browser geolocation)
+        lng: User's longitude coordinate (from browser geolocation)
+        city: Optional city name (if known from user input)
+        distance_range: Optional search radius in km (default: 25)
+
+    Returns:
+        Updated user preferences with location data
+    """
+    try:
+        update_data = {
+            "latitude": lat,
+            "longitude": lng,
+            "updated_at": datetime.now().isoformat(),
+        }
+
+        if city is not None:
+            update_data["city"] = city
+        if distance_range is not None:
+            update_data["distance_range"] = distance_range
+
+        # Check if preferences exist
+        table = get_table("user_preferences")
+        existing = table.select("*").eq("user_id", user["id"]).execute()
+
+        if existing.data:
+            # Update existing preferences
+            result = table.update(update_data).eq("user_id", user["id"]).execute()
+            logger.info(f"Updated location for user {user['id']}: {lat}, {lng}")
+        else:
+            # Create new preferences with location
+            insert_data = {
+                "user_id": user["id"],
+                "distance_range": distance_range or 25,
+                "city": city,
+                **update_data,
+            }
+            result = insert_record("user_preferences", insert_data)
+            logger.info(f"Created preferences with location for user {user['id']}")
+
+        return {
+            "message": "Location updated successfully",
+            "location": {"lat": lat, "lng": lng, "city": city},
+            "distance_range": distance_range or 25,
+            "data": result.data[0] if result.data else None,
+        }
+
+    except Exception as e:
+        logger.error(f"Error updating user location: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update location",
+        )
+
+
+@router.get("/geocode/city")
+async def geocode_city(city: str):
+    """
+    Geocode a city name to latitude and longitude.
+    Used during onboarding when user enters a custom city not in the hardcoded list.
+
+    Args:
+        city: City name (e.g., "San Francisco, CA" or "Paris, France")
+
+    Returns:
+        City name with coordinates {name, lat, lng, country}
+    """
+    try:
+        logger.info(f"Geocoding city for onboarding: {city}")
+
+        geocoding_service = get_geocoding_service()
+        result = await geocoding_service.geocode_freeform_address(city)
+
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Could not find coordinates for city: {city}",
+            )
+
+        return {
+            "name": result["name"],
+            "lat": result["latitude"],
+            "lng": result["longitude"],
+            "country": result.get("country", ""),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error geocoding city {city}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to geocode city",
+        )
+
+
+@router.get("/autocomplete/cities")
+async def autocomplete_cities(query: str, limit: int = 5):
+    """
+    Autocomplete city names as user types.
+    Uses Nominatim (OpenStreetMap) - free, no API key required.
+    Rate limited to 1 request per second.
+
+    Args:
+        query: Partial city name (e.g., "San Fra", "New Yo")
+        limit: Maximum number of suggestions (1-10, default 5)
+
+    Returns:
+        List of city suggestions with name, state, country, lat, lng
+
+    Example Response:
+        [
+            {
+                "name": "Boston",
+                "state": "Massachusetts",
+                "country": "United States",
+                "lat": 42.3601,
+                "lng": -71.0589,
+                "full_name": "Boston, Massachusetts, United States"
+            }
+        ]
+    """
+    try:
+        # Validate inputs
+        if not query or len(query) < 2:
+            return {"cities": [], "query": query}
+
+        limit = max(1, min(limit, 10))  # Clamp between 1-10
+
+        logger.info(f"City autocomplete query: '{query}', limit: {limit}")
+
+        # Call Nominatim service (OpenStreetMap - free)
+        results = await nominatim_service.autocomplete_cities(query, limit)
+
+        return {"cities": results, "query": query, "count": len(results)}
+
+    except Exception as e:
+        logger.error(f"Autocomplete error: {e}")
+        # Return empty results on error (don't break UI)
+        return {
+            "cities": [],
+            "query": query,
+            "count": 0,
+            "error": "Service temporarily unavailable",
+        }
+
+
 @router.get("/me/combined")
 async def get_current_user_combined(user: dict = Depends(get_current_user)):
     """
@@ -650,7 +813,7 @@ async def get_current_user_combined(user: dict = Depends(get_current_user)):
             preferences = {
                 "user_id": user["id"],
                 "age_range": None,
-                "has_kids": False,
+                "has_kids": None,
                 "interests": [],
                 "city": None,
                 "distance_range": 25,

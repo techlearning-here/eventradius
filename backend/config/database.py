@@ -118,3 +118,16 @@ def fetch_single_record(table_name: str, record_id: str):
         else:
             logger.error(f"Error fetching single record from {table_name}: {e}")
             raise
+
+
+def call_rpc(function_name: str, params: Dict[str, Any]):
+    """Call a Supabase RPC (stored procedure)"""
+    logger.info(f"Calling RPC {function_name} with params: {params}")
+    client = SupabaseClient.get_client()
+    try:
+        result = client.rpc(function_name, params).execute()
+        logger.info(f"RPC {function_name} result: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"Error calling RPC {function_name}: {e}")
+        raise

@@ -3,13 +3,39 @@ import { SEOHead } from '@/components/SEOHead';
 import { EventWizard, type EventFormData } from '@/components/EventWizard/EventWizard';
 import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { useEventActions, type EventCreate } from '@/hooks/useEvents';
+import { useAddressGeocoding } from '@/hooks/useAddressGeocoding';
 
 const CreateEvent = () => {
   const { user } = useAuthWithBackend();
   const { createEvent } = useEventActions();
+  const { geocodeAddress, result: geocodedLocation, loading: geocodingLoading, error: geocodingError } = useAddressGeocoding();
 
   const handleSaveDraft = async (data: EventFormData) => {
     try {
+      // Geocode address if venue info is available
+      let latitude = data.latitude;
+      let longitude = data.longitude;
+      let geolocation_accuracy = data.geolocation_accuracy;
+      
+      if (!latitude && data.venue_city && (data.venue_street || data.venue_city)) {
+        console.log('[CreateEvent] Geocoding address for draft...');
+        const geocoded = await geocodeAddress({
+          street: data.venue_street,
+          city: data.venue_city,
+          state: data.venue_state,
+          zipCode: data.venue_zip_code,
+          country: data.venue_country,
+        });
+        if (geocoded) {
+          latitude = geocoded.latitude;
+          longitude = geocoded.longitude;
+          geolocation_accuracy = geocoded.accuracy;
+          console.log('[CreateEvent] Geocoded successfully:', { lat: latitude, lng: longitude, accuracy: geolocation_accuracy });
+        } else {
+          console.warn('[CreateEvent] Geocoding failed, proceeding without coordinates');
+        }
+      }
+
       // Convert wizard data to API format with all attributes
       const eventData: EventCreate = {
         title: data.title,
@@ -43,6 +69,10 @@ const CreateEvent = () => {
         venue_zip_code: data.venue_zip_code,
         venue_country: data.venue_country,
         venue_building_name: data.venue_building_name,
+        // Geocoded coordinates
+        latitude,
+        longitude,
+        geolocation_accuracy,
         // Audience & Demographics
         age_categories: data.age_categories,
         gender_preference: data.gender_preference,
@@ -97,6 +127,18 @@ const CreateEvent = () => {
         format: data.format,
       };
 
+      console.log('=== SAVE DRAFT DEBUG ===');
+      console.log('Location data:', {
+        venue_street: eventData.venue_street,
+        venue_city: eventData.venue_city,
+        venue_state: eventData.venue_state,
+        venue_zip_code: eventData.venue_zip_code,
+        venue_country: eventData.venue_country,
+        latitude: eventData.latitude,
+        longitude: eventData.longitude,
+      });
+      console.log('========================');
+
       const result = await createEvent(eventData);
       if (!result) {
         throw new Error('Failed to save draft');
@@ -111,6 +153,30 @@ const CreateEvent = () => {
 
   const handlePublish = async (data: EventFormData) => {
     try {
+      // Geocode address if venue info is available
+      let latitude = data.latitude;
+      let longitude = data.longitude;
+      let geolocation_accuracy = data.geolocation_accuracy;
+      
+      if (!latitude && data.venue_city && (data.venue_street || data.venue_city)) {
+        console.log('[CreateEvent] Geocoding address for publish...');
+        const geocoded = await geocodeAddress({
+          street: data.venue_street,
+          city: data.venue_city,
+          state: data.venue_state,
+          zipCode: data.venue_zip_code,
+          country: data.venue_country,
+        });
+        if (geocoded) {
+          latitude = geocoded.latitude;
+          longitude = geocoded.longitude;
+          geolocation_accuracy = geocoded.accuracy;
+          console.log('[CreateEvent] Geocoded successfully:', { lat: latitude, lng: longitude, accuracy: geolocation_accuracy });
+        } else {
+          console.warn('[CreateEvent] Geocoding failed, proceeding without coordinates');
+        }
+      }
+
       // Convert wizard data to API format with all attributes
       const eventData: EventCreate = {
         title: data.title,
@@ -143,6 +209,10 @@ const CreateEvent = () => {
         venue_zip_code: data.venue_zip_code,
         venue_country: data.venue_country,
         venue_building_name: data.venue_building_name,
+        // Geocoded coordinates
+        latitude,
+        longitude,
+        geolocation_accuracy,
         // Audience & Demographics
         age_categories: data.age_categories,
         gender_preference: data.gender_preference,
@@ -199,6 +269,15 @@ const CreateEvent = () => {
 
       console.log('=== CREATE EVENT DEBUG ===');
       console.log('EventData to be sent to API:', eventData);
+      console.log('Location data:', {
+        venue_street: eventData.venue_street,
+        venue_city: eventData.venue_city,
+        venue_state: eventData.venue_state,
+        venue_zip_code: eventData.venue_zip_code,
+        venue_country: eventData.venue_country,
+        latitude: eventData.latitude,
+        longitude: eventData.longitude,
+      });
       console.log('Key attributes:', JSON.stringify({
         age_categories: eventData.age_categories,
         gender_preference: eventData.gender_preference,

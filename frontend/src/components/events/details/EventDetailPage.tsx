@@ -130,42 +130,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({
       if (data) {
         setEvent(data);
         setError(null);
-        
-        // DEBUG: Log all event data including new fields
-        console.log('[EventDetailPage] Event data loaded:', {
-          // Basic info
-          id: data.id,
-          title: data.title,
-          category: data.category,
-          // New Event Wizard fields
-          subtitle: data.subtitle,
-          summary: data.summary,
-          tags: data.tags,
-          timezone: data.timezone,
-          // Venue fields
-          venue_building_name: data.venue_building_name,
-          venue_street: data.venue_street,
-          venue_city: data.venue_city,
-          venue_state: data.venue_state,
-          venue_zip_code: data.venue_zip_code,
-          venue_country: data.venue_country,
-          // Virtual event fields
-          virtual_event_url: data.virtual_event_url,
-          virtual_event_platform: data.virtual_event_platform,
-          event_password: data.event_password ? '*** (hidden)' : undefined,
-          // Timing fields
-          doors_open_time: data.doors_open_time,
-          registration_start_time: data.registration_start_time,
-          registration_end_time: data.registration_end_time,
-          // Additional fields
-          age_restriction: data.age_restriction,
-          custom_refund_policy: data.custom_refund_policy,
-          ticketing_website: data.ticketing_website,
-          ticket_pricing_description: data.ticket_pricing_description,
-          // Full data available
-          fullEventData: data,
-        });
-        
+
         // Fetch organizer profile to get business name
         if (data.organizer_id) {
           apiClient.getUserProfile(data.organizer_id)
@@ -208,7 +173,7 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({
       try {
         // Use backend API to check registration
         const userEvents = await apiClient.getUserEvents();
-        const isEventRegistered = userEvents.some((e: Event) => e.id === eventId);
+        const isEventRegistered = userEvents.participating.some((e: Event) => e.id === eventId);
         setIsRegistered(isEventRegistered);
         // Cache the result
         registrationCache.set(cacheKey, { isRegistered: isEventRegistered, timestamp: Date.now() });
@@ -240,17 +205,6 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({
           setEvent(cachedEvent);
           setLoading(false);
         }
-      } else {
-        // Log preloaded data for debugging
-        console.log('[EventDetailPage] Using preloaded event data:', {
-          subtitle: preloadedEventData.subtitle,
-          summary: preloadedEventData.summary,
-          tags: preloadedEventData.tags,
-          timezone: preloadedEventData.timezone,
-          venue_building_name: preloadedEventData.venue_building_name,
-          virtual_event_url: preloadedEventData.virtual_event_url,
-          doors_open_time: preloadedEventData.doors_open_time,
-        });
       }
       checkRegistration();
     }
@@ -267,8 +221,6 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({
 
   if (!isOpen) return null;
 
-  console.log('[EventDetailOverlay] Rendering portal with event:', event?.title);
-
   return createPortal(
     <div 
       className="fixed inset-0 z-[5000] flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
@@ -281,12 +233,9 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = ({
         {/* Close button */}
         <button
           onClick={(e) => {
-            console.log('Close button clicked');
             e.preventDefault();
             e.stopPropagation();
-            console.log('Calling onClose function');
             onClose();
-            console.log('onClose called');
           }}
           className="absolute top-6 right-6 z-50 text-[#FA76FF] hover:text-[#ff94ff] transition-all duration-200 p-3 rounded-2xl hover:bg-background/80 backdrop-blur-sm border border-transparent hover:border-[#FA76FF]/50 group bg-background/50"
           title="Close event details"

@@ -189,6 +189,9 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
                     <EventDetailLocation 
                       location={event.location}
                       address={event.address}
+                      latitude={event.latitude}
+                      longitude={event.longitude}
+                      geolocation_accuracy={event.geolocation_accuracy}
                       onGetDirections={handleGetDirections}
                     />
                     <div className="space-y-4">
@@ -319,8 +322,9 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
                           <div className="w-1 h-5 bg-blue-500 rounded-full"></div>
                           Your Participation
                         </h3>
-                        <EventParticipation 
-                          eventId={event.id} 
+                        <EventParticipation
+                          eventId={event.id}
+                          event={event}
                           onAuthRequired={handleAuthRequired}
                           preLoadedData={participantData ? {
                             counts: participantData.counts,

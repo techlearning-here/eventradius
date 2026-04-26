@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarIcon, MapPin, Users, Clock, ArrowRight, Share2 } from 'lucide-react';
+import { CalendarIcon, MapPin, Users, Clock, ArrowRight, Share2, Navigation } from 'lucide-react';
 import { format } from 'date-fns';
 import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
 import { ShareEventModal } from '@/components/share/ShareEventModal';
 import { CATEGORIES } from '@/data/cities';
-import { type Event } from '@/components/EventDetail/types';
+import { formatDistance } from '@/hooks/useGeolocation';
+import { type Event } from '@/components/events/details/types';
+
+// Event from API may have additional/looser typing than strict Event type
+type EventFromApi = Event & Record<string, unknown> & {
+  distance_km?: number;
+};
 
 interface EventCardProps {
-  event: Event;
+  event: EventFromApi;
   onPreview?: (event: Event) => void;
   participantCounts?: { interested: number; going: number };
 }
@@ -134,6 +140,18 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPreview, particip
             </div>
             <span className="font-medium truncate">{event.location || 'Online Event'}</span>
           </div>
+          
+          {/* Distance from user (when available) */}
+          {event.distance_km !== undefined && (
+            <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center justify-center w-6 h-6 rounded-md bg-blue-50">
+                <Navigation className="w-3.5 h-3.5 text-blue-600" />
+              </div>
+              <span className="font-medium text-blue-600">
+                {formatDistance(event.distance_km)} away
+              </span>
+            </div>
+          )}
           
           {/* Participants with Progress */}
           <div className="pt-3 border-t border-border/60">

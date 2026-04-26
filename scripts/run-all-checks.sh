@@ -41,16 +41,28 @@ print_status() {
 cd "$PROJECT_ROOT/backend"
 
 echo "[1/7] Backend Black Formatting Check..."
-uv run black --check --diff api/ config/ tests/
+# First run check to see if any files need formatting
+BLACK_CHECK=$(uv run black --check api/ config/ tests/ 2>&1)
 BLACK_STATUS=$?
-print_status "1/7" "Backend Black formatting" $BLACK_STATUS
+
 if [ $BLACK_STATUS -ne 0 ]; then
+    echo "❌ Backend Black formatting failed!"
+    echo
+    echo "Files that need formatting:"
+    echo "$BLACK_CHECK"
+    echo
+    echo "To fix formatting automatically, run:"
+    echo "  cd backend && uv run black api/ config/ tests/"
+    echo
+    echo "Or to see the full diff:"
+    echo "  cd backend && uv run black --check --diff api/ config/ tests/"
     echo
     echo "========================================"
     echo "❌ CHECKS FAILED!"
     echo "========================================"
     exit 1
 fi
+print_status "1/7" "Backend Black formatting" $BLACK_STATUS
 echo
 
 echo "[2/7] Backend Tests with Coverage..."

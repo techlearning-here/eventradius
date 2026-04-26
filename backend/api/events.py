@@ -4,13 +4,14 @@ Event-related API endpoints.
 
 import logging
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from config.auth import get_current_user, optional_auth
 from config.database import (
+    call_rpc,
     delete_record,
     fetch_records,
     fetch_single_record,
@@ -18,6 +19,9 @@ from config.database import (
     insert_record,
     update_record,
 )
+
+# Note: Geocoding is done on frontend using Nominatim (OpenStreetMap)
+# Frontend sends lat/lng directly, no backend geocoding needed
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/events", tags=["events"])
@@ -64,6 +68,10 @@ class EventBase(BaseModel):
     venue_zip_code: Optional[str] = None
     venue_country: Optional[str] = None
     venue_building_name: Optional[str] = None
+    # Geocoded coordinates (frontend sends these via Nominatim)
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    geolocation_accuracy: Optional[str] = None
     # Virtual event URL
     virtual_event_url: Optional[str] = None
     # Status
@@ -282,6 +290,56 @@ class EventResponse(EventBase, EventAttributes):
     model_config = ConfigDict(from_attributes=True)
 
 
+# Approval Flow Models
+class ApprovalRequestSubmit(BaseModel):
+    """Model for submitting an approval request to join an event."""
+
+    requester_name: str = Field(..., min_length=1, max_length=200)
+    requester_email: str = Field(..., min_length=1, max_length=255)
+    requester_phone: Optional[str] = Field(None, max_length=50)
+    requester_bio: Optional[str] = Field(None, max_length=1000)
+    requester_reason: Optional[str] = Field(None, max_length=2000)
+    requester_social_links: Optional[dict] = Field(None)
+
+
+class ApprovalRequestResponse(BaseModel):
+    """Response model for approval request status."""
+
+    id: str
+    event_id: str
+    user_id: Optional[str] = None
+    approval_status: str
+    requester_name: Optional[str] = None
+    requester_email: Optional[str] = None
+    requester_phone: Optional[str] = None
+    requester_bio: Optional[str] = None
+    requester_reason: Optional[str] = None
+    requester_social_links: Optional[dict] = None
+    is_waitlisted: bool = False
+    waitlist_position: Optional[int] = None
+    registered_at: str
+    approved_at: Optional[str] = None
+    rejection_reason: Optional[str] = None
+
+
+class ApprovalActionRequest(BaseModel):
+    """Model for organizer approval/rejection action."""
+
+    action: Literal["approve", "reject", "waitlist"]
+    rejection_reason: Optional[str] = Field(None, max_length=500)
+
+
+class MyApprovalStatusResponse(BaseModel):
+    """Response for user's approval status for an event."""
+
+    has_requested: bool
+    approval_status: Optional[str] = None
+    is_waitlisted: bool = False
+    waitlist_position: Optional[int] = None
+    rejection_reason: Optional[str] = None
+    requested_at: Optional[str] = None
+
+
 # Event endpoints
 @router.get("/", response_model=List[EventResponse])
 async def get_events(
@@ -427,7 +485,31 @@ async def _create_event_logic(event: EventCreate, user: dict) -> EventResponse:
         logger.info(f"  is_paid_event: {event_data.get('is_paid_event')}")
         logger.info("=====================")
 
+        # Note: Geocoding is now done on frontend using Nominatim (OpenStreetMap)
+        # Frontend sends latitude, longitude, and geolocation_accuracy directly
+        # Backend just saves the provided coordinates
+        logger.info(f"DEBUG: Received event_data keys: {list(event_data.keys())}")
+        logger.info(
+            f"DEBUG: latitude={event_data.get('latitude')}, longitude={event_data.get('longitude')}, accuracy={event_data.get('geolocation_accuracy')}"
+        )
+
+        event_type = event_data.get("event_type")
+        if event_type in ("in_person", "hybrid"):
+            lat = event_data.get("latitude")
+            lng = event_data.get("longitude")
+            if lat and lng:
+                logger.info(f"Event location provided by frontend: {lat}, {lng}")
+                event_data["geocoded_at"] = datetime.now().isoformat()
+            else:
+                logger.info("No coordinates provided for event (optional)")
+
         response = insert_record("events", event_data)
+
+        logger.info(f"DEBUG: Insert response data: {response.data}")
+        if response.data:
+            logger.info(
+                f"DEBUG: Created event lat/lng: {response.data[0].get('latitude')}, {response.data[0].get('longitude')}"
+            )
 
         if not response.data:
             logger.error(f"Insert failed - no data returned. Response: {response}")
@@ -1209,4 +1291,864 @@ async def update_event_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update event status",
+        )
+
+
+# ============================================================================
+# APPROVAL FLOW ENDPOINTS
+# ============================================================================
+
+
+@router.post("/{event_id}/request-approval", response_model=ApprovalRequestResponse)
+async def submit_approval_request(
+    event_id: str,
+    request: ApprovalRequestSubmit,
+    user: Optional[dict] = Depends(optional_auth),
+):
+    """
+    Submit a request to join an event that requires approval.
+    Uses atomic stored procedure to prevent race conditions.
+    Can be called by authenticated users (linked to their account) or guests.
+    """
+    try:
+        # Call atomic stored procedure
+        rpc_params = {
+            "p_event_id": event_id,
+            "p_user_id": user["id"] if user else None,
+            "p_requester_name": request.requester_name,
+            "p_requester_email": request.requester_email,
+            "p_requester_phone": request.requester_phone,
+            "p_requester_bio": request.requester_bio,
+            "p_requester_reason": request.requester_reason,
+            "p_requester_social_links": request.requester_social_links or {},
+        }
+
+        result = call_rpc("submit_approval_request", rpc_params)
+
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to submit approval request",
+            )
+
+        # Parse result from stored procedure
+        response_data = result.data[0] if isinstance(result.data, list) else result.data
+
+        if not response_data.get("success"):
+            error_code = response_data.get("error_code")
+            error_message = response_data.get("message", "Failed to submit request")
+
+            # Map error codes to appropriate HTTP status codes
+            status_code_map = {
+                "EVENT_NOT_FOUND": status.HTTP_404_NOT_FOUND,
+                "NO_APPROVAL_REQUIRED": status.HTTP_400_BAD_REQUEST,
+                "ALREADY_APPROVED": status.HTTP_400_BAD_REQUEST,
+                "PENDING_EXISTS": status.HTTP_400_BAD_REQUEST,
+                "EVENT_FULL": status.HTTP_400_BAD_REQUEST,
+            }
+
+            raise HTTPException(
+                status_code=status_code_map.get(
+                    error_code, status.HTTP_500_INTERNAL_SERVER_ERROR
+                ),
+                detail=error_message,
+            )
+
+        # Transform response to match Pydantic model
+        return {
+            "id": response_data["participant_id"],
+            "event_id": response_data["event_id"],
+            "user_id": response_data.get("user_id"),
+            "approval_status": response_data["approval_status"],
+            "requester_name": response_data.get("requester_name"),
+            "requester_email": response_data.get("requester_email"),
+            "requester_phone": response_data.get("requester_phone"),
+            "requester_bio": response_data.get("requester_bio"),
+            "requester_reason": response_data.get("requester_reason"),
+            "requester_social_links": response_data.get("requester_social_links", {}),
+            "is_waitlisted": response_data.get("is_waitlisted", False),
+            "waitlist_position": response_data.get("waitlist_position"),
+            "registered_at": response_data.get("registered_at"),
+            "approved_at": None,
+            "rejection_reason": None,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting approval request for event {event_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to submit approval request",
+        )
+
+
+@router.delete("/{event_id}/approval-requests")
+async def delete_all_approval_requests(
+    event_id: str,
+    user: dict = Depends(get_current_user),
+) -> Dict[str, int]:
+    """
+    DEBUG: Delete all approval requests for an event.
+    Only available for event organizers.
+    Returns count of deleted records.
+    """
+    try:
+        # Verify user is the event organizer
+        event_response = fetch_single_record("events", event_id)
+        if not event_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+            )
+
+        event = event_response.data
+        if event.get("organizer_id") != user["id"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only event organizer can delete approval requests",
+            )
+
+        # Delete all participants with pending/approved/rejected/waitlisted status
+        # (i.e., all approval-based participants)
+        result = (
+            get_table("event_participants")
+            .delete()
+            .eq("event_id", event_id)
+            .in_("approval_status", ["pending", "approved", "rejected", "waitlisted"])
+            .execute()
+        )
+
+        deleted_count = len(result.data) if result.data else 0
+        logger.info(f"Deleted {deleted_count} approval requests for event {event_id}")
+
+        return {
+            "deleted_count": deleted_count,
+            "event_id": event_id,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting approval requests for event {event_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete approval requests",
+        )
+
+
+@router.get("/{event_id}/my-approval-status", response_model=MyApprovalStatusResponse)
+async def get_my_approval_status(
+    event_id: str,
+    email: Optional[str] = None,
+    user: Optional[dict] = Depends(optional_auth),
+):
+    """
+    Get the current user's approval status for an event.
+    For authenticated users, checks by user_id. For guests, can check by email.
+    """
+    try:
+        query = (
+            get_table("event_participants")
+            .select(
+                "approval_status, is_waitlisted, waitlist_position, rejection_reason, registered_at"
+            )
+            .eq("event_id", event_id)
+        )
+
+        if user:
+            query = query.eq("user_id", user["id"])
+        elif email:
+            query = query.eq("requester_email", email)
+        else:
+            return MyApprovalStatusResponse(has_requested=False)
+
+        response = query.maybe_single().execute()
+
+        if not response.data:
+            return MyApprovalStatusResponse(has_requested=False)
+
+        data = response.data
+        return MyApprovalStatusResponse(
+            has_requested=True,
+            approval_status=data.get("approval_status"),
+            is_waitlisted=data.get("is_waitlisted", False),
+            waitlist_position=data.get("waitlist_position"),
+            rejection_reason=data.get("rejection_reason"),
+            requested_at=data.get("registered_at"),
+        )
+
+    except Exception as e:
+        logger.error(f"Error checking approval status for event {event_id}: {e}")
+        return MyApprovalStatusResponse(has_requested=False)
+
+
+@router.get(
+    "/{event_id}/approval-requests", response_model=List[ApprovalRequestResponse]
+)
+async def get_approval_requests(
+    event_id: str,
+    status_filter: Optional[str] = Query(
+        None, description="Filter by status: pending, approved, rejected, waitlisted"
+    ),
+    user: dict = Depends(get_current_user),
+):
+    """
+    Get all approval requests for an event. Only the event organizer can access this.
+    """
+    try:
+        # Verify event exists and user is organizer
+        event_response = fetch_single_record("events", event_id)
+        if not event_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+            )
+
+        event = event_response.data
+        if event.get("organizer_id") != user["id"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the event organizer can view approval requests",
+            )
+
+        # Build query
+        query = get_table("event_participants").select("*").eq("event_id", event_id)
+
+        if status_filter:
+            query = query.eq("approval_status", status_filter)
+
+        query = query.order("registered_at", desc=True)
+
+        response = query.execute()
+        return response.data or []
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching approval requests for event {event_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch approval requests",
+        )
+
+
+@router.post(
+    "/{event_id}/approval/{participant_id}/action",
+    response_model=ApprovalRequestResponse,
+)
+async def process_approval_action(
+    event_id: str,
+    participant_id: str,
+    action_request: ApprovalActionRequest,
+    user: dict = Depends(get_current_user),
+):
+    """
+    Process an approval action (approve, reject, waitlist) for a participant.
+    Only the event organizer can perform these actions.
+    """
+    try:
+        # Verify event exists and user is organizer
+        event_response = fetch_single_record("events", event_id)
+        if not event_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+            )
+
+        event = event_response.data
+        if event.get("organizer_id") != user["id"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the event organizer can process approval requests",
+            )
+
+        # Get the participant request
+        participant_response = (
+            get_table("event_participants")
+            .select("*")
+            .eq("id", participant_id)
+            .eq("event_id", event_id)
+            .single()
+            .execute()
+        )
+
+        if not participant_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Approval request not found",
+            )
+
+        participant = participant_response.data
+
+        # Process the action
+        update_data = {}
+
+        if action_request.action == "approve":
+            update_data["approval_status"] = "approved"
+            update_data["approved_at"] = datetime.now().isoformat()
+            update_data["approved_by"] = user["id"]
+            update_data["is_waitlisted"] = False
+            update_data["waitlist_position"] = None
+            update_data["rejection_reason"] = None
+
+            # If they were on waitlist, update participation status to "going"
+            if participant.get("is_waitlisted"):
+                update_data["status"] = "going"
+
+        elif action_request.action == "reject":
+            update_data["approval_status"] = "rejected"
+            update_data["rejection_reason"] = action_request.rejection_reason
+            update_data["is_waitlisted"] = False
+            update_data["waitlist_position"] = None
+
+        elif action_request.action == "waitlist":
+            update_data["approval_status"] = "waitlisted"
+            update_data["is_waitlisted"] = True
+            # Get next waitlist position
+            waitlist_response = (
+                get_table("event_participants")
+                .select("waitlist_position")
+                .eq("event_id", event_id)
+                .eq("is_waitlisted", True)
+                .order("waitlist_position", desc=True)
+                .limit(1)
+                .execute()
+            )
+            next_position = 1
+            if waitlist_response.data:
+                next_position = (
+                    waitlist_response.data[0].get("waitlist_position") or 0
+                ) + 1
+            update_data["waitlist_position"] = next_position
+
+        # Update the participant record
+        response = update_record("event_participants", participant_id, update_data)
+
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to process approval action",
+            )
+
+        return response.data[0]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error processing approval action for participant {participant_id}: {e}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process approval action",
+        )
+
+
+@router.post(
+    "/{event_id}/promote-from-waitlist", response_model=ApprovalRequestResponse
+)
+async def promote_from_waitlist(
+    event_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """
+    Promote the next person from the waitlist to approved status.
+    Called when a spot opens up (e.g., someone cancels).
+    Only the event organizer can do this.
+    """
+    try:
+        # Verify event exists and user is organizer
+        event_response = fetch_single_record("events", event_id)
+        if not event_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+            )
+
+        event = event_response.data
+        if event.get("organizer_id") != user["id"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the event organizer can manage the waitlist",
+            )
+
+        # Find the first person on the waitlist
+        waitlist_response = (
+            get_table("event_participants")
+            .select("*")
+            .eq("event_id", event_id)
+            .eq("is_waitlisted", True)
+            .order("waitlist_position", ascending=True)
+            .limit(1)
+            .execute()
+        )
+
+        if not waitlist_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No one is on the waitlist",
+            )
+
+        participant = waitlist_response.data[0]
+
+        # Promote to approved
+        update_data = {
+            "approval_status": "approved",
+            "approved_at": datetime.now().isoformat(),
+            "approved_by": user["id"],
+            "is_waitlisted": False,
+            "waitlist_position": None,
+            "status": "going",
+        }
+
+        response = update_record("event_participants", participant["id"], update_data)
+
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to promote from waitlist",
+            )
+
+        # Reorder remaining waitlist positions
+        remaining = (
+            get_table("event_participants")
+            .select("id, waitlist_position")
+            .eq("event_id", event_id)
+            .eq("is_waitlisted", True)
+            .order("waitlist_position", ascending=True)
+            .execute()
+        )
+
+        if remaining.data:
+            for idx, record in enumerate(remaining.data, start=1):
+                if record.get("waitlist_position") != idx:
+                    update_record(
+                        "event_participants", record["id"], {"waitlist_position": idx}
+                    )
+
+        return response.data[0]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error promoting from waitlist for event {event_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to promote from waitlist",
+        )
+
+
+@router.get("/my-events/approval-stats")
+async def get_my_events_approval_stats(
+    user: dict = Depends(get_current_user),
+) -> Dict[str, Dict[str, int]]:
+    """
+    Get approval request statistics for all events created by the current user.
+    Returns a map of event_id -> {total, pending, approved, waitlisted, rejected}.
+    """
+    try:
+        # First get all events created by this user
+        user_id = user["id"]
+        logger.info(f"Fetching events for user: {user_id}")
+
+        events_response = (
+            get_table("events").select("id").eq("organizer_id", user_id).execute()
+        )
+
+        logger.info(
+            f"Found {len(events_response.data or [])} events with organizer_id={user_id}"
+        )
+
+        if not events_response.data:
+            logger.info("No events found, returning empty stats")
+            return {}
+
+        event_ids = [e["id"] for e in events_response.data]
+
+        # Get all participants for these events (including those without approval_status)
+        logger.info(f"Fetching participants for event_ids: {event_ids}")
+        participants_response = (
+            get_table("event_participants")
+            .select("event_id, approval_status, user_id, requester_email, status")
+            .in_("event_id", event_ids)
+            .execute()
+        )
+
+        logger.info(f"Found {len(participants_response.data or [])} total participants")
+        for p in participants_response.data or []:
+            logger.info(
+                f"Participant: event={p.get('event_id')}, status={p.get('status')}, approval_status={p.get('approval_status')}, user={p.get('user_id')}, email={p.get('requester_email')}"
+            )
+
+        # Aggregate counts by event
+        stats: Dict[str, Dict[str, int]] = {}
+        for event_id in event_ids:
+            stats[str(event_id)] = {
+                "total": 0,
+                "pending": 0,
+                "approved": 0,
+                "waitlisted": 0,
+                "rejected": 0,
+                "cancellation_requested": 0,
+            }
+
+        for participant in participants_response.data or []:
+            event_id = str(participant.get("event_id"))
+            status = participant.get("approval_status")
+            logger.info(f"Processing participant: event_id={event_id}, status={status}")
+
+            if event_id in stats and status:
+                stats[event_id]["total"] += 1
+                if status in stats[event_id]:
+                    stats[event_id][status] += 1
+
+        logger.info(f"Final stats: {stats}")
+
+        # If stats are empty but we have events, check what's happening
+        if not any(s["total"] > 0 for s in stats.values()):
+            logger.info(
+                "All stats are zero - checking if participants exist without approval_status"
+            )
+            # Try fetching all participants without filtering
+            all_parts = (
+                get_table("event_participants")
+                .select("*")
+                .in_("event_id", event_ids)
+                .execute()
+            )
+            logger.info(
+                f"Raw participant count for these events: {len(all_parts.data or [])}"
+            )
+            if all_parts.data:
+                for p in all_parts.data[:3]:  # Log first 3
+                    logger.info(f"Raw participant: {p}")
+
+        return stats
+
+    except Exception as e:
+        logger.error(f"Error fetching approval stats: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch approval statistics",
+        )
+
+
+# ============================================================================
+# CANCELLATION REQUEST ENDPOINTS
+# ============================================================================
+
+
+class CancellationRequest(BaseModel):
+    """Model for user requesting cancellation."""
+
+    reason: Optional[str] = Field(
+        None, max_length=500, description="Optional reason for cancellation"
+    )
+
+
+class CancellationActionRequest(BaseModel):
+    """Model for organizer processing cancellation request."""
+
+    action: Literal["approve", "reject"]
+    # approve = actually cancel (remove from event)
+    # reject = deny cancellation request (keep them approved)
+
+
+@router.post("/{event_id}/cancel-participation")
+async def cancel_participation(
+    event_id: str,
+    request: CancellationRequest,
+    user: dict = Depends(get_current_user),
+):
+    """
+    Cancel participation for an already-approved event.
+    Immediately removes participant and promotes from waitlist if applicable.
+    """
+    try:
+        # Find the participant record for this user and event
+        participant_response = (
+            get_table("event_participants")
+            .select("*")
+            .eq("event_id", event_id)
+            .eq("user_id", user["id"])
+            .single()
+            .execute()
+        )
+
+        if not participant_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="You are not registered for this event",
+            )
+
+        participant = participant_response.data
+
+        # Only approved participants can cancel
+        if participant.get("approval_status") != "approved":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot cancel participation. Current status: {participant.get('approval_status')}",
+            )
+
+        # Use atomic stored procedure to cancel and promote from waitlist
+        rpc_params = {
+            "p_participant_id": participant["id"],
+            "p_event_id": event_id,
+            "p_reason": request.reason,
+        }
+
+        result = call_rpc("cancel_approved_participation", rpc_params)
+
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to cancel participation",
+            )
+
+        result_data = result.data[0] if isinstance(result.data, list) else result.data
+        logger.info(f"Result data: {result_data}, type: {type(result_data)}")
+
+        success_val = result_data.get("success")
+        logger.info(f"Success value: {success_val}, type: {type(success_val)}")
+
+        if not success_val:
+            error_code = result_data.get("error_code")
+            logger.info(f"Error code: {error_code}")
+            if error_code == "PARTICIPANT_NOT_FOUND":
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Participant not found",
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=result_data.get("message", "Failed to cancel participation"),
+                )
+
+        logger.info(f"Passed success check, proceeding to return")
+        logger.info(f"User: {user}, participant: {participant}")
+        logger.info(f"result_data: {result_data}")
+
+        return {
+            "success": True,
+            "participant_id": participant["id"],
+            "removed": True,
+            "promoted_from_waitlist": result_data.get("promoted_from_waitlist", False),
+            "promoted_participant_id": result_data.get("promoted_participant_id"),
+            "message": "You have successfully cancelled your participation.",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling participation: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to cancel participation",
+        )
+
+
+# ============================================================================
+# GEOLOCATION & DISCOVERY ENDPOINTS
+# ============================================================================
+
+
+@router.get("/discover/nearby", response_model=List[EventResponse])
+async def get_nearby_events(
+    lat: float = Query(..., description="User latitude", ge=-90, le=90),
+    lng: float = Query(..., description="User longitude", ge=-180, le=180),
+    radius: int = Query(25, ge=1, le=500, description="Search radius in km"),
+    category: Optional[str] = None,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    user: Optional[dict] = Depends(optional_auth),
+):
+    """
+    Get events within specified radius from user location.
+    Uses optimized bounding box + haversine calculation via database function.
+    """
+    try:
+        # Call the database function for efficient radius filtering
+        result = call_rpc(
+            "events_within_radius_fast",
+            {
+                "user_lat": lat,
+                "user_lng": lng,
+                "radius_km": radius,
+                "max_results": limit + offset,
+            },
+        )
+
+        if not result.data:
+            return []
+
+        # Get full event details for filtered IDs
+        event_ids = [r["event_id"] for r in result.data[offset : offset + limit]]
+        distances = {r["event_id"]: r["distance_km"] for r in result.data}
+
+        if not event_ids:
+            return []
+
+        # Fetch full event details
+        table = get_table("events")
+        query = table.select("*").in_("id", event_ids)
+
+        if category:
+            query = query.eq("category", category)
+
+        query = query.is_("deleted_at", "null")
+        query = query.or_("status.eq.published,status.eq.upcoming,status.is.null")
+
+        response = query.execute()
+
+        # Add distance to each event
+        events = []
+        for event in response.data:
+            event["distance_km"] = distances.get(event["id"])
+            event["current_participants"] = 0
+            events.append(event)
+
+        # Sort by distance (already sorted by DB function, but re-sort to be safe)
+        events.sort(key=lambda x: x.get("distance_km", float("inf")))
+
+        return events
+
+    except Exception as e:
+        logger.error(f"Error fetching nearby events: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch nearby events",
+        )
+
+
+@router.get("/discover/nearby/summary")
+async def get_nearby_events_summary(
+    lat: float = Query(..., description="User latitude", ge=-90, le=90),
+    lng: float = Query(..., description="User longitude", ge=-180, le=180),
+    radius: int = Query(25, ge=1, le=500, description="Search radius in km"),
+    user: Optional[dict] = Depends(optional_auth),
+):
+    """
+    Get a summary of nearby events with counts by category.
+    Lightweight endpoint for map/discovery overview.
+    """
+    try:
+        result = call_rpc(
+            "events_within_radius_fast",
+            {
+                "user_lat": lat,
+                "user_lng": lng,
+                "radius_km": radius,
+                "max_results": 1000,  # Get more for summary stats
+            },
+        )
+
+        if not result.data:
+            return {
+                "total_events": 0,
+                "events_by_category": {},
+                "radius_km": radius,
+                "user_location": {"lat": lat, "lng": lng},
+            }
+
+        event_ids = [r["event_id"] for r in result.data]
+
+        # Get categories for these events
+        table = get_table("events")
+        response = (
+            table.select("id,category")
+            .in_("id", event_ids)
+            .is_("deleted_at", "null")
+            .or_("status.eq.published,status.eq.upcoming,status.is.null")
+            .execute()
+        )
+
+        # Count by category
+        category_counts = {}
+        for event in response.data:
+            cat = event.get("category") or "uncategorized"
+            category_counts[cat] = category_counts.get(cat, 0) + 1
+
+        return {
+            "total_events": len(response.data),
+            "events_by_category": category_counts,
+            "radius_km": radius,
+            "user_location": {"lat": lat, "lng": lng},
+        }
+
+    except Exception as e:
+        logger.error(f"Error fetching nearby events summary: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch nearby events summary",
+        )
+
+
+@router.put("/{event_id}/location")
+async def update_event_location(
+    event_id: str,
+    lat: float = Body(..., embed=True, ge=-90, le=90),
+    lng: float = Body(..., embed=True, ge=-180, le=180),
+    accuracy: str = Body("rooftop", embed=True),
+    user: dict = Depends(get_current_user),
+):
+    """
+    Update event location coordinates.
+    Frontend geocodes using Nominatim, then sends lat/lng here.
+    Only the event organizer can update location.
+    """
+    try:
+        # Fetch the event
+        event_response = fetch_single_record("events", event_id)
+        if not event_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+            )
+
+        event = event_response.data
+
+        # Verify user is organizer
+        if event.get("organizer_id") != user["id"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the event organizer can update this event",
+            )
+
+        # Skip online-only events
+        if event.get("event_type") == "online":
+            return {
+                "message": "Online events don't require location",
+                "updated": False,
+            }
+
+        # Update event with coordinates from frontend
+        update_data = {
+            "latitude": lat,
+            "longitude": lng,
+            "geolocation_accuracy": accuracy,
+            "geocoded_at": datetime.now().isoformat(),
+        }
+
+        update_response = update_record("events", event_id, update_data)
+
+        if not update_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update event location",
+            )
+
+        return {
+            "message": "Event location updated successfully",
+            "updated": True,
+            "coordinates": {
+                "latitude": lat,
+                "longitude": lng,
+            },
+            "accuracy": accuracy,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating event location {event_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update event location",
         )

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuthWithBackend, globalRequestResults } from '@/hooks/useAuthWithBackend';
+import { useAuthWithBackend } from '@/hooks/useAuthWithBackend';
 import { CITIES, CATEGORIES, AGE_RANGES, DISTANCE_OPTIONS } from '@/data/cities';
+import { useNominatimAutocomplete } from '@/hooks/useNominatimAutocomplete';
 import { SEOHead } from '@/components/SEOHead';
-import { MapPin, ChevronRight, ChevronLeft, Check, Sparkles, Users, Calendar, Map, Heart, Star } from 'lucide-react';
+import { MapPin, ChevronRight, ChevronLeft, Check, Sparkles, Users, Calendar, Map, Heart, Star, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/utils';
 import { apiClient } from '@/integrations/backend/api';
@@ -14,16 +14,25 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [ageRange, setAgeRange] = useState('');
-  const [hasKids, setHasKids] = useState(false);
+  const [hasKids, setHasKids] = useState<'yes' | 'no' | 'prefer_not_to_say' | ''>('');
   const [isOrganizer] = useState<boolean>(false); // Default to event discoverer
   const [interests, setInterests] = useState<string[]>([]);
   const [citySearch, setCitySearch] = useState('');
   const [selectedCity, setSelectedCity] = useState<typeof CITIES[0] | null>(null);
+  const [customCity, setCustomCity] = useState<{name: string, state: string, lat: number, lng: number} | null>(null);
   const [distanceRange, setDistanceRange] = useState(25);
   const [saving, setSaving] = useState(false);
+  
+  // Use Nominatim autocomplete directly from frontend (free, no backend calls)
+  const { suggestions, loading: autocompleteLoading, searchCity, clearSuggestions } = useNominatimAutocomplete({
+    debounceMs: 300,
+    minLength: 2,
+    limit: 5
+  });
 
+  // Filter hardcoded cities (fallback when no autocomplete results)
   const filteredCities = citySearch.length > 0
-    ? CITIES.filter(c => `${c.name}, ${c.state}`.toLowerCase().includes(citySearch.toLowerCase())).slice(0, 8)
+    ? CITIES.filter(c => `${c.name}, ${c.state}`.toLowerCase().includes(citySearch.toLowerCase())).slice(0, 5)
     : [];
 
   const toggleInterest = (id: string) => {
@@ -31,20 +40,50 @@ const Onboarding = () => {
   };
 
   const handleComplete = async () => {
-    if (!user || !selectedCity || interests.length === 0) {
-      toast.error('Please complete all fields');
+    // Use either custom city (from autocomplete) or hardcoded city
+    const cityToUse = customCity || selectedCity;
+    
+    // Debug logging
+    console.log('[Onboarding] Validation:', {
+      user: !!user,
+      cityToUse: !!cityToUse,
+      interestsCount: interests.length,
+      selectedCity: !!selectedCity,
+      customCity: !!customCity,
+      cityDetails: cityToUse ? { name: cityToUse.name, state: cityToUse.state, lat: cityToUse.lat, lng: cityToUse.lng } : null
+    });
+    
+    if (!user) {
+      toast.error('Please sign in first');
       return;
     }
+    
+    if (!cityToUse) {
+      toast.error('Please select a city');
+      return;
+    }
+    
+    if (interests.length === 0) {
+      toast.error('Please select at least one interest');
+      return;
+    }
+    
+    console.log('[Onboarding] Saving preferences with location:', {
+      city: `${cityToUse.name}, ${cityToUse.state}`,
+      lat: cityToUse.lat,
+      lng: cityToUse.lng,
+      distanceRange: distanceRange
+    });
 
     setSaving(true);
     try {
       const preferencesData = {
         age_range: ageRange || null,
-        has_kids: hasKids,
+        has_kids: hasKids || null,
         interests,
-        city: `${selectedCity.name}, ${selectedCity.state}`,
-        latitude: selectedCity.lat,
-        longitude: selectedCity.lng,
+        city: `${cityToUse.name}, ${cityToUse.state}`,
+        latitude: cityToUse.lat,
+        longitude: cityToUse.lng,
         distance_range: distanceRange,
         onboarding_completed: true,
         is_organizer: isOrganizer,
@@ -131,10 +170,11 @@ const Onboarding = () => {
                       <Heart className="w-4 h-4 text-teal-600" />
                       Do you have kids?
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       {[
-                        { label: 'Yes, I have kids', value: true },
-                        { label: 'No kids', value: false },
+                        { label: 'Yes, I have kids', value: 'yes' },
+                        { label: 'No kids', value: 'no' },
+                        { label: 'Prefer not to say', value: 'prefer_not_to_say' },
                       ].map(opt => (
                         <button
                           key={opt.label}
@@ -224,28 +264,86 @@ const Onboarding = () => {
                   <input
                     type="text"
                     value={citySearch}
-                    onChange={e => { setCitySearch(e.target.value); setSelectedCity(null); }}
+                    onChange={e => { 
+                      const value = e.target.value;
+                      setCitySearch(value); 
+                      setSelectedCity(null);
+                      setCustomCity(null);
+                      // Trigger autocomplete for custom cities
+                      searchCity(value);
+                    }}
                     placeholder="Search for your city..."
                     className="w-full bg-card border-2 border-border pl-12 pr-4 py-3 text-sm rounded-lg focus:outline-none focus:border-teal-600 text-foreground placeholder:text-muted-foreground transition-colors"
                   />
-                  {filteredCities.length > 0 && !selectedCity && (
-                    <div className="absolute top-full left-0 right-0 bg-card border-2 border-border border-t-0 z-10 max-h-64 overflow-y-auto rounded-b-lg shadow-lg mt-1">
-                      {filteredCities.map(city => (
-                        <button
-                          key={`${city.name}-${city.state}`}
-                          onClick={() => { setSelectedCity(city); setCitySearch(`${city.name}, ${city.state}`); }}
-                          className="w-full text-left px-4 py-3 text-sm hover:bg-accent transition-colors flex items-center gap-3"
-                        >
-                          <MapPin className="w-4 h-4 text-teal-600" />
-                          <div>
-                            <div className="font-medium text-foreground">{city.name}</div>
-                            <div className="text-xs text-muted-foreground">{city.state}</div>
-                          </div>
-                        </button>
-                      ))}
+                  {autocompleteLoading && (
+                    <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground animate-spin" />
+                  )}
+                  
+                  {/* Combined dropdown: hardcoded cities first, then autocomplete suggestions */}
+                  {(filteredCities.length > 0 || suggestions.length > 0) && !selectedCity && !customCity && (
+                    <div className="absolute top-full left-0 right-0 bg-card border-2 border-border border-t-0 z-10 max-h-80 overflow-y-auto rounded-b-lg shadow-lg mt-1">
+                      {/* Hardcoded cities section */}
+                      {filteredCities.length > 0 && (
+                        <div className="py-2">
+                          <div className="px-4 py-1 text-xs font-semibold text-muted-foreground uppercase">Popular Cities</div>
+                          {filteredCities.map(city => (
+                            <button
+                              key={`${city.name}-${city.state}`}
+                              onClick={() => { 
+                                console.log('[Onboarding] Selected hardcoded city:', { name: city.name, state: city.state, lat: city.lat, lng: city.lng });
+                                setSelectedCity(city); 
+                                setCitySearch(`${city.name}, ${city.state}`); 
+                                clearSuggestions();
+                              }}
+                              className="w-full text-left px-4 py-2.5 text-sm hover:bg-accent transition-colors flex items-center gap-3"
+                            >
+                              <MapPin className="w-4 h-4 text-teal-600" />
+                              <div>
+                                <div className="font-medium text-foreground">{city.name}</div>
+                                <div className="text-xs text-muted-foreground">{city.state}</div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Autocomplete suggestions section */}
+                      {suggestions.length > 0 && (
+                        <div className="py-2 border-t border-border">
+                          <div className="px-4 py-1 text-xs font-semibold text-muted-foreground uppercase">Search Results</div>
+                          {suggestions.map((city, idx) => (
+                            <button
+                              key={`suggestion-${idx}`}
+                              onClick={() => { 
+                                console.log('[Onboarding] Selected autocomplete city:', { name: city.name, state: city.state, lat: city.lat, lng: city.lng });
+                                setCustomCity({
+                                  name: city.name,
+                                  state: city.state,
+                                  lat: city.lat,
+                                  lng: city.lng
+                                }); 
+                                setCitySearch(city.full_name); 
+                                clearSuggestions();
+                              }}
+                              className="w-full text-left px-4 py-2.5 text-sm hover:bg-accent transition-colors flex items-center gap-3"
+                            >
+                              <MapPin className="w-4 h-4 text-blue-600" />
+                              <div>
+                                <div className="font-medium text-foreground">{city.name}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {city.state}{city.state && city.country ? ', ' : ''}{city.country}
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Type at least 2 characters to search worldwide cities
+                </p>
               </div>
 
               <div>
@@ -277,7 +375,7 @@ const Onboarding = () => {
               </button>
               <button 
                 onClick={handleComplete} 
-                disabled={!selectedCity || saving} 
+                disabled={(!selectedCity && !customCity) || saving} 
                 className="flex-1 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-semibold text-sm rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {saving ? (

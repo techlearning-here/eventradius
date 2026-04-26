@@ -1,712 +1,18 @@
 -- =====================================================
--- 01 - EVENTRADIUS DATABASE SETUP - SINGLE SCRIPT
+-- EVENTRADIUS DATABASE SETUP - PART 3: TRIGGERS, RLS, INDEXES, VIEWS
 -- =====================================================
--- This single script contains all database creation for EventRadius
--- including tables, types, functions, triggers, RLS policies, and indexes.
--- 
--- Run this in Supabase SQL Editor to set up the complete database
--- This script is safe to run multiple times (uses IF EXISTS/IF NOT EXISTS)
+-- This file contains:
+--   1. Triggers (timestamp updates, participant count, audit logging)
+--   2. Row Level Security (RLS) policies
+--   3. Performance indexes
+--   4. Views for common queries
+--   5. Column comments and documentation
+--   6. Verification queries
 --
--- ⚠️ IMPORTANT: If you have an existing database with old schema:
---    1. Run clear/drop_all_tables.sql FIRST to drop all views
---    2. Then run this script to recreate everything
---    Or: Run clear/clear_all_events.sql to clear data only
+-- Run order: 01_schema.sql → 02_functions.sql → 03_indexes_rls_views.sql
+--
+-- Safe to run multiple times (uses IF EXISTS/DROP IF EXISTS)
 -- =====================================================
-
--- =====================================================
--- 1. TYPES AND ENUMS
--- =====================================================
-
--- Create app_role enum for role-based access control
-DO $$ BEGIN
-    CREATE TYPE public.app_role AS ENUM ('admin', 'user', 'organizer');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
--- Event type enum
-DO $$ BEGIN
-    CREATE TYPE public.event_type AS ENUM ('online', 'in_person', 'hybrid');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
--- Event format enum
-DO $$ BEGIN
-    CREATE TYPE public.event_format AS ENUM ('single', 'recurring', 'multi_date');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
--- Privacy settings enum
-DO $$ BEGIN
-    CREATE TYPE public.event_privacy AS ENUM ('public', 'private', 'unlisted');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
--- Refund policy enum
-DO $$ BEGIN
-    CREATE TYPE public.refund_policy AS ENUM ('no_refunds', 'refund_up_to_7_days', 'refund_up_to_24_hours', 'refund_up_to_1_hour', 'custom');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
--- Currency enum (common currencies)
-DO $$ BEGIN
-    CREATE TYPE public.currency_type AS ENUM ('USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CNY', 'INR');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
--- =====================================================
--- 1.5 DROP EXISTING VIEWS (for clean migration)
--- =====================================================
--- Drop views first to avoid column dependency conflicts
-DROP VIEW IF EXISTS public.events_with_participants CASCADE;
-DROP VIEW IF EXISTS public.user_events_view CASCADE;
-DROP VIEW IF EXISTS public.events_enhanced_view CASCADE;
-DROP VIEW IF EXISTS public.deleted_events_with_countdown CASCADE;
-
--- =====================================================
--- 2. CORE TABLES
--- =====================================================
-
--- 2.1 Profiles table for user information
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-  display_name TEXT,
-  provider TEXT DEFAULT 'email',
-  provider_id TEXT,
-  avatar_url TEXT,
-  full_name TEXT,
-  email TEXT,
-  phone TEXT,
-  phone_country_code TEXT,
-  phone_verified BOOLEAN DEFAULT FALSE,
-  email_verified BOOLEAN DEFAULT FALSE,
-  organizer_status TEXT DEFAULT 'pending',
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- 2.2 User roles table for RBAC
-CREATE TABLE IF NOT EXISTS public.user_roles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL,
-    role public.app_role NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    UNIQUE (user_id, role)
-);
-
--- 2.3 Venues table for detailed location information (must be created before events)
-CREATE TABLE IF NOT EXISTS public.venues (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  description TEXT,
-  address TEXT,
-  city TEXT,
-  state TEXT,
-  country TEXT,
-  postal_code TEXT,
-  latitude DECIMAL(10, 8),
-  longitude DECIMAL(11, 8),
-  capacity INTEGER,
-  website TEXT,
-  phone TEXT,
-  contact_email TEXT,
-  accessibility_features TEXT[],
-  parking_info TEXT,
-  public_transport_info TEXT,
-  organizer_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- 2.4 Events table for storing event information
-CREATE TABLE IF NOT EXISTS public.events (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  title TEXT NOT NULL,
-  subtitle TEXT,
-  description TEXT,
-  summary TEXT,
-  location TEXT,
-  start_time TIMESTAMP WITH TIME ZONE,
-  end_time TIMESTAMP WITH TIME ZONE,
-  doors_open_time TIMESTAMP WITH TIME ZONE,
-  image_url TEXT,
-  category TEXT,
-  max_participants INTEGER,
-  is_public BOOLEAN NOT NULL DEFAULT true,
-  organizer_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  status TEXT DEFAULT 'pending',
-  participant_count INTEGER DEFAULT 0,
-  
-  -- Enhanced event fields from migration 04
-  event_type public.event_type DEFAULT 'in_person',
-  event_format public.event_format DEFAULT 'single',
-  event_privacy public.event_privacy DEFAULT 'public',
-  timezone TEXT DEFAULT 'UTC',
-  registration_start_time TIMESTAMP WITH TIME ZONE,
-  registration_end_time TIMESTAMP WITH TIME ZONE,
-  refund_policy public.refund_policy DEFAULT 'no_refunds',
-  custom_refund_policy TEXT,
-  event_password TEXT,
-  age_restriction TEXT,
-  accessibility_options TEXT,
-  language TEXT DEFAULT 'en',
-  virtual_event_url TEXT,
-  virtual_event_platform TEXT,
-  event_website TEXT,
-  event_contact_email TEXT,
-  event_contact_phone TEXT,
-  event_contact_phone_country_code TEXT,
-  ticketing_website TEXT,
-  primary_venue_id UUID REFERENCES public.venues(id) ON DELETE SET NULL,
-  
-  -- Structured venue fields from EventWizard
-  venue_street TEXT,
-  venue_city TEXT,
-  venue_state TEXT,
-  venue_zip_code TEXT,
-  venue_country TEXT,
-  venue_building_name TEXT,
-  
-  -- Event type and payment fields
-  is_virtual BOOLEAN DEFAULT false,
-  is_paid_event BOOLEAN DEFAULT false,
-  ticket_pricing_description TEXT,
-  tags TEXT[] DEFAULT '{}',
-  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  event_status TEXT DEFAULT 'published'
-);
-
--- 2.4 User preferences table for onboarding data
-CREATE TABLE IF NOT EXISTS public.user_preferences (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL UNIQUE,
-  age_range TEXT,
-  has_kids BOOLEAN DEFAULT false,
-  interests TEXT[] DEFAULT '{}',
-  city TEXT,
-  latitude DOUBLE PRECISION,
-  longitude DOUBLE PRECISION,
-  distance_range INTEGER DEFAULT 25,
-  onboarding_completed BOOLEAN DEFAULT false,
-  is_organizer BOOLEAN DEFAULT false,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  
-  -- Organizer onboarding fields from migration 03
-  organizer_onboarding_completed BOOLEAN DEFAULT false,
-  business_name TEXT,
-  business_type TEXT,
-  business_description TEXT,
-  business_address TEXT,
-  business_city TEXT,
-  business_state_province TEXT,
-  business_zip_pin TEXT,
-  business_country TEXT,
-  event_types TEXT[] DEFAULT '{}'
-);
-
--- Add missing columns if they don't exist (for existing tables)
-DO $$
-BEGIN
-    -- Add is_organizer column if it doesn't exist
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'user_preferences' 
-        AND column_name = 'is_organizer'
-    ) THEN
-        ALTER TABLE public.user_preferences ADD COLUMN is_organizer BOOLEAN DEFAULT false;
-        RAISE NOTICE 'Added is_organizer column';
-    END IF;
-
-    -- Add organizer_onboarding_completed column if it doesn't exist
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'user_preferences' 
-        AND column_name = 'organizer_onboarding_completed'
-    ) THEN
-        ALTER TABLE public.user_preferences ADD COLUMN organizer_onboarding_completed BOOLEAN DEFAULT false;
-        RAISE NOTICE 'Added organizer_onboarding_completed column';
-    END IF;
-
-    -- Add business_name column if it doesn't exist
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'user_preferences' 
-        AND column_name = 'business_name'
-    ) THEN
-        ALTER TABLE public.user_preferences ADD COLUMN business_name TEXT;
-        RAISE NOTICE 'Added business_name column';
-    END IF;
-
-    -- Add business_type column if it doesn't exist
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'user_preferences' 
-        AND column_name = 'business_type'
-    ) THEN
-        ALTER TABLE public.user_preferences ADD COLUMN business_type TEXT;
-        RAISE NOTICE 'Added business_type column';
-    END IF;
-
-    -- Add business_description column if it doesn't exist
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'user_preferences' 
-        AND column_name = 'business_description'
-    ) THEN
-        ALTER TABLE public.user_preferences ADD COLUMN business_description TEXT;
-        RAISE NOTICE 'Added business_description column';
-    END IF;
-
-    -- Add business_address column if it doesn't exist
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'user_preferences' 
-        AND column_name = 'business_address'
-    ) THEN
-        ALTER TABLE public.user_preferences ADD COLUMN business_address TEXT;
-        RAISE NOTICE 'Added business_address column';
-    END IF;
-
-    -- Add business_city column if it doesn't exist
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'user_preferences' 
-        AND column_name = 'business_city'
-    ) THEN
-        ALTER TABLE public.user_preferences ADD COLUMN business_city TEXT;
-        RAISE NOTICE 'Added business_city column';
-    END IF;
-
-    -- Add business_state_province column if it doesn't exist
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'user_preferences' 
-        AND column_name = 'business_state_province'
-    ) THEN
-        ALTER TABLE public.user_preferences ADD COLUMN business_state_province TEXT;
-        RAISE NOTICE 'Added business_state_province column';
-    END IF;
-
-    -- Add business_zip_pin column if it doesn't exist
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'user_preferences' 
-        AND column_name = 'business_zip_pin'
-    ) THEN
-        ALTER TABLE public.user_preferences ADD COLUMN business_zip_pin TEXT;
-        RAISE NOTICE 'Added business_zip_pin column';
-    END IF;
-
-    -- Add business_country column if it doesn't exist
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'user_preferences' 
-        AND column_name = 'business_country'
-    ) THEN
-        ALTER TABLE public.user_preferences ADD COLUMN business_country TEXT;
-        RAISE NOTICE 'Added business_country column';
-    END IF;
-
-    -- Add event_types column if it doesn't exist
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'user_preferences' 
-        AND column_name = 'event_types'
-    ) THEN
-        ALTER TABLE public.user_preferences ADD COLUMN event_types TEXT[] DEFAULT '{}';
-        RAISE NOTICE 'Added event_types column';
-    END IF;
-END $$;
-
--- 2.5 Event participants table for event registrations
-CREATE TABLE IF NOT EXISTS public.event_participants (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  registered_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  status TEXT NOT NULL DEFAULT 'going',
-  UNIQUE(event_id, user_id) -- Prevent duplicate registrations
-);
-
--- 2.6 Event categories table
-CREATE TABLE IF NOT EXISTS public.event_categories (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
-  category TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  UNIQUE(event_id, category)
-);
-
--- 2.7 Event registrations table (alias for event_participants)
-CREATE TABLE IF NOT EXISTS public.event_registrations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  registered_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  status TEXT DEFAULT 'registered',
-  UNIQUE(event_id, user_id)
-);
-
--- 2.8 Audit table for tracking changes
-CREATE TABLE IF NOT EXISTS public.event_audit (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id UUID NOT NULL,
-  action TEXT NOT NULL, -- 'INSERT', 'UPDATE', 'DELETE'
-  old_data JSONB,
-  new_data JSONB,
-  changed_by UUID REFERENCES auth.users(id),
-  changed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- =====================================================
--- 3. COMPREHENSIVE EVENT MANAGEMENT TABLES
--- =====================================================
-
--- 3.1 Event venues relationship table
-CREATE TABLE IF NOT EXISTS public.event_venues (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
-  venue_id UUID NOT NULL REFERENCES public.venues(id) ON DELETE CASCADE,
-  is_primary BOOLEAN DEFAULT false,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  UNIQUE(event_id, venue_id)
-);
-
--- 3.2 Ticket types table for comprehensive ticketing
-CREATE TABLE IF NOT EXISTS public.ticket_types (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  description TEXT,
-  price DECIMAL(10, 2) DEFAULT 0.00,
-  currency public.currency_type DEFAULT 'USD',
-  quantity_available INTEGER,
-  quantity_sold INTEGER DEFAULT 0,
-  min_per_order INTEGER DEFAULT 1,
-  max_per_order INTEGER DEFAULT 10,
-  sales_start_time TIMESTAMP WITH TIME ZONE,
-  sales_end_time TIMESTAMP WITH TIME ZONE,
-  visibility TEXT DEFAULT 'visible', -- 'visible', 'hidden', 'hidden_when_not_on_sale'
-  absorb_fees BOOLEAN DEFAULT false,
-  is_donation BOOLEAN DEFAULT false,
-  sales_channel TEXT DEFAULT 'online', -- 'online', 'at_door', 'both'
-  delivery_options TEXT[], -- ['eticket', 'will_call', 'print_at_home']
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- 3.3 Custom registration fields table
-CREATE TABLE IF NOT EXISTS public.registration_fields (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
-  field_name TEXT NOT NULL,
-  field_type TEXT NOT NULL, -- 'text', 'email', 'phone', 'dropdown', 'checkbox', 'radio', 'textarea'
-  field_label TEXT NOT NULL,
-  placeholder TEXT,
-  required BOOLEAN DEFAULT false,
-  options TEXT[], -- For dropdown, radio, checkbox
-  validation_rules TEXT, -- JSON validation rules
-  display_order INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- 3.4 Event media table for images and videos
-CREATE TABLE IF NOT EXISTS public.event_media (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
-  media_type TEXT NOT NULL, -- 'image', 'video', 'banner'
-  url TEXT NOT NULL,
-  caption TEXT,
-  alt_text TEXT,
-  display_order INTEGER DEFAULT 0,
-  is_primary BOOLEAN DEFAULT false,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- 3.5 Event notifications table
-CREATE TABLE IF NOT EXISTS public.event_notifications (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
-  notification_type TEXT NOT NULL, -- 'confirmation', 'reminder', 'cancellation', 'update'
-  subject TEXT,
-  message TEXT,
-  send_timing TEXT, -- 'immediate', '1_day_before', '1_hour_before', 'custom'
-  custom_timing_hours INTEGER,
-  is_enabled BOOLEAN DEFAULT true,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- 3.6 Event tags for better discovery
-CREATE TABLE IF NOT EXISTS public.event_tags (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
-  tag TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  UNIQUE(event_id, tag)
-);
-
--- 3.7 Event schedule/agenda table
-CREATE TABLE IF NOT EXISTS public.event_schedule (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  description TEXT,
-  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
-  end_time TIMESTAMP WITH TIME ZONE NOT NULL,
-  speaker_name TEXT,
-  location TEXT, -- Room or virtual breakout room
-  display_order INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
--- =====================================================
--- 3. FUNCTIONS AND TRIGGERS
--- =====================================================
-
--- 3.1 Function to update timestamps automatically
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SET search_path = public;
-
--- 3.2 Security function to check user roles
-CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role public.app_role)
-RETURNS BOOLEAN
-LANGUAGE SQL
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM public.user_roles
-    WHERE user_id = _user_id
-      AND role = _role
-  )
-$$;
-
--- 3.3 Function to handle new user signup
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE _role app_role;
-BEGIN
-  -- Create profile
-  INSERT INTO public.profiles (user_id, display_name, email)
-  VALUES (new.id, COALESCE(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)), new.email)
-  ON CONFLICT (user_id) DO NOTHING;
-
-  -- Determine role
-  _role := COALESCE(NULLIF(new.raw_user_meta_data->>'role', '')::app_role, 'user'::app_role);
-
-  -- Assign role
-  INSERT INTO public.user_roles (user_id, role)
-  VALUES (new.id, _role)
-  ON CONFLICT (user_id, role) DO NOTHING;
-
-  -- Create preferences for regular users
-  INSERT INTO public.user_preferences (user_id)
-  VALUES (new.id)
-  ON CONFLICT (user_id) DO NOTHING;
-
-  -- Log user creation
-  INSERT INTO public.event_audit (event_id, action, new_data, changed_by)
-  VALUES (new.id, 'USER_CREATED', row_to_json(new), new.id)
-  ON CONFLICT DO NOTHING;
-
-  RETURN new;
-END;
-$$;
-
--- 3.4 Function to update participant count
-CREATE OR REPLACE FUNCTION public.update_participant_count()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF TG_OP = 'INSERT' THEN
-    -- Increment participant count
-    UPDATE public.events
-    SET participant_count = participant_count + 1
-    WHERE id = NEW.event_id;
-    RETURN NEW;
-  ELSIF TG_OP = 'DELETE' THEN
-    -- Decrement participant count
-    UPDATE public.events
-    SET participant_count = GREATEST(participant_count - 1, 0)
-    WHERE id = OLD.event_id;
-    RETURN OLD;
-  END IF;
-  RETURN NULL;
-END;
-$$ LANGUAGE plpgsql SET search_path = public;
-
--- 3.5 Function to automatically update event status based on time
-CREATE OR REPLACE FUNCTION public.update_event_status()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Auto-update status based on current time
-  IF NEW.start_time IS NOT NULL AND NEW.end_time IS NOT NULL THEN
-    IF NOW() > NEW.end_time THEN
-      NEW.status := 'ended';
-    ELSIF NOW() >= NEW.start_time AND NOW() <= NEW.end_time THEN
-      NEW.status := 'ongoing';
-    ELSIF NOW() < NEW.start_time THEN
-      NEW.status := 'upcoming';
-    END IF;
-  END IF;
-
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SET search_path = public;
-
--- 3.6 Function to validate event data
-CREATE OR REPLACE FUNCTION public.validate_event_data()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Validate end_time is after start_time
-  IF NEW.start_time IS NOT NULL AND NEW.end_time IS NOT NULL THEN
-    IF NEW.end_time <= NEW.start_time THEN
-      RAISE EXCEPTION 'End time must be after start time';
-    END IF;
-  END IF;
-
-  -- Validate max_participants is positive
-  IF NEW.max_participants IS NOT NULL AND NEW.max_participants <= 0 THEN
-    RAISE EXCEPTION 'Max participants must be positive';
-  END IF;
-
-  -- Validate status
-  IF NEW.status IS NOT NULL AND NEW.status NOT IN ('pending', 'approved', 'rejected', 'cancelled', 'upcoming', 'ongoing', 'ended') THEN
-    RAISE EXCEPTION 'Invalid event status: %s', NEW.status;
-  END IF;
-
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SET search_path = public;
-
--- 3.7 Function to log event changes
-CREATE OR REPLACE FUNCTION public.log_event_changes()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF TG_OP = 'DELETE' THEN
-    INSERT INTO public.event_audit (event_id, action, old_data, changed_by)
-    VALUES (OLD.id, 'DELETE', row_to_json(OLD), auth.uid());
-    RETURN OLD;
-  ELSIF TG_OP = 'UPDATE' THEN
-    INSERT INTO public.event_audit (event_id, action, old_data, new_data, changed_by)
-    VALUES (NEW.id, 'UPDATE', row_to_json(OLD), row_to_json(NEW), auth.uid());
-    RETURN NEW;
-  ELSIF TG_OP = 'INSERT' THEN
-    INSERT INTO public.event_audit (event_id, action, new_data, changed_by)
-    VALUES (NEW.id, 'INSERT', row_to_json(NEW), auth.uid());
-    RETURN NEW;
-  END IF;
-  RETURN NULL;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
-
--- 3.8 Function to validate ticket data
-CREATE OR REPLACE FUNCTION public.validate_ticket_data()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Validate price is non-negative
-  IF NEW.price < 0 THEN
-    RAISE EXCEPTION 'Ticket price cannot be negative';
-  END IF;
-  
-  -- Validate quantity
-  IF NEW.quantity_available IS NOT NULL AND NEW.quantity_available < 0 THEN
-    RAISE EXCEPTION 'Quantity available cannot be negative';
-  END IF;
-  
-  -- Validate min/max per order
-  IF NEW.min_per_order > NEW.max_per_order THEN
-    RAISE EXCEPTION 'Minimum per order cannot exceed maximum per order';
-  END IF;
-  
-  -- Validate sales timing
-  IF NEW.sales_start_time IS NOT NULL AND NEW.sales_end_time IS NOT NULL THEN
-    IF NEW.sales_end_time <= NEW.sales_start_time THEN
-      RAISE EXCEPTION 'Sales end time must be after sales start time';
-    END IF;
-  END IF;
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SET search_path = public;
-
--- 3.9 Function to validate event data with new fields
-CREATE OR REPLACE FUNCTION public.validate_event_data_enhanced()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Validate timezone
-  IF NEW.timezone IS NOT NULL THEN
-    -- Basic timezone validation (can be enhanced with proper timezone library)
-    IF NOT NEW.timezone ~ '^[A-Za-z_]+/[A-Za-z_]+$' AND NEW.timezone NOT IN ('UTC', 'GMT') THEN
-      RAISE EXCEPTION 'Invalid timezone format';
-    END IF;
-  END IF;
-  
-  -- Validate registration timing
-  IF NEW.registration_start_time IS NOT NULL AND NEW.registration_end_time IS NOT NULL THEN
-    IF NEW.registration_end_time <= NEW.registration_start_time THEN
-      RAISE EXCEPTION 'Registration end time must be after registration start time';
-    END IF;
-  END IF;
-  
-  -- Validate doors open time
-  IF NEW.doors_open_time IS NOT NULL AND NEW.start_time IS NOT NULL THEN
-    IF NEW.doors_open_time > NEW.start_time THEN
-      RAISE EXCEPTION 'Doors open time must be before event start time';
-    END IF;
-  END IF;
-  
-  -- Validate virtual event requirements
-  IF NEW.event_type = 'online' AND NEW.virtual_event_url IS NULL THEN
-    RAISE EXCEPTION 'Online events must have a virtual event URL';
-  END IF;
-  
-  -- Validate event contact email
-  IF NEW.event_contact_email IS NOT NULL THEN
-    IF NEW.event_contact_email !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN
-      RAISE EXCEPTION 'Invalid event contact email format';
-    END IF;
-  END IF;
-  
-  -- Validate ticketing website URL format
-  IF NEW.ticketing_website IS NOT NULL THEN
-    IF NEW.ticketing_website !~ '^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$' THEN
-      RAISE EXCEPTION 'Invalid ticketing website URL format';
-    END IF;
-  END IF;
-  
-  -- Validate event website URL format
-  IF NEW.event_website IS NOT NULL THEN
-    IF NEW.event_website !~ '^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$' THEN
-      RAISE EXCEPTION 'Invalid event website URL format';
-    END IF;
-  END IF;
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SET search_path = public;
 
 -- =====================================================
 -- 4. TRIGGERS
@@ -1401,6 +707,22 @@ CREATE INDEX IF NOT EXISTS idx_events_category ON public.events(category);
 CREATE INDEX IF NOT EXISTS idx_events_is_public ON public.events(is_public);
 CREATE INDEX IF NOT EXISTS idx_events_start_time ON public.events(start_time);
 CREATE INDEX IF NOT EXISTS idx_events_status ON public.events(status);
+
+-- Geolocation indexes (from 09_add_event_geolocation.sql)
+CREATE INDEX IF NOT EXISTS idx_events_location 
+ON public.events USING btree (latitude, longitude) 
+WHERE event_type IN ('in_person', 'hybrid') AND latitude IS NOT NULL AND longitude IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_events_location_with_details 
+ON public.events (latitude, longitude) 
+INCLUDE (id, title, category, start_time, is_public, status)
+WHERE event_type IN ('in_person', 'hybrid') AND is_public = true;
+CREATE INDEX IF NOT EXISTS idx_events_active_location
+ON public.events (latitude, longitude, start_time)
+WHERE status IN ('published', 'upcoming') 
+  AND event_type IN ('in_person', 'hybrid')
+  AND is_public = true
+  AND latitude IS NOT NULL 
+  AND longitude IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_events_participant_count ON public.events(participant_count);
 CREATE INDEX IF NOT EXISTS idx_events_status_time ON public.events(status, start_time, end_time);
 
@@ -1416,10 +738,31 @@ CREATE INDEX IF NOT EXISTS idx_event_participants_user_id ON public.event_partic
 CREATE INDEX IF NOT EXISTS idx_event_participants_registered_at ON public.event_participants(registered_at);
 CREATE INDEX IF NOT EXISTS idx_event_participants_status ON public.event_participants(status);
 
+-- Approval and cancellation indexes (from 07_add_approval_fields.sql and 08_add_cancellation_request.sql)
+CREATE INDEX IF NOT EXISTS idx_event_participants_approval_status 
+ON public.event_participants(approval_status);
+CREATE INDEX IF NOT EXISTS idx_event_participants_is_waitlisted 
+ON public.event_participants(is_waitlisted);
+CREATE INDEX IF NOT EXISTS idx_event_participants_waitlist_position 
+ON public.event_participants(waitlist_position) 
+WHERE is_waitlisted = TRUE;
+CREATE INDEX IF NOT EXISTS idx_event_participants_event_approval 
+ON public.event_participants(event_id, approval_status);
+CREATE INDEX IF NOT EXISTS idx_event_participants_cancellation 
+ON public.event_participants(event_id, cancellation_requested_at) 
+WHERE cancellation_requested_at IS NOT NULL;
+
 -- Add check constraint for valid status values
 ALTER TABLE public.event_participants 
 ADD CONSTRAINT event_participants_status_check 
 CHECK (status IN ('interested', 'going', 'not_going'));
+
+-- Add check constraint for approval_status (from 07_add_approval_fields.sql and 08_add_cancellation_request.sql)
+ALTER TABLE public.event_participants 
+DROP CONSTRAINT IF EXISTS event_participants_approval_status_check;
+ALTER TABLE public.event_participants 
+ADD CONSTRAINT event_participants_approval_status_check 
+CHECK (approval_status IN ('pending', 'approved', 'rejected', 'waitlisted', 'cancellation_requested'));
 
 -- 8.6 Event categories indexes
 CREATE INDEX IF NOT EXISTS idx_event_categories_event_id ON public.event_categories(event_id);
@@ -1546,6 +889,33 @@ SELECT
 FROM public.ticket_types tt
 JOIN public.events e ON tt.event_id = e.id;
 
+-- 9.3 Geolocation stats view (from 09_add_event_geolocation.sql)
+DROP VIEW IF EXISTS public.event_geolocation_stats;
+CREATE OR REPLACE VIEW public.event_geolocation_stats AS
+SELECT
+  e.id as event_id,
+  e.title,
+  e.latitude,
+  e.longitude,
+  e.geolocation_accuracy,
+  e.geocoded_at,
+  e.event_type,
+  e.is_public,
+  e.status,
+  CASE 
+    WHEN e.latitude IS NOT NULL AND e.longitude IS NOT NULL THEN true
+    ELSE false
+  END as has_geolocation,
+  e.location,
+  e.venue_city,
+  e.venue_state,
+  e.venue_country
+FROM public.events e
+WHERE e.latitude IS NOT NULL 
+  AND e.longitude IS NOT NULL
+  AND e.deleted_at IS NULL;
+COMMENT ON VIEW public.event_geolocation_stats IS 'View of events with geolocation data for location-based discovery';
+
 -- =====================================================
 -- 9. COMMENTS AND DOCUMENTATION
 -- =====================================================
@@ -1622,6 +992,38 @@ COMMENT ON COLUMN public.user_preferences.business_zip_pin IS 'ZIP or PIN code o
 COMMENT ON COLUMN public.user_preferences.business_country IS 'Country where organizer is located';
 COMMENT ON COLUMN public.user_preferences.event_types IS 'Array of event categories organizer plans to create';
 
+-- Comments for new columns from merged migrations (02, 07, 08, 09)
+COMMENT ON COLUMN public.events.ticket_price IS 'Event ticket price in USD, 0 for free events';
+COMMENT ON COLUMN public.events.require_approval IS 'Whether organizer approval is required for participants';
+COMMENT ON COLUMN public.events.enable_waitlist IS 'Whether waitlist is enabled when event reaches capacity';
+COMMENT ON COLUMN public.events.approval_request_fields IS 'Customizable fields for approval requests (JSONB)';
+COMMENT ON COLUMN public.events.approval_instructions IS 'Instructions shown to users when requesting approval';
+COMMENT ON COLUMN public.events.latitude IS 'Event latitude coordinate for location-based discovery';
+COMMENT ON COLUMN public.events.longitude IS 'Event longitude coordinate for location-based discovery';
+COMMENT ON COLUMN public.events.geolocation_accuracy IS 'Accuracy level of geocoded coordinates: exact, approximate, manual, venue_derived';
+COMMENT ON COLUMN public.events.geocoded_at IS 'Timestamp when coordinates were geocoded';
+COMMENT ON COLUMN public.events.deleted_at IS 'Soft delete timestamp (NULL if not deleted)';
+COMMENT ON COLUMN public.events.event_contact_phone IS 'Contact phone number for event-specific inquiries';
+COMMENT ON COLUMN public.events.event_contact_phone_country_code IS 'Country code for event contact phone (e.g., +1, +44)';
+
+-- Comments for event_participants new columns
+COMMENT ON COLUMN public.event_participants.approval_status IS 'Current approval status: pending, approved, rejected, waitlisted, cancellation_requested';
+COMMENT ON COLUMN public.event_participants.requester_name IS 'Name provided during approval request';
+COMMENT ON COLUMN public.event_participants.requester_email IS 'Email provided during approval request';
+COMMENT ON COLUMN public.event_participants.requester_phone IS 'Phone provided during approval request';
+COMMENT ON COLUMN public.event_participants.requester_bio IS 'Bio provided during approval request';
+COMMENT ON COLUMN public.event_participants.requester_social_links IS 'Social links provided during approval request (JSONB)';
+COMMENT ON COLUMN public.event_participants.requester_reason IS 'Reason for wanting to attend';
+COMMENT ON COLUMN public.event_participants.approved_at IS 'Timestamp when request was approved';
+COMMENT ON COLUMN public.event_participants.approved_by IS 'User ID of organizer who approved/rejected';
+COMMENT ON COLUMN public.event_participants.rejection_reason IS 'Reason provided if request was rejected';
+COMMENT ON COLUMN public.event_participants.is_waitlisted IS 'Whether participant is on waitlist';
+COMMENT ON COLUMN public.event_participants.waitlist_position IS 'Position in waitlist queue';
+COMMENT ON COLUMN public.event_participants.cancellation_requested_at IS 'Timestamp when cancellation was requested';
+COMMENT ON COLUMN public.event_participants.cancellation_reason IS 'Reason for cancellation request';
+COMMENT ON COLUMN public.event_participants.cancellation_processed_at IS 'Timestamp when cancellation was processed';
+COMMENT ON COLUMN public.event_participants.cancellation_processed_by IS 'User ID who processed the cancellation';
+
 -- =====================================================
 -- 10. VERIFICATION QUERIES
 -- =====================================================
@@ -1659,7 +1061,22 @@ ORDER BY event_object_table, trigger_name;
 -- COMPREHENSIVE DATABASE SETUP COMPLETE
 -- =====================================================
 --
--- This enhanced script includes all original functionality PLUS comprehensive event management:
+-- This CONSOLIDATED script combines the following migrations into ONE file:
+--   - 01_eventradius_complete_setup.sql (base schema)
+--   - 02_add_quick_create_fields.sql (ticket_price, require_approval, enable_waitlist)
+--   - 07_add_approval_fields.sql (approval workflow, waitlist)
+--   - 08_add_cancellation_request.sql (cancellation requests)
+--   - 09_add_event_geolocation.sql (location-based discovery)
+--   - add_event_contact_phone.sql (event contact phone)
+--   - add_event_wizard_fields.sql (wizard fields already in base)
+--
+-- KEY IMPROVEMENTS from consolidation:
+-- ✅ NO ALTER TABLE statements for new columns - all columns in CREATE TABLE
+-- ✅ All functions, triggers, indexes, and RLS policies included
+-- ✅ Approval workflow with waitlist support
+-- ✅ Cancellation request system
+-- ✅ Geolocation with distance calculation functions
+-- ✅ Comprehensive column documentation
 -- 
 -- ✅ User management with profiles and roles
 -- ✅ Role-based access control (RBAC)
