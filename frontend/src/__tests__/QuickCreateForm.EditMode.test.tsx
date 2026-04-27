@@ -4,6 +4,21 @@ import { QuickCreateForm } from '@/components/OrganizerDashboard/QuickCreateForm
 import type { Event } from '@/integrations/backend/api';
 import * as useEventsModule from '@/hooks/useEvents';
 
+// Mock the CoverImageSelector component
+vi.mock('@/components/EventWizard/CoverImageSelector', () => ({
+  CoverImageSelector: vi.fn(({ selectedImageUrl, onImageSelect }) => (
+    <div data-testid="cover-image-selector">
+      <span data-testid="selected-image">{selectedImageUrl || 'no-image'}</span>
+      <button
+        data-testid="select-image-btn"
+        onClick={() => onImageSelect('/test-image.jpg')}
+      >
+        Select Image
+      </button>
+    </div>
+  ))
+}));
+
 // Mock the hooks
 vi.mock('@/hooks/useEvents', () => ({
   useEventActions: vi.fn()
@@ -240,6 +255,76 @@ describe('QuickCreateForm Edit Mode', () => {
       await waitFor(() => {
         expect(mockUpdateEvent).not.toHaveBeenCalled();
       });
+    });
+  });
+
+  describe('CoverImageSelector Props (commit f3972fa)', () => {
+    it('should render CoverImageSelector with selectedImageUrl prop', () => {
+      render(
+        <QuickCreateForm
+          isOpen={true}
+          onClose={mockOnClose}
+          onSuccess={mockOnSuccess}
+          editingEvent={mockEvent}
+        />
+      );
+
+      // Click to expand image selector
+      const addImageButton = screen.getByText('Change Image');
+      fireEvent.click(addImageButton);
+
+      // Verify CoverImageSelector is rendered with the correct props
+      expect(screen.getByTestId('cover-image-selector')).toBeInTheDocument();
+      expect(screen.getByTestId('selected-image')).toHaveTextContent('https://test-image.jpg');
+    });
+
+    it('should handle image selection via onImageSelect callback', async () => {
+      mockUpdateEvent.mockResolvedValue({ ...mockEvent, image_url: '/test-image.jpg' });
+
+      render(
+        <QuickCreateForm
+          isOpen={true}
+          onClose={mockOnClose}
+          onSuccess={mockOnSuccess}
+          editingEvent={mockEvent}
+        />
+      );
+
+      // Click to expand image selector
+      const addImageButton = screen.getByText('Change Image');
+      fireEvent.click(addImageButton);
+
+      // Select an image via the mocked CoverImageSelector
+      const selectImageBtn = screen.getByTestId('select-image-btn');
+      fireEvent.click(selectImageBtn);
+
+      // Verify the image URL was updated in the form
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-image')).toHaveTextContent('/test-image.jpg');
+      });
+    });
+
+    it('should pass empty string when image is null or undefined', () => {
+      const eventWithoutImage: Event = {
+        ...mockEvent,
+        image_url: undefined as any,
+      };
+
+      render(
+        <QuickCreateForm
+          isOpen={true}
+          onClose={mockOnClose}
+          onSuccess={mockOnSuccess}
+          editingEvent={eventWithoutImage}
+        />
+      );
+
+      // Click to expand image selector
+      const addImageButton = screen.getByText('Add Cover Image');
+      fireEvent.click(addImageButton);
+
+      // Verify CoverImageSelector handles null image_url
+      expect(screen.getByTestId('selected-image')).toHaveTextContent('no-image');
     });
   });
 });

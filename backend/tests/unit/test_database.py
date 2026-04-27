@@ -9,6 +9,7 @@ import pytest
 
 from config.database import (
     SupabaseClient,
+    call_rpc,
     delete_record,
     fetch_records,
     fetch_single_record,
@@ -226,3 +227,77 @@ class TestDatabaseHelpers:
             result = fetch_single_record("events", "999")
 
             assert result == mock_response
+
+
+class TestCallRPC:
+    """Test call_rpc function with error handling (commit 0b8542b)."""
+
+    def test_call_rpc_success(self):
+        """Test call_rpc returns result on successful RPC call."""
+        mock_client = Mock()
+        mock_response = Mock()
+        mock_response.data = [{"success": True, "id": "123"}]
+        mock_client.rpc.return_value.execute.return_value = mock_response
+
+        with patch(
+            "config.database.SupabaseClient.get_client", return_value=mock_client
+        ):
+            result = call_rpc("test_function", {"param": "value"})
+            assert result == mock_response
+            mock_client.rpc.assert_called_once_with("test_function", {"param": "value"})
+
+    def test_call_rpc_json_extraction_from_error(self):
+        """Test call_rpc extracts JSON from error when JSON could not be generated but code is 200."""
+        mock_client = Mock()
+        # Simulate error with embedded success JSON
+        error = Exception(
+            "JSON could not be generated 'code': 200, details': 'b\\'\"{\\'success\\': True, \\'id\\': \\'123\\'}\"''"
+        )
+        mock_client.rpc.return_value.execute.side_effect = error
+
+        with patch(
+            "config.database.SupabaseClient.get_client", return_value=mock_client
+        ):
+            result = call_rpc("submit_approval_request", {"event_id": "evt-123"})
+            assert result.data[0]["success"] is True
+            assert result.data[0]["id"] == "123"
+
+    def test_call_rpc_bytes_extraction_fallback(self):
+        """Test call_rpc extracts JSON from bytes literal format in error."""
+        mock_client = Mock()
+        error = Exception(
+            "b'\"{\\'success\\': True, \\'participant_id\\': \\'456\\'}\"'"
+        )
+        mock_client.rpc.return_value.execute.side_effect = error
+
+        with patch(
+            "config.database.SupabaseClient.get_client", return_value=mock_client
+        ):
+            result = call_rpc("submit_approval_request", {})
+            assert result.data[0]["success"] is True
+            assert result.data[0]["participant_id"] == "456"
+
+    def test_call_rpc_generic_fallback_extraction(self):
+        """Test call_rpc uses generic fallback for success JSON objects."""
+        mock_client = Mock()
+        error = Exception("Some error {success: true, event_id: 'abc123'}")
+        mock_client.rpc.return_value.execute.side_effect = error
+
+        with patch(
+            "config.database.SupabaseClient.get_client", return_value=mock_client
+        ):
+            result = call_rpc("test_func", {})
+            assert result.data[0]["success"] is True
+            assert result.data[0]["event_id"] == "abc123"
+
+    def test_call_rpc_raises_on_unhandled_error(self):
+        """Test call_rpc raises exception when error cannot be parsed."""
+        mock_client = Mock()
+        error = Exception("Some unparseable error without JSON")
+        mock_client.rpc.return_value.execute.side_effect = error
+
+        with patch(
+            "config.database.SupabaseClient.get_client", return_value=mock_client
+        ):
+            with pytest.raises(Exception, match="Some unparseable error without JSON"):
+                call_rpc("test_func", {})

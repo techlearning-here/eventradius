@@ -135,14 +135,21 @@ def call_rpc(function_name: str, params: Dict[str, Any]):
         if "JSON could not be generated" in error_str and "code': 200" in error_str:
             import json
             import re
+
             # Extract JSON from the details field
             # Pattern matches: details': 'b\'{...}\'' or similar variations
-            match = re.search(r"details['\"]*:\s*['\"]b?\\*['\"](\{.*?\})\\*['\"]", error_str, re.DOTALL)
+            match = re.search(
+                r"details['\"]*:\s*['\"]b?\\*['\"](\{.*?\})\\*['\"]",
+                error_str,
+                re.DOTALL,
+            )
             if match:
                 try:
                     json_str = match.group(1)
                     data = json.loads(json_str)
-                    logger.info(f"RPC {function_name} succeeded (extracted from error): {data}")
+                    logger.info(
+                        f"RPC {function_name} succeeded (extracted from error): {data}"
+                    )
                     # Return a mock result object with the data
                     return type("RPCResult", (), {"data": [data]})()
                 except (json.JSONDecodeError, IndexError):
@@ -152,7 +159,9 @@ def call_rpc(function_name: str, params: Dict[str, Any]):
             if match:
                 try:
                     data = json.loads(match.group(1))
-                    logger.info(f"RPC {function_name} succeeded (bytes extraction): {data}")
+                    logger.info(
+                        f"RPC {function_name} succeeded (bytes extraction): {data}"
+                    )
                     return type("RPCResult", (), {"data": [data]})()
                 except (json.JSONDecodeError, IndexError):
                     pass
@@ -161,7 +170,9 @@ def call_rpc(function_name: str, params: Dict[str, Any]):
             if match:
                 try:
                     data = json.loads(match.group(1))
-                    logger.info(f"RPC {function_name} succeeded (fallback extraction): {data}")
+                    logger.info(
+                        f"RPC {function_name} succeeded (fallback extraction): {data}"
+                    )
                     return type("RPCResult", (), {"data": [data]})()
                 except (json.JSONDecodeError, IndexError):
                     pass
