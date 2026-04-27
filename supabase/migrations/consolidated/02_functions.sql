@@ -417,6 +417,11 @@ $$;
 COMMENT ON FUNCTION public.get_nearby_events_with_details IS 'Get nearby events with full details and optional filters';
 
 -- 3.14 Stored procedure: Submit approval request (from 07_add_approval_fields.sql)
+-- Drop old function versions without p_user_id parameter to avoid ambiguity
+DROP FUNCTION IF EXISTS public.submit_approval_request(
+    UUID, TEXT, TEXT, TEXT, TEXT, JSONB, TEXT
+);
+
 CREATE OR REPLACE FUNCTION public.submit_approval_request(
     p_event_id UUID,
     p_requester_name TEXT,
@@ -424,7 +429,8 @@ CREATE OR REPLACE FUNCTION public.submit_approval_request(
     p_requester_phone TEXT DEFAULT NULL,
     p_requester_bio TEXT DEFAULT NULL,
     p_requester_social_links JSONB DEFAULT NULL,
-    p_requester_reason TEXT DEFAULT NULL
+    p_requester_reason TEXT DEFAULT NULL,
+    p_user_id UUID DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -438,25 +444,29 @@ DECLARE
     v_max_participants INTEGER;
     v_is_full BOOLEAN;
     v_result JSONB;
+    v_user_id UUID;
 BEGIN
     -- Get event details
     SELECT require_approval, max_participants, participant_count
     INTO v_event_require_approval, v_max_participants, v_participant_count
     FROM public.events
     WHERE id = p_event_id;
-    
+
     IF NOT FOUND THEN
         RETURN jsonb_build_object('success', false, 'error', 'Event not found');
     END IF;
-    
+
     -- Check if event requires approval
     IF NOT v_event_require_approval THEN
         RETURN jsonb_build_object('success', false, 'error', 'This event does not require approval');
     END IF;
-    
+
     -- Check if event is full
     v_is_full := v_max_participants IS NOT NULL AND v_participant_count >= v_max_participants;
-    
+
+    -- Determine user_id: prefer p_user_id if provided, otherwise use auth.uid()
+    v_user_id := COALESCE(p_user_id, auth.uid());
+
     -- Insert participant with pending approval status
     BEGIN
         INSERT INTO public.event_participants (
@@ -474,7 +484,7 @@ BEGIN
             waitlist_position
         ) VALUES (
             p_event_id,
-            auth.uid(),
+            v_user_id,
             'interested',
             CASE WHEN v_is_full THEN 'waitlisted' ELSE 'pending' END,
             p_requester_name,
@@ -487,19 +497,29 @@ BEGIN
             CASE WHEN v_is_full THEN v_participant_count + 1 ELSE NULL END
         )
         RETURNING id INTO v_participant_id;
-        
+
         v_result := jsonb_build_object(
             'success', true,
             'participant_id', v_participant_id,
+            'event_id', p_event_id,
+            'user_id', v_user_id,
             'approval_status', CASE WHEN v_is_full THEN 'waitlisted' ELSE 'pending' END,
             'is_waitlisted', v_is_full,
+            'requester_name', p_requester_name,
+            'requester_email', p_requester_email,
+            'requester_phone', p_requester_phone,
+            'requester_bio', p_requester_bio,
+            'requester_reason', p_requester_reason,
+            'requester_social_links', COALESCE(p_requester_social_links, '{}'),
+            'registered_at', NOW(),
+            'waitlist_position', CASE WHEN v_is_full THEN v_participant_count + 1 ELSE NULL END,
             'message', CASE WHEN v_is_full THEN 'Added to waitlist' ELSE 'Approval request submitted' END
         );
     EXCEPTION
         WHEN unique_violation THEN
             v_result := jsonb_build_object('success', false, 'error', 'You have already submitted a request for this event');
     END;
-    
+
     RETURN v_result;
 END;
 $$;

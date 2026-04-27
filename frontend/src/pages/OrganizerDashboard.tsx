@@ -340,8 +340,11 @@ const OrganizerDashboard = () => {
       if (!result) {
         throw new Error('Failed to save draft');
       }
-      
+
       toast.success('Draft saved successfully');
+      // Invalidate cache to ensure new event appears immediately
+      cachedUserEvents = null;
+      cachedUserEventsTimestamp = 0;
       fetchEvents();
     } catch (error) {
       console.error('Failed to save draft:', error);
@@ -377,6 +380,9 @@ const OrganizerDashboard = () => {
       setEditingEvent(null);
       // Restore sidebar state when wizard closes
       setSidebarIconized(false);
+      // Invalidate cache to ensure updated event appears immediately
+      cachedUserEvents = null;
+      cachedUserEventsTimestamp = 0;
       fetchEvents();
     } catch (error) {
       console.error('Failed to update event:', error);
@@ -497,12 +503,15 @@ const OrganizerDashboard = () => {
       if (!result) {
         throw new Error('Event creation returned null');
       }
-      
+
       toast.success('Event created and published successfully!');
       setShowCreateWizard(false);
       setEditingEvent(null);
       // Restore sidebar state when wizard closes
       setSidebarIconized(false);
+      // Invalidate cache to ensure new event appears immediately
+      cachedUserEvents = null;
+      cachedUserEventsTimestamp = 0;
       fetchEvents();
     } catch (error) {
       console.error('Failed to publish event:', error);
@@ -588,6 +597,9 @@ const OrganizerDashboard = () => {
       setEditingEvent(null);
       // Restore sidebar state when wizard closes
       setSidebarIconized(false);
+      // Invalidate cache to ensure updated event appears immediately
+      cachedUserEvents = null;
+      cachedUserEventsTimestamp = 0;
       fetchEvents();
     } catch (error) {
       console.error('Failed to publish event:', error);
@@ -1042,6 +1054,9 @@ const OrganizerDashboard = () => {
     try {
       await apiClient.deleteEvent(eventToDelete);
       toast.success('Event moved to recycle bin');
+      // Invalidate cache to ensure deleted event disappears immediately
+      cachedUserEvents = null;
+      cachedUserEventsTimestamp = 0;
       fetchEvents();
     } catch (error) {
       toast.error('Failed to delete event');
@@ -1076,6 +1091,9 @@ const OrganizerDashboard = () => {
       await apiClient.restoreEvent(eventToRestore);
       toast.success('Event restored successfully');
       fetchDeletedEvents();
+      // Invalidate cache to ensure restored event appears immediately
+      cachedUserEvents = null;
+      cachedUserEventsTimestamp = 0;
       fetchEvents();
     } catch (error) {
       toast.error('Failed to restore event');

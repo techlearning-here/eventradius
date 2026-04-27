@@ -1,12 +1,13 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { X, Sparkles, MapPin, Video, Calendar, Clock, ChevronRight, Ticket, UserCheck, Users, Pencil, Upload } from 'lucide-react';
+import { X, Sparkles, MapPin, Video, Calendar, ChevronRight, Ticket, UserCheck, Users, Pencil, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
+import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { CoverImageSelector } from '@/components/EventWizard/CoverImageSelector';
 import { useEventActions } from '@/hooks/useEvents';
 import { useAddressGeocoding } from '@/hooks/useAddressGeocoding';
@@ -598,53 +599,40 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDe
               Date & Time <span className="text-red-500">*</span>
             </label>
             
-            {/* Start Date & Time - Using datetime-local */}
-            <div>
-              <Input
-                type="datetime-local"
-                value={formData.start_time 
-                  ? `${formatDateLocal(formData.start_time)}T${formatTimeLocal(formData.start_time)}`
-                  : `${defaultDate}T${defaultTime}`}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value) {
-                    const [dateStr, timeStr] = value.split('T');
-                    handleDateChange('start_time', dateStr, timeStr);
-                    // Auto-populate end time if not set (+1 hour)
-                    if (!formData.end_time) {
-                      const [hours, minutes] = timeStr.split(':').map(Number);
-                      const endHours = (hours + 1) % 24;
-                      const endTimeStr = `${String(endHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-                      handleDateChange('end_time', dateStr, endTimeStr);
+            {/* Start Date & Time - Using DateTimePicker with OK/Cancel */}
+            <div className="space-y-1">
+              <p className="text-xs text-gray-500">Start Date & Time <span className="text-red-500">*</span></p>
+              <DateTimePicker
+                value={formData.start_time}
+                onChange={(date) => {
+                  handleInputChange('start_time', date);
+                  // Auto-populate end time if not set or needs update (+1 hour from start)
+                  if (date) {
+                    const endDate = new Date(date.getTime() + 60 * 60 * 1000);
+                    if (!formData.end_time || formData.end_time <= date) {
+                      handleInputChange('end_time', endDate);
                     }
                   }
                 }}
-                className={errors.start_time ? 'border-red-500' : ''}
+                placeholder="Select start date and time"
+                error={!!errors.start_time}
+                minDate={new Date()}
               />
-              <p className="text-xs text-gray-500 mt-1">Start Date & Time <span className="text-red-500">*</span></p>
+              {errors.start_time && <p className="text-xs text-red-500">{errors.start_time}</p>}
             </div>
-            {/* End Date & Time - Using datetime-local */}
-            <div>
-              <Input
-                type="datetime-local"
-                value={formData.end_time
-                  ? `${formatDateLocal(formData.end_time)}T${formatTimeLocal(formData.end_time)}`
-                  : formData.start_time
-                    ? `${formatDateLocal(formData.start_time)}T${formatTimeLocal(new Date(new Date(formData.start_time).getTime() + 60 * 60 * 1000))}`
-                    : `${defaultDate}T${defaultEndTime}`}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value) {
-                    const [dateStr, timeStr] = value.split('T');
-                    handleDateChange('end_time', dateStr, timeStr);
-                  }
-                }}
-                className={errors.end_time ? 'border-red-500' : ''}
+            
+            {/* End Date & Time - Using DateTimePicker with OK/Cancel */}
+            <div className="space-y-1">
+              <p className="text-xs text-gray-500">End Date & Time <span className="text-red-500">*</span></p>
+              <DateTimePicker
+                value={formData.end_time}
+                onChange={(date) => handleInputChange('end_time', date)}
+                placeholder="Select end date and time"
+                error={!!errors.end_time}
+                minDate={formData.start_time || new Date()}
               />
-              <p className="text-xs text-gray-500 mt-1">End Date & Time <span className="text-red-500">*</span></p>
+              {errors.end_time && <p className="text-xs text-red-500">{errors.end_time}</p>}
             </div>
-            {errors.start_time && <p className="text-xs text-red-500">{errors.start_time}</p>}
-            {errors.end_time && <p className="text-xs text-red-500">{errors.end_time}</p>}
           </div>
 
           {/* Location or Virtual URL */}

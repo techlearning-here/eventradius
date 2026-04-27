@@ -1312,6 +1312,7 @@ async def submit_approval_request(
     """
     try:
         # Call atomic stored procedure
+        # p_user_id is passed for service role authentication; falls back to auth.uid() if null
         rpc_params = {
             "p_event_id": event_id,
             "p_user_id": user["id"] if user else None,
