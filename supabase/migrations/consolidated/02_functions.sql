@@ -224,23 +224,23 @@ BEGIN
     RAISE EXCEPTION 'Online events must have a virtual event URL';
   END IF;
   
-  -- Validate event contact email
+  -- Validate event contact email (simple LIKE patterns - contains @ and at least one .)
   IF NEW.event_contact_email IS NOT NULL THEN
-    IF NEW.event_contact_email !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN
+    IF NEW.event_contact_email NOT LIKE '%@%.%' THEN
       RAISE EXCEPTION 'Invalid event contact email format';
     END IF;
   END IF;
   
-  -- Validate ticketing website URL format
+  -- Validate ticketing website URL format (simple check for http/https prefix and at least one dot)
   IF NEW.ticketing_website IS NOT NULL THEN
-    IF NEW.ticketing_website !~ '^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$' THEN
+    IF NOT (NEW.ticketing_website ~ '^https?://' AND NEW.ticketing_website ~ '\.' ) THEN
       RAISE EXCEPTION 'Invalid ticketing website URL format';
     END IF;
   END IF;
   
-  -- Validate event website URL format
+  -- Validate event website URL format (simple check for http/https prefix and at least one dot)
   IF NEW.event_website IS NOT NULL THEN
-    IF NEW.event_website !~ '^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$' THEN
+    IF NOT (NEW.event_website ~ '^https?://' AND NEW.event_website ~ '\.' ) THEN
       RAISE EXCEPTION 'Invalid event website URL format';
     END IF;
   END IF;

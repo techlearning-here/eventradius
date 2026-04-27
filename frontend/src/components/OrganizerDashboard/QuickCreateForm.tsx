@@ -765,8 +765,9 @@ export const QuickCreateForm = ({ isOpen, onClose, onSuccess, editingEvent, onDe
             {showImageSelector && (
               <div className="mt-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <CoverImageSelector
-                  selectedImage={formData.image_url}
-                  onSelect={(img) => handleInputChange('image_url', img)}
+                  selectedImageUrl={formData.image_url}
+                  onImageSelect={(img) => handleInputChange('image_url', img || '')}
+                  onImageUpload={() => {}}
                 />
               </div>
             )}
