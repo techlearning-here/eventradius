@@ -410,6 +410,167 @@ class TestEventsAPI:
             assert data[1]["is_paid_event"] is False
             assert data[1]["ticketing_website"] is None
 
+    @patch("config.auth.AuthService.require_auth")
+    def test_event_attributes_defaults(self, mock_auth):
+        """Test EventAttributes default values for require_approval and enable_waitlist (commit f3972fa)."""
+        mock_user = {"id": "test-user-id"}
+        mock_auth.return_value = mock_user
+
+        # Test that require_approval and enable_waitlist default to False when not provided
+        event_data = {
+            "title": "Test Event",
+            "description": "Test Description",
+            "location": "Test Location",
+            "category": "social",
+            "max_participants": 50,
+            "is_public": True,
+            "format": "social_meetup",
+            "sub_category": "community_gathering",
+            "event_type": "in_person",
+            "primary_language": "english",
+            # Not specifying require_approval or enable_waitlist - should default to False
+        }
+
+        with patch("api.events.insert_record") as mock_insert:
+            mock_response = MagicMock()
+            mock_response.data = [
+                {
+                    "id": "test-event-id",
+                    **event_data,
+                    "require_approval": False,
+                    "enable_waitlist": False,
+                    "organizer_id": "test-user-id",
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "updated_at": "2024-01-01T00:00:00Z",
+                }
+            ]
+            mock_insert.return_value = mock_response
+
+            response = client.post(
+                "/api/events",
+                json=event_data,
+                headers={"Authorization": "Bearer valid-token"},
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["require_approval"] is False
+            assert data["enable_waitlist"] is False
+
+    @patch("config.auth.AuthService.require_auth")
+    def test_event_attributes_explicit_true(self, mock_auth):
+        """Test EventAttributes accepts explicit True values (commit f3972fa)."""
+        mock_user = {"id": "test-user-id"}
+        mock_auth.return_value = mock_user
+
+        event_data = {
+            "title": "Test Event with Approval",
+            "description": "Test Description",
+            "location": "Test Location",
+            "category": "education",
+            "max_participants": 50,
+            "is_public": True,
+            "format": "workshop",
+            "sub_category": "tech_workshop",
+            "event_type": "in_person",
+            "primary_language": "english",
+            "require_approval": True,
+            "enable_waitlist": True,
+        }
+
+        with patch("api.events.insert_record") as mock_insert:
+            mock_response = MagicMock()
+            mock_response.data = [
+                {
+                    "id": "test-event-id",
+                    **event_data,
+                    "organizer_id": "test-user-id",
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "updated_at": "2024-01-01T00:00:00Z",
+                }
+            ]
+            mock_insert.return_value = mock_response
+
+            response = client.post(
+                "/api/events",
+                json=event_data,
+                headers={"Authorization": "Bearer valid-token"},
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["require_approval"] is True
+            assert data["enable_waitlist"] is True
+
+    @patch("config.auth.AuthService.require_auth")
+    def test_get_nearby_events_with_event_type_filter(self, mock_auth):
+        """Test get_nearby_events passes event_type_filter instead of max_results (commit f3972fa)."""
+        mock_user = {"id": "test-user-id"}
+        mock_auth.return_value = mock_user
+
+        with patch("api.events.call_rpc") as mock_call_rpc:
+            mock_response = MagicMock()
+            mock_response.data = [
+                {
+                    "event_id": "evt-1",
+                    "title": "Nearby Event",
+                    "distance_km": 2.5,
+                }
+            ]
+            mock_call_rpc.return_value = mock_response
+
+            response = client.get(
+                "/api/events/nearby?lat=37.7749&lng=-122.4194&radius=10&limit=20",
+                headers={"Authorization": "Bearer valid-token"},
+            )
+
+            assert response.status_code == 200
+            # Verify call_rpc was called with event_type_filter instead of max_results
+            mock_call_rpc.assert_called_once()
+            call_args = mock_call_rpc.call_args
+            assert call_args[0][0] == "get_nearby_events_with_details"
+            assert "event_type_filter" in call_args[1]["params"]
+            assert call_args[1]["params"]["event_type_filter"] == [
+                "in_person",
+                "hybrid",
+                "online",
+            ]
+            # max_results should NOT be in params anymore
+            assert "max_results" not in call_args[1]["params"]
+
+    @patch("config.auth.AuthService.require_auth")
+    def test_get_nearby_events_summary_with_event_type_filter(self, mock_auth):
+        """Test get_nearby_events_summary passes event_type_filter (commit f3972fa)."""
+        mock_user = {"id": "test-user-id"}
+        mock_auth.return_value = mock_user
+
+        with patch("api.events.call_rpc") as mock_call_rpc:
+            mock_response = MagicMock()
+            mock_response.data = [
+                {"category": "social", "count": 5},
+                {"category": "education", "count": 3},
+            ]
+            mock_call_rpc.return_value = mock_response
+
+            response = client.get(
+                "/api/events/nearby/summary?lat=37.7749&lng=-122.4194&radius=10",
+                headers={"Authorization": "Bearer valid-token"},
+            )
+
+            assert response.status_code == 200
+            # Verify call_rpc was called with event_type_filter instead of max_results
+            mock_call_rpc.assert_called_once()
+            call_args = mock_call_rpc.call_args
+            assert call_args[0][0] == "get_nearby_events_summary"
+            assert "event_type_filter" in call_args[1]["params"]
+            assert call_args[1]["params"]["event_type_filter"] == [
+                "in_person",
+                "hybrid",
+                "online",
+            ]
+            # max_results should NOT be in params anymore
+            assert "max_results" not in call_args[1]["params"]
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

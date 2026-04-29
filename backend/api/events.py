@@ -154,8 +154,8 @@ class EventAttributes(BaseModel):
 
     # Quick Create fields
     ticket_price: Optional[float] = Field(None, ge=0)
-    require_approval: Optional[bool] = None
-    enable_waitlist: Optional[bool] = None
+    require_approval: bool = False
+    enable_waitlist: bool = False
 
 
 class EventCreate(EventBase, EventAttributes):
@@ -1312,6 +1312,7 @@ async def submit_approval_request(
     """
     try:
         # Call atomic stored procedure
+        # p_user_id is passed for service role authentication; falls back to auth.uid() if null
         rpc_params = {
             "p_event_id": event_id,
             "p_user_id": user["id"] if user else None,
@@ -1972,7 +1973,7 @@ async def get_nearby_events(
                 "user_lat": lat,
                 "user_lng": lng,
                 "radius_km": radius,
-                "max_results": limit + offset,
+                "event_type_filter": ["in_person", "hybrid", "online"],
             },
         )
 
@@ -2036,7 +2037,7 @@ async def get_nearby_events_summary(
                 "user_lat": lat,
                 "user_lng": lng,
                 "radius_km": radius,
-                "max_results": 1000,  # Get more for summary stats
+                "event_type_filter": ["in_person", "hybrid", "online"],
             },
         )
 
