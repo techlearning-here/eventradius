@@ -83,6 +83,12 @@ from api.events import router as events_router
 from api.users import router as users_router
 from api.verification import router as verification_router
 from api.organizers import router as organizers_router
+from api.pricing_rules import router as pricing_rules_router
+from api.pricing_inventory import router as pricing_inventory_router
+from api.pricing_recommendations import router as pricing_recommendations_router
+from api.promo_codes import router as promo_codes_router
+from api.discount_rules import router as discount_rules_router
+from api.deals import router as deals_router
 
 # Include routers first
 app.include_router(events_router)
@@ -90,6 +96,12 @@ app.include_router(users_router)
 app.include_router(verification_router)
 app.include_router(organizers_router)
 app.include_router(auth_router)
+app.include_router(pricing_rules_router)
+app.include_router(pricing_inventory_router)
+app.include_router(pricing_recommendations_router)
+app.include_router(promo_codes_router)
+app.include_router(discount_rules_router)
+app.include_router(deals_router)
 
 
 # NOTE: Custom OPTIONS handler removed - FastAPI's CORS middleware handles preflight automatically

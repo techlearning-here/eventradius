@@ -493,6 +493,12 @@ async def _create_event_logic(event: EventCreate, user: dict) -> EventResponse:
             f"DEBUG: latitude={event_data.get('latitude')}, longitude={event_data.get('longitude')}, accuracy={event_data.get('geolocation_accuracy')}"
         )
 
+        # Fix empty strings that should be NULL
+        if event_data.get("ticketing_website") == "":
+            event_data["ticketing_website"] = None
+        if event_data.get("event_website") == "":
+            event_data["event_website"] = None
+
         event_type = event_data.get("event_type")
         if event_type in ("in_person", "hybrid"):
             lat = event_data.get("latitude")
@@ -503,22 +509,20 @@ async def _create_event_logic(event: EventCreate, user: dict) -> EventResponse:
             else:
                 logger.info("No coordinates provided for event (optional)")
 
-        response = insert_record("events", event_data)
+        created_event = insert_record("events", event_data)
 
-        logger.info(f"DEBUG: Insert response data: {response.data}")
-        if response.data:
+        logger.info(f"DEBUG: Insert response: {created_event}")
+        if created_event:
             logger.info(
-                f"DEBUG: Created event lat/lng: {response.data[0].get('latitude')}, {response.data[0].get('longitude')}"
+                f"DEBUG: Created event lat/lng: {created_event.get('latitude')}, {created_event.get('longitude')}"
             )
 
-        if not response.data:
-            logger.error(f"Insert failed - no data returned. Response: {response}")
+        if not created_event:
+            logger.error(f"Insert failed - no data returned")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create event - database returned no data",
             )
-
-        created_event = response.data[0]
         created_event["current_participants"] = 0
         logger.info(f"Event created successfully: {created_event.get('id')}")
 
@@ -674,14 +678,12 @@ async def update_event(
     """
     try:
         # Check if event exists and user is organizer
-        existing_response = fetch_single_record("events", event_id)
+        existing_event = fetch_single_record("events", event_id)
 
-        if not existing_response.data:
+        if not existing_event:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
             )
-
-        existing_event = existing_response.data
 
         if existing_event.get("organizer_id") != user["id"]:
             raise HTTPException(
@@ -697,15 +699,13 @@ async def update_event(
         if not update_data:
             return existing_event
 
-        response = update_record("events", event_id, update_data)
+        updated_event = update_record("events", event_id, update_data)
 
-        if not response.data:
+        if not updated_event:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to update event",
             )
-
-        updated_event = response.data[0]
 
         # Count participants
         participants_response = (
@@ -736,14 +736,12 @@ async def delete_event(event_id: str, user: dict = Depends(get_current_user)):
     """
     try:
         # Check if event exists and user is organizer
-        existing_response = fetch_single_record("events", event_id)
+        existing_event = fetch_single_record("events", event_id)
 
-        if not existing_response.data:
+        if not existing_event:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
             )
-
-        existing_event = existing_response.data
 
         if existing_event.get("organizer_id") != user["id"]:
             raise HTTPException(
@@ -798,15 +796,13 @@ async def restore_event(event_id: str, user: dict = Depends(get_current_user)):
             )
 
         # Restore: clear deleted_at
-        update_response = update_record("events", event_id, {"deleted_at": None})
+        restored_event = update_record("events", event_id, {"deleted_at": None})
 
-        if not update_response.data:
+        if not restored_event:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to restore event",
             )
-
-        restored_event = update_response.data[0]
         restored_event["current_participants"] = 0
 
         return restored_event
@@ -900,14 +896,12 @@ async def participate_event(event_id: str, user: dict = Depends(get_current_user
     """
     try:
         # Check if event exists and is public
-        event_response = fetch_single_record("events", event_id)
+        event = fetch_single_record("events", event_id)
 
-        if not event_response.data:
+        if not event:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
             )
-
-        event = event_response.data
 
         # Check if event is public or user is organizer
         if not event.get("is_public") and event.get("organizer_id") != user["id"]:
@@ -1396,13 +1390,11 @@ async def delete_all_approval_requests(
     """
     try:
         # Verify user is the event organizer
-        event_response = fetch_single_record("events", event_id)
-        if not event_response.data:
+        event = fetch_single_record("events", event_id)
+        if not event:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
             )
-
-        event = event_response.data
         if event.get("organizer_id") != user["id"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -1498,13 +1490,12 @@ async def get_approval_requests(
     """
     try:
         # Verify event exists and user is organizer
-        event_response = fetch_single_record("events", event_id)
-        if not event_response.data:
+        event = fetch_single_record("events", event_id)
+        if not event:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
             )
 
-        event = event_response.data
         if event.get("organizer_id") != user["id"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -1548,13 +1539,12 @@ async def process_approval_action(
     """
     try:
         # Verify event exists and user is organizer
-        event_response = fetch_single_record("events", event_id)
-        if not event_response.data:
+        event = fetch_single_record("events", event_id)
+        if not event:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
             )
 
-        event = event_response.data
         if event.get("organizer_id") != user["id"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -1621,15 +1611,15 @@ async def process_approval_action(
             update_data["waitlist_position"] = next_position
 
         # Update the participant record
-        response = update_record("event_participants", participant_id, update_data)
+        result = update_record("event_participants", participant_id, update_data)
 
-        if not response.data:
+        if not result:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to process approval action",
             )
 
-        return response.data[0]
+        return result
 
     except HTTPException:
         raise
@@ -1657,13 +1647,12 @@ async def promote_from_waitlist(
     """
     try:
         # Verify event exists and user is organizer
-        event_response = fetch_single_record("events", event_id)
-        if not event_response.data:
+        event = fetch_single_record("events", event_id)
+        if not event:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
             )
 
-        event = event_response.data
         if event.get("organizer_id") != user["id"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -1699,9 +1688,9 @@ async def promote_from_waitlist(
             "status": "going",
         }
 
-        response = update_record("event_participants", participant["id"], update_data)
+        result = update_record("event_participants", participant["id"], update_data)
 
-        if not response.data:
+        if not result:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to promote from waitlist",
@@ -1724,7 +1713,7 @@ async def promote_from_waitlist(
                         "event_participants", record["id"], {"waitlist_position": idx}
                     )
 
-        return response.data[0]
+        return result
 
     except HTTPException:
         raise
@@ -2097,13 +2086,11 @@ async def update_event_location(
     """
     try:
         # Fetch the event
-        event_response = fetch_single_record("events", event_id)
-        if not event_response.data:
+        event = fetch_single_record("events", event_id)
+        if not event:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
             )
-
-        event = event_response.data
 
         # Verify user is organizer
         if event.get("organizer_id") != user["id"]:
@@ -2127,9 +2114,9 @@ async def update_event_location(
             "geocoded_at": datetime.now().isoformat(),
         }
 
-        update_response = update_record("events", event_id, update_data)
+        result = update_record("events", event_id, update_data)
 
-        if not update_response.data:
+        if not result:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to update event location",

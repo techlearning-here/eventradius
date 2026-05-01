@@ -65,18 +65,41 @@ def insert_record(table_name: str, data: Dict[str, Any]):
     """Insert a record into a table"""
     logger.info(f"Inserting record into {table_name}: {data}")
     table = get_table(table_name)
-    result = table.insert(data).execute()
-    logger.info(f"Insert result for {table_name}: {result}")
-    return result
+    response = table.insert(data).execute()
+    logger.info(f"Insert result for {table_name}: {response}")
+    # Return first item from data array, or full response if no data
+    if hasattr(response, 'data') and response.data:
+        return response.data[0] if isinstance(response.data, list) else response.data
+    return response
 
 
-def update_record(table_name: str, record_id: str, data: Dict[str, Any]):
-    """Update a record in a table"""
-    logger.info(f"Updating record {record_id} in {table_name}: {data}")
+def update_record(table_name: str, record_id: str = None, data: Dict[str, Any] = None, filters: Dict[str, Any] = None):
+    """Update a record in a table.
+    
+    Args:
+        table_name: Name of the table
+        record_id: ID of record to update (alternative to filters)
+        data: Data to update
+        filters: Dict of field-value pairs to filter by (alternative to record_id)
+    """
+    logger.info(f"Updating record in {table_name}: record_id={record_id}, filters={filters}, data={data}")
     table = get_table(table_name)
-    result = table.update(data).eq("id", record_id).execute()
-    logger.info(f"Update result for {table_name}: {result}")
-    return result
+    query = table.update(data)
+    
+    if record_id:
+        query = query.eq("id", record_id)
+    elif filters:
+        for key, value in filters.items():
+            query = query.eq(key, value)
+    else:
+        raise ValueError("Either record_id or filters must be provided")
+    
+    response = query.execute()
+    logger.info(f"Update result for {table_name}: {response}")
+    # Return first item from data array, or full response if no data
+    if hasattr(response, 'data') and response.data:
+        return response.data[0] if isinstance(response.data, list) else response.data
+    return response
 
 
 def delete_record(table_name: str, record_id: str):
@@ -97,24 +120,53 @@ def fetch_records(
 
     if filters:
         for key, value in filters.items():
-            query = query.eq(key, value)
+            # Handle "in" operator when value is a tuple ("in", [list])
+            if isinstance(value, tuple) and len(value) == 2 and value[0] == "in":
+                query = query.in_(key, value[1])
+            elif value is None:
+                # Use is_ for NULL values
+                query = query.is_(key, None)
+            else:
+                query = query.eq(key, value)
 
-    return query.range(offset, offset + limit - 1).execute()
+    response = query.range(offset, offset + limit - 1).execute()
+    return response.data if hasattr(response, 'data') else response
 
 
-def fetch_single_record(table_name: str, record_id: str):
-    """Fetch a single record by ID"""
-    logger.info(f"Fetching single record {record_id} from {table_name}")
+def fetch_single_record(table_name: str, record_id: str = None, filters: Dict[str, Any] = None):
+    """Fetch a single record by ID or filters.
+    
+    Args:
+        table_name: Name of the table
+        record_id: ID of record to fetch (alternative to filters)
+        filters: Dict of field-value pairs to filter by (alternative to record_id)
+    """
+    logger.info(f"Fetching single record from {table_name}: record_id={record_id}, filters={filters}")
     table = get_table(table_name)
+    
     try:
-        result = table.select("*").eq("id", record_id).single().execute()
-        logger.info(f"Fetch result for {table_name}: {result}")
-        return result
+        query = table.select("*")
+        
+        if record_id:
+            query = query.eq("id", record_id).single()
+        elif filters:
+            for key, value in filters.items():
+                query = query.eq(key, value)
+            query = query.single()
+        else:
+            raise ValueError("Either record_id or filters must be provided")
+        
+        response = query.execute()
+        logger.info(f"Fetch result for {table_name}: {response}")
+        # Return data directly if available
+        if hasattr(response, 'data'):
+            return response.data
+        return response
     except Exception as e:
-        # If no records found, return a result with empty data
+        # If no records found, return None
         if "PGRST116" in str(e) or "The result contains 0 rows" in str(e):
-            logger.info(f"No record found for {record_id} in {table_name}")
-            return type("Result", (), {"data": None})()
+            logger.info(f"No record found in {table_name}")
+            return None
         else:
             logger.error(f"Error fetching single record from {table_name}: {e}")
             raise

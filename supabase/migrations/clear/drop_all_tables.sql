@@ -183,7 +183,41 @@ END $$;
 -- 5. DROP TABLES (in reverse order of creation to handle dependencies)
 -- =====================================================
 
--- Drop event-related tables first (due to foreign key dependencies)
+-- Drop dynamic pricing tables first (reverse dependency order)
+DO $$
+BEGIN
+    -- Drop promo codes (depends on recommendations)
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'promo_codes') THEN
+        DROP TABLE public.promo_codes CASCADE;
+        RAISE NOTICE 'Dropped table: promo_codes';
+    END IF;
+    
+    -- Drop discount recommendations (depends on pricing_rules)
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'discount_recommendations') THEN
+        DROP TABLE public.discount_recommendations CASCADE;
+        RAISE NOTICE 'Dropped table: discount_recommendations';
+    END IF;
+    
+    -- Drop discount rules config (depends on events)
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'discount_rules_config') THEN
+        DROP TABLE public.discount_rules_config CASCADE;
+        RAISE NOTICE 'Dropped table: discount_rules_config';
+    END IF;
+    
+    -- Drop inventory snapshots (depends on pricing_rules)
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'inventory_snapshots') THEN
+        DROP TABLE public.inventory_snapshots CASCADE;
+        RAISE NOTICE 'Dropped table: inventory_snapshots';
+    END IF;
+    
+    -- Drop dynamic pricing rules (depends on events)
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'dynamic_pricing_rules') THEN
+        DROP TABLE public.dynamic_pricing_rules CASCADE;
+        RAISE NOTICE 'Dropped table: dynamic_pricing_rules';
+    END IF;
+END $$;
+
+-- Drop event-related tables (due to foreign key dependencies)
 DO $$
 BEGIN
     -- Drop tables with foreign key dependencies first
@@ -372,12 +406,12 @@ BEGIN
     RAISE NOTICE 'ALL EVENTRADIUS OBJECTS DROPPED!';
     RAISE NOTICE '========================================';
     RAISE NOTICE '';
-    RAISE NOTICE 'Dropped objects:';
-    RAISE NOTICE '  ✓ All views (6)';
-    RAISE NOTICE '  ✓ All triggers';
-    RAISE NOTICE '  ✓ All RLS policies';
-    RAISE NOTICE '  ✓ All functions/stored procedures (40+)';
-    RAISE NOTICE '  ✓ All tables (15)';
+    RAISE NOTICE '========================================';
+    RAISE NOTICE '  ✓ All views (3)';
+    RAISE NOTICE '  ✓ All triggers (20+)';
+    RAISE NOTICE '  ✓ All RLS policies (15+)';
+    RAISE NOTICE '  ✓ All functions (25+)';
+    RAISE NOTICE '  ✓ All tables (20)';
     RAISE NOTICE '  ✓ All custom types/enums (6)';
     RAISE NOTICE '';
     RAISE NOTICE 'Database is now clean for fresh setup.';

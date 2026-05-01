@@ -71,7 +71,7 @@ const Discover = () => {
   }, [loading, error, events]);
   const [prefs, setPrefs] = useState<UserPrefs | null>(cachedUserPrefs);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<'card' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
   
   // Location-based discovery state
   const [userLatitude, setUserLatitude] = useState<number | null>(null);
@@ -291,11 +291,13 @@ const Discover = () => {
   }, [useLocation, nearbyEvents, events]);
 
   const filteredEvents = useMemo(() => {
-    return baseEvents.filter((event) => {
+    const result = baseEvents.filter((event) => {
       const matchesDate = !date || (event.start_time && new Date(event.start_time).toDateString() === date.toDateString());
       const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(event.category || '');
       return matchesDate && matchesCategory;
     });
+    console.log('[Discover] filteredEvents:', result.length, 'events, is_paid flags:', result.map(e => ({ id: e.id, title: e.title, is_paid: e.is_paid_event })));
+    return result;
   }, [baseEvents, date, selectedCategories]);
 
   return (

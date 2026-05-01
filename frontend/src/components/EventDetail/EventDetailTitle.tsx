@@ -7,13 +7,15 @@ interface EventDetailTitleProps {
   creator?: string;
   organizer_email?: string;
   is_paid_event?: boolean;
+  ticket_price?: number;
 }
 
-export const EventDetailTitle: React.FC<EventDetailTitleProps> = ({ 
-  title, 
-  creator, 
+export const EventDetailTitle: React.FC<EventDetailTitleProps> = ({
+  title,
+  creator,
   organizer_email,
-  is_paid_event
+  is_paid_event,
+  ticket_price
 }) => {
   const displayCreator = creator || organizer_email || 'Event Organizer';
   
@@ -43,12 +45,12 @@ export const EventDetailTitle: React.FC<EventDetailTitleProps> = ({
           {/* Price Badge */}
           <div className={cn(
             "flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm shadow-sm transition-all duration-200 hover:shadow-md",
-            is_paid_event 
-              ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white" 
+            is_paid_event
+              ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
               : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white"
           )}>
             {is_paid_event ? (
-              <><Tag className="w-4 h-4" /> <span>Paid Event</span></>
+              <><Tag className="w-4 h-4" /> <span>${ticket_price?.toFixed(2) || 'Paid Event'}</span></>
             ) : (
               <><Ticket className="w-4 h-4" /> <span>Free Entry</span></>
             )}
