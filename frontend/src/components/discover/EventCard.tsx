@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+console.log('*** EVENTCARD MODULE LOADED ***');
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarIcon, MapPin, Users, Clock, ArrowRight, Share2, Navigation } from 'lucide-react';
+import { CalendarIcon, MapPin, Users, Clock, ArrowRight, Share2, Navigation, Tag } from 'lucide-react';
 import { format } from 'date-fns';
 import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
 import { ShareEventModal } from '@/components/share/ShareEventModal';
 import { CATEGORIES } from '@/data/cities';
 import { formatDistance } from '@/hooks/useGeolocation';
 import { type Event } from '@/components/events/details/types';
+import { apiClient } from '@/integrations/backend/api';
 
 // Event from API may have additional/looser typing than strict Event type
 type EventFromApi = Event & Record<string, unknown> & {
@@ -20,10 +23,36 @@ interface EventCardProps {
 }
 
 export const EventCard: React.FC<EventCardProps> = ({ event, onPreview, participantCounts }) => {
+  console.log('EventCard RENDER:', event.id, event.title, 'is_paid:', event.is_paid_event);
+  
   const navigate = useNavigate();
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [dealInfo, setDealInfo] = useState<{
+    has_active_deal: boolean;
+    discount_percent?: number;
+    discounted_price?: number;
+    original_price?: number;
+    seats_remaining?: number;
+  } | null>(null);
   const catLabel = CATEGORIES.find(c => c.id === event.category)?.label || event.category;
+
+  // Fetch deal info for paid events
+  useEffect(() => {
+    console.log('EventCard debug:', { id: event.id, is_paid: event.is_paid_event, title: event.title });
+    if (event.is_paid_event && event.id) {
+      apiClient.getEventDeal(event.id)
+        .then(info => {
+          console.log('Deal info received:', info);
+          if (info.has_active_deal) {
+            setDealInfo(info);
+          }
+        })
+        .catch((err) => {
+          console.log('No deal available for event', event.id, err);
+        });
+    }
+  }, [event.id, event.is_paid_event]);
 
   const handleEventClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -87,22 +116,29 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onPreview, particip
           )}
           
           
-          {/* Free/Paid Badge */}
-          {!event.is_paid_event ? (
-            <div className="absolute top-3 right-3">
+          {/* Free/Paid Badge + Discount Badge */}
+          <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+            {!event.is_paid_event ? (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-emerald-700 to-emerald-600 border border-emerald-500 rounded-full text-xs font-semibold text-white shadow-md">
                 <div className="w-1.5 h-1.5 bg-white rounded-full" />
                 FREE
               </span>
-            </div>
-          ) : (
-            <div className="absolute top-3 right-3">
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-amber-600 to-amber-500 border border-amber-400 rounded-full text-xs font-semibold text-white shadow-md">
-                <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                PAID
-              </span>
-            </div>
-          )}
+            ) : (
+              <>
+                {dealInfo?.has_active_deal ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-red-600 to-rose-500 border border-red-400 rounded-full text-xs font-semibold text-white shadow-md animate-pulse">
+                    <Tag className="w-3 h-3" />
+                    {dealInfo.discount_percent}% OFF
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-amber-600 to-amber-500 border border-amber-400 rounded-full text-xs font-semibold text-white shadow-md">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                    PAID
+                  </span>
+                )}
+              </>
+            )}
+          </div>
         </div>
         
         {/* Event Details */}

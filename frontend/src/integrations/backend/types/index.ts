@@ -370,3 +370,200 @@ export interface ApprovalRequestFields {
   reason: ApprovalRequestField;
   social_links: ApprovalRequestField;
 }
+
+// =====================================================
+// Dynamic Pricing Types
+// =====================================================
+
+export interface PricingRule {
+  id: string;
+  event_id: string;
+  organizer_id: string;
+  max_capacity: number;
+  base_price: number;
+  min_price: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface PricingRuleCreate {
+  event_id: string;
+  max_capacity: number;
+  base_price: number;
+  min_price: number;
+  is_active?: boolean;
+}
+
+export interface PricingRuleUpdate {
+  max_capacity?: number;
+  base_price?: number;
+  min_price?: number;
+  is_active?: boolean;
+}
+
+export interface InventorySnapshot {
+  id: string;
+  event_id: string;
+  tickets_sold: number;
+  tickets_remaining: number;
+  occupancy_percent: number;
+  reported_by?: string;
+  reported_at: string;
+}
+
+export interface InventoryUpdateRequest {
+  event_id: string;
+  tickets_sold: number;
+}
+
+export type RecommendationStatus = 'pending' | 'approved' | 'rejected' | 'expired';
+export type RecommendationType = 'ai' | 'rule_based';
+
+export interface DiscountRecommendation {
+  id: string;
+  event_id: string;
+  occupancy_percent: number;
+  hours_remaining: number;
+  recommended_discount_percent: number;
+  recommended_price: number;
+  status: RecommendationStatus;
+  recommendation_type: RecommendationType;
+  rule_id?: string;
+  rule_name?: string;
+  created_at: string;
+  decided_at?: string;
+  decided_by?: string;
+  promo_code?: PromoCode;
+}
+
+export interface DiscountRule {
+  id: string;
+  organizer_id: string;
+  event_id?: string;
+  rule_name: string;
+  rule_description?: string;
+  occupancy_threshold: number;
+  time_threshold: number;
+  time_unit: 'hours' | 'days';
+  discount_percent: number;
+  is_active: boolean;
+  priority: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DiscountRuleCreate {
+  rule_name: string;
+  rule_description?: string;
+  occupancy_threshold: number;
+  time_threshold: number;
+  time_unit: 'hours' | 'days';
+  discount_percent: number;
+  is_active?: boolean;
+  priority?: number;
+  event_id?: string;
+}
+
+export interface DiscountRuleUpdate {
+  rule_name?: string;
+  rule_description?: string;
+  occupancy_threshold?: number;
+  time_threshold?: number;
+  time_unit?: 'hours' | 'days';
+  discount_percent?: number;
+  is_active?: boolean;
+  priority?: number;
+  event_id?: string;
+}
+
+export interface EvaluateRuleRequest {
+  event_id: string;
+  occupancy_percent: number;
+  hours_before_event: number;
+}
+
+export interface EvaluateRuleResponse {
+  rule_matched: boolean;
+  rule_id?: string;
+  rule_name?: string;
+  discount_percent?: number;
+  priority?: number;
+  message: string;
+}
+
+export interface PromoCode {
+  id: string;
+  event_id: string;
+  recommendation_id?: string;
+  code: string;
+  discount_percent: number;
+  discount_amount?: number;
+  max_uses: number;
+  times_claimed: number;
+  times_used: number;
+  valid_from: string;
+  valid_until: string;
+  is_active: boolean;
+  commission_percent: number;
+  estimated_commission?: number;
+  created_at: string;
+}
+
+export interface PromoCodeClaim {
+  id: string;
+  promo_code_id: string;
+  user_id?: string;
+  claimed_at: string;
+  ip_address?: string;
+  user_agent?: string;
+  marked_as_used: boolean;
+  marked_used_at?: string;
+}
+
+export interface ApproveRecommendationRequest {
+  max_uses: number;
+}
+
+export interface RejectRecommendationRequest {
+  reason?: string;
+}
+
+export interface Deal {
+  event_id: string;
+  event_title: string;
+  event_image_url?: string;
+  event_start_time?: string;
+  event_location?: string;
+  promo_code_id: string;
+  code: string;
+  discount_percent: number;
+  discount_amount?: number;
+  original_price: number;
+  discounted_price: number;
+  seats_remaining: number;
+  valid_until: string;
+  latitude?: number;
+  longitude?: number;
+  category?: string;
+}
+
+export interface ClaimDealResponse {
+  code: string;
+  discount_percent: number;
+  discount_amount?: number;
+  original_price: number;
+  discounted_price: number;
+  valid_until: string;
+  external_ticketing_url?: string;
+  event_title: string;
+  event_location?: string;
+  event_start_time?: string;
+}
+
+export interface PromoCodeStats {
+  active_deals: number;
+  total_claims: number;
+  total_used: number;
+  estimated_commission: string;
+}

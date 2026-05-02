@@ -5,7 +5,7 @@
 -- This script clears all event data while preserving user accounts
 -- For complete reset including users, use 03_truncate_all_users.sql instead
 --
--- Updated: 2026-01-19 - Added all current event-related tables
+-- Updated: 2026-04-29 - Added user_preferences for event-related preferences
 
 -- =====================================================
 -- 1. TRUNCATE CHILD TABLES (no dependencies or leaf nodes)
@@ -52,23 +52,28 @@ TRUNCATE TABLE public.event_venues CASCADE;
 TRUNCATE TABLE public.event_audit CASCADE;
 
 -- =====================================================
--- 5. TRUNCATE VENUES (referenced by events)
+-- 5. TRUNCATE USER PREFERENCES (event-related preferences)
+-- =====================================================
+TRUNCATE TABLE public.user_preferences CASCADE;
+
+-- =====================================================
+-- 6. TRUNCATE VENUES (referenced by events)
 -- =====================================================
 TRUNCATE TABLE public.venues CASCADE;
 
 -- =====================================================
--- 6. TRUNCATE MAIN EVENTS TABLE (parent table - last)
+-- 7. TRUNCATE MAIN EVENTS TABLE (parent table - last)
 -- =====================================================
 TRUNCATE TABLE public.events CASCADE;
 
 -- =====================================================
--- 5. RESET SEQUENCES (if any auto-increment IDs exist)
+-- 8. RESET SEQUENCES (if any auto-increment IDs exist)
 -- =====================================================
 -- Note: Most tables use UUIDs, but keeping for completeness
 -- ALTER SEQUENCE IF EXISTS public.events_id_seq RESTART WITH 1;
 
 -- =====================================================
--- 6. VERIFY TRUNCATION
+-- 9. VERIFY TRUNCATION
 -- =====================================================
 SELECT 
     'events' as table_name, 
@@ -86,4 +91,5 @@ UNION ALL SELECT 'event_audit', COUNT(*) FROM public.event_audit
 UNION ALL SELECT 'venues', COUNT(*) FROM public.venues
 UNION ALL SELECT 'ticket_types', COUNT(*) FROM public.ticket_types
 UNION ALL SELECT 'registration_fields', COUNT(*) FROM public.registration_fields
+UNION ALL SELECT 'user_preferences', COUNT(*) FROM public.user_preferences
 ORDER BY table_name;

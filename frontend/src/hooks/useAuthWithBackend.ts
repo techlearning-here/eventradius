@@ -33,13 +33,13 @@ const CACHE_TTL = 5000; // 5 second cache
 let isGlobalInitializing = false;
 // eslint-disable-next-line prefer-const
 let globalInitPromise: Promise<void> | null = null;
-// eslint-disable-next-line prefer-const
+ 
 let globalInitializedUserId: string | null = null; // Track which user is initialized globally
-// eslint-disable-next-line prefer-const
+ 
 let globalLoadSessionUserId: string | null = null;
-// eslint-disable-next-line prefer-const
+ 
 let globalLoadSessionPromise: Promise<void> | null = null;
-// eslint-disable-next-line prefer-const
+ 
 let globalIsInitialized = false; // Global flag to prevent re-initialization across all instances
 
 // Helper to get initial user settings from localStorage

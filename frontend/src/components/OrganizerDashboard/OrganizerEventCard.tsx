@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarIcon, MapPin } from 'lucide-react';
+import { CalendarIcon, MapPin, Tag } from 'lucide-react';
 import { format } from 'date-fns';
 import { EventParticipationCounts } from '@/components/EventParticipation';
 import { CATEGORIES } from '@/data/cities';
 import { type Event } from '@/integrations/backend/api';
 import { cn } from '@/lib/utils';
 import { EventCardContainer } from './EventCardContainer';
+import { apiClient } from '@/integrations/backend/api';
 
 interface OrganizerEventCardProps {
   event: Event;
@@ -31,7 +32,32 @@ export const OrganizerEventCard = ({
 }: OrganizerEventCardProps) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
+  const [dealInfo, setDealInfo] = useState<{
+    has_active_deal: boolean;
+    discount_percent?: number;
+    discount_amount?: number;
+    original_price?: number;
+    discounted_price?: number;
+    seats_remaining?: number;
+    valid_until?: string;
+    code?: string;
+  } | null>(null);
   const catLabel = CATEGORIES.find(c => c.id === event.category)?.label || event.category;
+
+  // Fetch deal info for paid events
+  useEffect(() => {
+    if (event.is_paid_event && event.id) {
+      apiClient.getEventDeal(event.id)
+        .then(info => {
+          if (info.has_active_deal) {
+            setDealInfo(info);
+          }
+        })
+        .catch(() => {
+          // No deal available
+        });
+    }
+  }, [event.id, event.is_paid_event]);
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't open overlay if clicking on action buttons
@@ -103,6 +129,16 @@ export const OrganizerEventCard = ({
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              {/* Discount Badge */}
+              {event.is_paid_event && dealInfo?.has_active_deal && (
+                <div className="absolute top-3 right-3">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-red-600 to-rose-500 border border-red-400 rounded-full text-xs font-semibold text-white shadow-md animate-pulse">
+                    <Tag className="w-3 h-3" />
+                    {dealInfo.discount_percent}% OFF
+                  </span>
+                </div>
+              )}
             </div>
           ) : (
             <div className={cn(
@@ -113,6 +149,16 @@ export const OrganizerEventCard = ({
                 "text-primary/50",
                 isCompact ? "w-8 h-8" : "w-12 h-12"
               )} />
+              
+              {/* Discount Badge for placeholder image */}
+              {event.is_paid_event && dealInfo?.has_active_deal && (
+                <div className="absolute top-3 right-3">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-red-600 to-rose-500 border border-red-400 rounded-full text-xs font-semibold text-white shadow-md animate-pulse">
+                    <Tag className="w-3 h-3" />
+                    {dealInfo.discount_percent}% OFF
+                  </span>
+                </div>
+              )}
             </div>
           )}
           

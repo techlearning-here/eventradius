@@ -150,11 +150,12 @@ export const EventDetailOverlay: React.FC<EventDetailOverlayProps> = React.memo(
         ) : event ? (
           <>
             <div className="flex-shrink-0">
-              <EventDetailTitle 
+              <EventDetailTitle
                 title={event.title}
                 creator={organizerProfile?.business_name || event.creator}
                 organizer_email={event.organizer_email}
                 is_paid_event={event.is_paid_event}
+                ticket_price={event.ticket_price}
               />
             </div>
 

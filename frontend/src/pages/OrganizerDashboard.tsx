@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/integrations/backend/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +25,7 @@ import { OrganizerEventsGrid } from '@/components/OrganizerDashboard/OrganizerEv
 import { EventWizardOverlay } from '@/components/OrganizerDashboard/EventWizardOverlay';
 import { QuickCreateForm } from '@/components/OrganizerDashboard/QuickCreateForm';
 import { ApprovalRequestsDashboard } from '@/components/OrganizerDashboard/ApprovalRequestsDashboard';
+import { PricingDashboard } from '@/components/dynamic-pricing';
 import { EventDetailOverlay } from '@/components/events/details/EventDetailPage';
 import { ShareEventModal } from '@/components/share/ShareEventModal';
 import { EventDetailInline } from '@/components/EventDetailInline';
@@ -88,6 +89,14 @@ const OrganizerDashboard = () => {
   // State for Quick Edit form
   const [showQuickEdit, setShowQuickEdit] = useState(false);
   const [quickEditEvent, setQuickEditEvent] = useState<Event | null>(null);
+
+  // Handle successful quick create - invalidate cache and refresh
+  const handleQuickCreateSuccess = useCallback(() => {
+    // Invalidate cache to ensure new event appears immediately
+    cachedUserEvents = null;
+    cachedUserEventsTimestamp = 0;
+    fetchEvents();
+  }, []);
 
   // Helper to calculate days remaining until permanent deletion
   const getDaysRemaining = (deletedAt: string | undefined): number => {
@@ -242,6 +251,22 @@ const OrganizerDashboard = () => {
       });
     }
   }, [user]);
+
+  // Safety: Clear loading state if auth completes but no user (race condition fix)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      // Auth is done loading but no user - clear loading to prevent indefinite wait
+      setLoading(false);
+    }
+  }, [authLoading, user]);
+
+  // Safety: If events section marked loaded but never fetched (user was null initially), fetch when user arrives
+  useEffect(() => {
+    if (user && loadedSections.has('events') && events.length === 0 && !loading) {
+      // Check if we need to actually fetch (race condition: section marked loaded but fetch never called)
+      fetchEvents();
+    }
+  }, [user, loadedSections, events.length, loading]);
 
   const handleSaveDraft = async (data: EventFormData) => {
     try {
@@ -1139,7 +1164,7 @@ const OrganizerDashboard = () => {
             <QuickCreateForm
               isOpen={showQuickCreate}
               onClose={() => setShowQuickCreate(false)}
-              onSuccess={fetchEvents}
+              onSuccess={handleQuickCreateSuccess}
               onDetailedEdit={handleWizardEdit}
             />
 
@@ -1151,7 +1176,7 @@ const OrganizerDashboard = () => {
                   setShowQuickEdit(false);
                   setQuickEditEvent(null);
                 }}
-                onSuccess={fetchEvents}
+                onSuccess={handleQuickCreateSuccess}
                 editingEvent={quickEditEvent}
                 onDetailedEdit={handleWizardEdit}
               />
@@ -1391,8 +1416,11 @@ const OrganizerDashboard = () => {
             {/* Approval Requests Section */}
             {activeSection === 'approvals' && <ApprovalRequestsDashboard />}
 
+            {/* Dynamic Pricing Section */}
+            {activeSection === 'pricing' && <PricingDashboard events={events} />}
+
             {/* Placeholder for other sections */}
-            {activeSection !== 'events' && activeSection !== 'recycle-bin' && activeSection !== 'approvals' && (
+            {activeSection !== 'events' && activeSection !== 'recycle-bin' && activeSection !== 'approvals' && activeSection !== 'pricing' && (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">This section is under development.</p>
               </div>

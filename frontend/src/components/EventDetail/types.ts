@@ -83,6 +83,7 @@ export interface Event {
   format?: string;
   sub_category?: string;
   // New Event Attributes - Pricing
+  ticket_price?: number;
   refund_policy?: string;
   group_discounts?: boolean;
   custom_refund_policy?: string;
