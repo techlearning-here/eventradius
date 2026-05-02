@@ -11,7 +11,12 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 
 from config.auth import get_current_user
-from config.database import fetch_records, fetch_single_record, update_record
+from config.database import (
+    fetch_records,
+    fetch_single_record,
+    insert_record,
+    update_record,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/promo-codes", tags=["promo-codes"])
@@ -20,7 +25,7 @@ router = APIRouter(prefix="/api/promo-codes", tags=["promo-codes"])
 # Pydantic models
 class PromoCodeListItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: UUID
     event_id: UUID
     code: str
@@ -37,7 +42,7 @@ class PromoCodeListItem(BaseModel):
 
 class PromoCodeClaimResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: UUID
     user_id: Optional[UUID] = None
     claimed_at: str
@@ -60,7 +65,7 @@ async def list_promo_codes(
 ):
     """List all promo codes for the organizer."""
     user_id = current_user.get("id")
-    
+
     # Build filters based on organizer's events
     if event_id:
         # Verify organizer owns this event
@@ -85,15 +90,15 @@ async def list_promo_codes(
             return []
         event_ids = [r["event_id"] for r in pricing_rules]
         filters = {"event_id": ("in", event_ids)}
-    
+
     if is_active is not None:
         filters["is_active"] = is_active
-    
+
     results = fetch_records(
         "promo_codes",
         filters=filters,
     )
-    
+
     return [PromoCodeListItem(**r) for r in results]
 
 
@@ -104,7 +109,7 @@ async def get_promo_code(
 ):
     """Get details of a specific promo code."""
     user_id = current_user.get("id")
-    
+
     # Get promo code
     promo_codes = fetch_records(
         "promo_codes",
@@ -117,7 +122,7 @@ async def get_promo_code(
             detail="Promo code not found",
         )
     promo_code = promo_codes[0]
-    
+
     # Verify organizer owns the event
     pricing_rules = fetch_records(
         "dynamic_pricing_rules",
@@ -129,7 +134,7 @@ async def get_promo_code(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied",
         )
-    
+
     return PromoCodeDetailResponse(**promo_code)
 
 
@@ -140,7 +145,7 @@ async def deactivate_promo_code(
 ):
     """Deactivate a promo code."""
     user_id = current_user.get("id")
-    
+
     # Get promo code
     promo_codes = fetch_records(
         "promo_codes",
@@ -153,7 +158,7 @@ async def deactivate_promo_code(
             detail="Promo code not found",
         )
     promo_code = promo_codes[0]
-    
+
     # Verify organizer owns the event
     pricing_rules = fetch_records(
         "dynamic_pricing_rules",
@@ -165,7 +170,7 @@ async def deactivate_promo_code(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied",
         )
-    
+
     # Deactivate
     result = update_record(
         "promo_codes",
@@ -177,7 +182,7 @@ async def deactivate_promo_code(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to deactivate promo code",
         )
-    
+
     logger.info(f"Promo code {promo_code_id} deactivated by user {user_id}")
     return PromoCodeDetailResponse(**result)
 
@@ -189,7 +194,7 @@ async def get_promo_code_claims(
 ):
     """Get claim history for a promo code."""
     user_id = current_user.get("id")
-    
+
     # Get promo code
     promo_codes = fetch_records(
         "promo_codes",
@@ -202,7 +207,7 @@ async def get_promo_code_claims(
             detail="Promo code not found",
         )
     promo_code = promo_codes[0]
-    
+
     # Verify organizer owns the event
     pricing_rules = fetch_records(
         "dynamic_pricing_rules",
@@ -214,13 +219,13 @@ async def get_promo_code_claims(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied",
         )
-    
+
     # Get claims
     results = fetch_records(
         "promo_code_claims",
         filters={"promo_code_id": str(promo_code_id)},
     )
-    
+
     return [PromoCodeClaimResponse(**r) for r in results]
 
 
@@ -231,7 +236,7 @@ async def regenerate_promo_code(
 ):
     """Regenerate a new promo code (deactivates old one, creates new)."""
     user_id = current_user.get("id")
-    
+
     # Get existing promo code
     promo_codes = fetch_records(
         "promo_codes",
@@ -244,7 +249,7 @@ async def regenerate_promo_code(
             detail="Promo code not found",
         )
     promo_code = promo_codes[0]
-    
+
     # Verify organizer owns the event
     pricing_rules = fetch_records(
         "dynamic_pricing_rules",
@@ -256,24 +261,25 @@ async def regenerate_promo_code(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied",
         )
-    
+
     # Deactivate old code
     update_record(
         "promo_codes",
         filters={"id": str(promo_code_id)},
         data={"is_active": False},
     )
-    
+
     # Generate new code
-    from services.promo_code_generator import generate_promo_code
     from datetime import datetime
-    
+
+    from services.promo_code_generator import generate_promo_code
+
     events = fetch_records("events", filters={"id": promo_code["event_id"]}, limit=1)
     new_code = generate_promo_code(
         events[0].get("title", "EVENT") if events else "EVENT",
-        promo_code["discount_percent"]
+        promo_code["discount_percent"],
     )
-    
+
     # Create new promo code with same parameters
     new_data = {
         "event_id": promo_code["event_id"],
@@ -286,14 +292,14 @@ async def regenerate_promo_code(
         "is_active": True,
         "commission_percent": promo_code.get("commission_percent", 5.00),
     }
-    
+
     result = insert_record("promo_codes", new_data)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to regenerate promo code",
         )
-    
+
     logger.info(
         f"Promo code regenerated by user {user_id}: "
         f"{promo_code['code']} -> {new_code}"
@@ -307,7 +313,7 @@ async def get_promo_code_stats(
 ):
     """Get summary statistics for organizer's promo codes."""
     user_id = current_user.get("id")
-    
+
     # Get all organizer's events
     pricing_rules = fetch_records(
         "dynamic_pricing_rules",
@@ -320,25 +326,25 @@ async def get_promo_code_stats(
             "total_used": 0,
             "estimated_commission": 0,
         }
-    
+
     event_ids = [r["event_id"] for r in pricing_rules]
-    
+
     # Get all promo codes for these events
     promo_codes = fetch_records(
         "promo_codes",
         filters={"event_id": ("in", event_ids)},
     )
-    
+
     active_deals = sum(1 for pc in promo_codes if pc.get("is_active"))
     total_claims = sum(pc.get("times_claimed", 0) for pc in promo_codes)
     total_used = sum(pc.get("times_used", 0) for pc in promo_codes)
-    
+
     # Calculate estimated commission
     total_commission = Decimal("0")
     for pc in promo_codes:
         if pc.get("estimated_commission"):
             total_commission += Decimal(pc["estimated_commission"])
-    
+
     return {
         "active_deals": active_deals,
         "total_claims": total_claims,

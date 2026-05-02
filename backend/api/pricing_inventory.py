@@ -24,7 +24,7 @@ class UpdateInventoryRequest(BaseModel):
 
 class InventorySnapshotResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: UUID
     event_id: UUID
     tickets_sold: int
@@ -40,18 +40,24 @@ class InventoryHistoryResponse(BaseModel):
     latest_remaining: Optional[int] = None
 
 
-@router.post("", response_model=InventorySnapshotResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=InventorySnapshotResponse, status_code=status.HTTP_201_CREATED
+)
 async def update_inventory(
     request: UpdateInventoryRequest = Body(...),
     current_user: dict = Depends(get_current_user),
 ):
     """Report current ticket sales for an event. Auto-triggers recommendation calculation."""
     user_id = current_user.get("id")
-    
+
     # Verify event has pricing rule and belongs to organizer
     pricing_rules = fetch_records(
         "dynamic_pricing_rules",
-        filters={"event_id": str(request.event_id), "organizer_id": user_id, "is_active": True},
+        filters={
+            "event_id": str(request.event_id),
+            "organizer_id": user_id,
+            "is_active": True,
+        },
         limit=1,
     )
     if not pricing_rules:
@@ -61,18 +67,20 @@ async def update_inventory(
         )
     pricing_rule = pricing_rules[0]
     max_capacity = pricing_rule["max_capacity"]
-    
+
     # Validate tickets_sold doesn't exceed capacity
     if request.tickets_sold > max_capacity:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Tickets sold ({request.tickets_sold}) cannot exceed capacity ({max_capacity})",
         )
-    
+
     # Calculate occupancy
     tickets_remaining = max_capacity - request.tickets_sold
-    occupancy_percent = (request.tickets_sold / max_capacity) * 100 if max_capacity > 0 else 0
-    
+    occupancy_percent = (
+        (request.tickets_sold / max_capacity) * 100 if max_capacity > 0 else 0
+    )
+
     # Create inventory snapshot
     data = {
         "event_id": str(request.event_id),
@@ -81,22 +89,22 @@ async def update_inventory(
         "occupancy_percent": round(occupancy_percent, 2),
         "reported_by": user_id,
     }
-    
+
     result = insert_record("inventory_snapshots", data)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update inventory",
         )
-    
+
     logger.info(
         f"Inventory updated for event {request.event_id}: "
         f"{request.tickets_sold}/{max_capacity} sold ({occupancy_percent:.1f}%)"
     )
-    
+
     # Note: Recommendation calculation is automatically triggered by database trigger
     # check_and_create_recommendation() runs AFTER INSERT on inventory_snapshots
-    
+
     return InventorySnapshotResponse(**result)
 
 
@@ -107,7 +115,7 @@ async def get_inventory_history(
 ):
     """Get inventory history for an event."""
     user_id = current_user.get("id")
-    
+
     # Verify pricing rule exists and belongs to organizer
     pricing_rules = fetch_records(
         "dynamic_pricing_rules",
@@ -119,22 +127,22 @@ async def get_inventory_history(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Pricing rule not found for this event or access denied",
         )
-    
+
     # Fetch inventory snapshots
     results = fetch_records(
         "inventory_snapshots",
         filters={"event_id": str(event_id)},
         limit=50,
     )
-    
+
     snapshots = [InventorySnapshotResponse(**r) for r in results]
-    
+
     latest_occupancy = None
     latest_remaining = None
     if snapshots:
         latest_occupancy = snapshots[0].occupancy_percent
         latest_remaining = snapshots[0].tickets_remaining
-    
+
     return InventoryHistoryResponse(
         snapshots=snapshots,
         latest_occupancy=latest_occupancy,
@@ -149,7 +157,7 @@ async def get_current_inventory(
 ):
     """Get the most recent inventory snapshot for an event."""
     user_id = current_user.get("id")
-    
+
     # Verify pricing rule exists and belongs to organizer
     pricing_rules = fetch_records(
         "dynamic_pricing_rules",
@@ -161,18 +169,18 @@ async def get_current_inventory(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Pricing rule not found for this event or access denied",
         )
-    
+
     # Get latest snapshot
     results = fetch_records(
         "inventory_snapshots",
         filters={"event_id": str(event_id)},
         limit=1,
     )
-    
+
     if not results:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No inventory data found for this event",
         )
-    
+
     return InventorySnapshotResponse(**results[0])

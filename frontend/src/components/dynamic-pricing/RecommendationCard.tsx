@@ -85,7 +85,20 @@ export function RecommendationCard({
     if (hours <= 2) return 'text-red-600 bg-red-50';
     if (hours <= 6) return 'text-orange-600 bg-orange-50';
     if (hours <= 12) return 'text-yellow-600 bg-yellow-50';
-    return 'text-blue-600 bg-blue-50';
+    if (hours <= 24) return 'text-blue-600 bg-blue-50';
+    return 'text-purple-600 bg-purple-50'; // For events more than 1 day away
+  };
+
+  const formatTimeLeft = (hours: number) => {
+    if (hours >= 24) {
+      const days = Math.floor(hours / 24);
+      const remainingHours = Math.round(hours % 24);
+      if (remainingHours === 0) {
+        return `${days}d`;
+      }
+      return `${days}d ${remainingHours}h`;
+    }
+    return `${hours.toFixed(1)}h`;
   };
 
   return (
@@ -147,7 +160,7 @@ export function RecommendationCard({
               <Clock className="w-3 h-3" />
               <span className="text-xs font-medium">Time Left</span>
             </div>
-            <div className="text-lg font-bold">{recommendation.hours_remaining.toFixed(1)}h</div>
+            <div className="text-lg font-bold">{formatTimeLeft(recommendation.hours_remaining)}</div>
           </div>
           
           <div className="p-3 rounded-lg bg-blue-50 text-blue-700">

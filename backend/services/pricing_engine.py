@@ -147,7 +147,7 @@ def calculate_hours_remaining(event_start_time: str, current_time: Optional[str]
     Returns:
         Hours remaining (can be negative if event started)
     """
-    from datetime import datetime
+    from datetime import datetime, timezone
     
     try:
         start = datetime.fromisoformat(event_start_time.replace("Z", "+00:00"))
@@ -155,7 +155,7 @@ def calculate_hours_remaining(event_start_time: str, current_time: Optional[str]
         if current_time:
             now = datetime.fromisoformat(current_time.replace("Z", "+00:00"))
         else:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
         
         diff = start - now
         hours = diff.total_seconds() / 3600
@@ -205,7 +205,7 @@ def should_create_recommendation(
     Returns:
         True if new recommendation should be created
     """
-    from datetime import datetime
+    from datetime import datetime, timezone
     
     # Check if conditions warrant a recommendation
     if occupancy_percent > 80 or hours_remaining > 24:
@@ -218,7 +218,7 @@ def should_create_recommendation(
     if last_recommendation_time:
         try:
             last_time = datetime.fromisoformat(last_recommendation_time.replace("Z", "+00:00"))
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             hours_since_last = (now - last_time).total_seconds() / 3600
             
             if hours_since_last < min_interval_hours:

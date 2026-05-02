@@ -189,22 +189,25 @@ def require_organizer(credentials: HTTPAuthorizationCredentials = Depends(securi
             headers={"WWW-Authenticate": "Bearer"},
         )
     user = auth_service.require_auth(credentials)
-    
+
     # Check if user is organizer or admin
     role = user.get("role", "authenticated")
     is_organizer = role in ["organizer", "admin"]
-    
+
     # Also check profile for organizer_status
     if not is_organizer and role != "admin":
         # Try to get organizer status from user object or check profile
-        is_organizer = user.get("is_organizer", False) or user.get("organizer_status") == "approved"
-    
+        is_organizer = (
+            user.get("is_organizer", False)
+            or user.get("organizer_status") == "approved"
+        )
+
     if not is_organizer and role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Organizer access required",
         )
-    
+
     # Add is_organizer flag to user dict
     user["is_organizer"] = True
     return user

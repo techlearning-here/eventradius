@@ -11,7 +11,13 @@ from fastapi import APIRouter, Body, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from config.auth import get_current_user
-from config.database import delete_record, fetch_records, fetch_single_record, insert_record, update_record
+from config.database import (
+    delete_record,
+    fetch_records,
+    fetch_single_record,
+    insert_record,
+    update_record,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/pricing/rules", tags=["pricing-rules"])
@@ -20,8 +26,12 @@ router = APIRouter(prefix="/api/pricing/rules", tags=["pricing-rules"])
 # Pydantic models
 class PricingRuleBase(BaseModel):
     max_capacity: int = Field(..., ge=1, description="Maximum event capacity")
-    base_price: Decimal = Field(..., gt=0, decimal_places=2, description="Original ticket price")
-    min_price: Decimal = Field(..., gt=0, decimal_places=2, description="Minimum price guardrail")
+    base_price: Decimal = Field(
+        ..., gt=0, decimal_places=2, description="Original ticket price"
+    )
+    min_price: Decimal = Field(
+        ..., gt=0, decimal_places=2, description="Minimum price guardrail"
+    )
     is_active: bool = True
 
     @field_validator("min_price")
@@ -45,7 +55,7 @@ class UpdatePricingRuleRequest(BaseModel):
 
 class PricingRuleResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: UUID
     event_id: UUID
     organizer_id: UUID
@@ -57,14 +67,16 @@ class PricingRuleResponse(BaseModel):
     updated_at: Optional[str] = None
 
 
-@router.post("", response_model=PricingRuleResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=PricingRuleResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_pricing_rule(
     request: CreatePricingRuleRequest = Body(...),
     current_user: dict = Depends(get_current_user),
 ):
     """Create pricing rule for an event."""
     user_id = current_user.get("id")
-    
+
     # Verify event exists and belongs to organizer
     events = fetch_records(
         "events",
@@ -76,7 +88,7 @@ async def create_pricing_rule(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Event not found or access denied",
         )
-    
+
     # Check if pricing rule already exists for this event
     existing_rules = fetch_records(
         "dynamic_pricing_rules",
@@ -88,7 +100,7 @@ async def create_pricing_rule(
             status_code=status.HTTP_409_CONFLICT,
             detail="Pricing rule already exists for this event. Use PUT to update.",
         )
-    
+
     # Create pricing rule
     data = {
         "event_id": str(request.event_id),
@@ -98,14 +110,14 @@ async def create_pricing_rule(
         "min_price": str(request.min_price),
         "is_active": request.is_active,
     }
-    
+
     result = insert_record("dynamic_pricing_rules", data)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create pricing rule",
         )
-    
+
     logger.info(f"Created pricing rule for event {request.event_id} by user {user_id}")
     return PricingRuleResponse(**result)
 
@@ -118,13 +130,13 @@ async def get_pricing_rule(
     """Get pricing rule for an event."""
     user_id = current_user.get("id")
     is_organizer = current_user.get("is_organizer", False)
-    
+
     filters = {"event_id": str(event_id)}
-    
+
     # Organizers can only see their own rules
     if is_organizer:
         filters["organizer_id"] = user_id
-    
+
     results = fetch_records("dynamic_pricing_rules", filters=filters, limit=1)
     result = results[0] if results else None
     if not result:
@@ -132,7 +144,7 @@ async def get_pricing_rule(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Pricing rule not found",
         )
-    
+
     return PricingRuleResponse(**result)
 
 
@@ -144,7 +156,7 @@ async def update_pricing_rule(
 ):
     """Update pricing rule for an event."""
     user_id = current_user.get("id")
-    
+
     # Verify rule exists and belongs to organizer
     existing_rules = fetch_records(
         "dynamic_pricing_rules",
@@ -157,7 +169,7 @@ async def update_pricing_rule(
             detail="Pricing rule not found or access denied",
         )
     existing = existing_rules[0]
-    
+
     # Build update data (only include provided fields)
     update_data = {}
     if request.max_capacity is not None:
@@ -168,13 +180,13 @@ async def update_pricing_rule(
         update_data["min_price"] = str(request.min_price)
     if request.is_active is not None:
         update_data["is_active"] = request.is_active
-    
+
     if not update_data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No fields to update",
         )
-    
+
     # Validate min_price <= base_price if both provided
     if "min_price" in update_data and "base_price" in update_data:
         if Decimal(update_data["min_price"]) > Decimal(update_data["base_price"]):
@@ -194,7 +206,7 @@ async def update_pricing_rule(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="min_price cannot exceed base_price",
             )
-    
+
     result = update_record(
         "dynamic_pricing_rules",
         filters={"id": existing["id"]},
@@ -205,7 +217,7 @@ async def update_pricing_rule(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update pricing rule",
         )
-    
+
     logger.info(f"Updated pricing rule for event {event_id} by user {user_id}")
     return PricingRuleResponse(**result)
 
@@ -217,7 +229,7 @@ async def delete_pricing_rule(
 ):
     """Disable/delete pricing rule for an event."""
     user_id = current_user.get("id")
-    
+
     # Verify rule exists and belongs to organizer
     existing_rules = fetch_records(
         "dynamic_pricing_rules",
@@ -230,7 +242,7 @@ async def delete_pricing_rule(
             detail="Pricing rule not found or access denied",
         )
     existing = existing_rules[0]
-    
+
     # Soft delete by setting is_active to false
     result = update_record(
         "dynamic_pricing_rules",
@@ -242,7 +254,7 @@ async def delete_pricing_rule(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to disable pricing rule",
         )
-    
+
     logger.info(f"Disabled pricing rule for event {event_id} by user {user_id}")
     return None
 
@@ -253,10 +265,10 @@ async def list_organizer_pricing_rules(
 ):
     """List all pricing rules for the current organizer."""
     user_id = current_user.get("id")
-    
+
     results = fetch_records(
         "dynamic_pricing_rules",
         filters={"organizer_id": user_id},
     )
-    
+
     return [PricingRuleResponse(**r) for r in results]

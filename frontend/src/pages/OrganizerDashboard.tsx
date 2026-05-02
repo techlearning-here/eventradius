@@ -252,6 +252,22 @@ const OrganizerDashboard = () => {
     }
   }, [user]);
 
+  // Safety: Clear loading state if auth completes but no user (race condition fix)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      // Auth is done loading but no user - clear loading to prevent indefinite wait
+      setLoading(false);
+    }
+  }, [authLoading, user]);
+
+  // Safety: If events section marked loaded but never fetched (user was null initially), fetch when user arrives
+  useEffect(() => {
+    if (user && loadedSections.has('events') && events.length === 0 && !loading) {
+      // Check if we need to actually fetch (race condition: section marked loaded but fetch never called)
+      fetchEvents();
+    }
+  }, [user, loadedSections, events.length, loading]);
+
   const handleSaveDraft = async (data: EventFormData) => {
     try {
       const eventData = {

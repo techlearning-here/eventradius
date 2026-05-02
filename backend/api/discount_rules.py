@@ -11,7 +11,13 @@ from fastapi import APIRouter, Body, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from config.auth import get_current_user
-from config.database import delete_record, fetch_records, fetch_single_record, insert_record, update_record
+from config.database import (
+    delete_record,
+    fetch_records,
+    fetch_single_record,
+    insert_record,
+    update_record,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/pricing/discount-rules", tags=["discount-rules"])
@@ -19,15 +25,29 @@ router = APIRouter(prefix="/api/pricing/discount-rules", tags=["discount-rules"]
 
 # Pydantic models
 class DiscountRuleBase(BaseModel):
-    rule_name: str = Field(..., min_length=1, max_length=100, description="Name of the discount rule")
-    rule_description: Optional[str] = Field(None, max_length=500, description="Optional description")
-    occupancy_threshold: int = Field(..., ge=1, le=100, description="Trigger when occupancy is BELOW this %")
+    rule_name: str = Field(
+        ..., min_length=1, max_length=100, description="Name of the discount rule"
+    )
+    rule_description: Optional[str] = Field(
+        None, max_length=500, description="Optional description"
+    )
+    occupancy_threshold: int = Field(
+        ..., ge=1, le=100, description="Trigger when occupancy is BELOW this %"
+    )
     time_threshold: int = Field(..., ge=1, description="Time before event to trigger")
-    time_unit: str = Field(..., pattern="^(hours|days)$", description="Unit: hours or days")
-    discount_percent: int = Field(..., ge=1, le=100, description="Discount percentage to apply")
+    time_unit: str = Field(
+        ..., pattern="^(hours|days)$", description="Unit: hours or days"
+    )
+    discount_percent: int = Field(
+        ..., ge=1, le=100, description="Discount percentage to apply"
+    )
     is_active: bool = True
-    priority: int = Field(100, ge=1, description="Lower = higher priority when multiple rules match")
-    event_id: Optional[UUID] = Field(None, description="Optional: specific event, or null for all events")
+    priority: int = Field(
+        100, ge=1, description="Lower = higher priority when multiple rules match"
+    )
+    event_id: Optional[UUID] = Field(
+        None, description="Optional: specific event, or null for all events"
+    )
 
 
 class CreateDiscountRuleRequest(DiscountRuleBase):
@@ -48,7 +68,7 @@ class UpdateDiscountRuleRequest(BaseModel):
 
 class DiscountRuleResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: UUID
     organizer_id: UUID
     event_id: Optional[UUID] = None
@@ -83,7 +103,10 @@ class EvaluateRuleResponse(BaseModel):
 # CRUD Endpoints
 # ============================================================================
 
-@router.post("", response_model=DiscountRuleResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "", response_model=DiscountRuleResponse, status_code=status.HTTP_201_CREATED
+)
 def create_discount_rule(
     rule: CreateDiscountRuleRequest,
     user: dict = Depends(get_current_user),
@@ -105,23 +128,23 @@ def create_discount_rule(
             "priority": rule.priority,
             "event_id": str(rule.event_id) if rule.event_id else None,
         }
-        
+
         result = insert_record("discount_rules_config", rule_data)
-        
+
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create discount rule"
+                detail="Failed to create discount rule",
             )
-        
+
         logger.info(f"Created discount rule {result.get('id')} for user {user['id']}")
         return DiscountRuleResponse(**result)
-        
+
     except Exception as e:
         logger.error(f"Error creating discount rule: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create discount rule: {str(e)}"
+            detail=f"Failed to create discount rule: {str(e)}",
         )
 
 
@@ -137,45 +160,46 @@ def list_discount_rules(
     """
     try:
         filters = {"organizer_id": str(user["id"])}
-        
+
         if event_id:
             # Get rules for specific event OR global rules (event_id is null)
             filters["event_id"] = str(event_id)
-        
+
         if is_active is not None:
             filters["is_active"] = is_active
-        
+
         results = fetch_records("discount_rules_config", filters=filters)
-        
+
         # If filtering by event_id, also include global rules
         if event_id:
-            global_filters = {
-                "organizer_id": str(user["id"]),
-                "event_id": None
-            }
+            global_filters = {"organizer_id": str(user["id"]), "event_id": None}
             if is_active is not None:
                 global_filters["is_active"] = is_active
-            
-            global_results = fetch_records("discount_rules_config", filters=global_filters)
-            
+
+            global_results = fetch_records(
+                "discount_rules_config", filters=global_filters
+            )
+
             # Combine and remove duplicates
             all_results = list(results)
             global_ids = {r["id"] for r in all_results}
             for gr in global_results:
                 if gr["id"] not in global_ids:
                     all_results.append(gr)
-            
+
             # Sort by priority (ascending) then created_at
-            all_results.sort(key=lambda x: (x.get("priority", 100), x.get("created_at", "")))
+            all_results.sort(
+                key=lambda x: (x.get("priority", 100), x.get("created_at", ""))
+            )
             return [DiscountRuleResponse(**r) for r in all_results]
-        
+
         return [DiscountRuleResponse(**r) for r in results]
-        
+
     except Exception as e:
         logger.error(f"Error listing discount rules: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list discount rules: {str(e)}"
+            detail=f"Failed to list discount rules: {str(e)}",
         )
 
 
@@ -187,29 +211,28 @@ def get_discount_rule(
     """Get a specific discount rule by ID."""
     try:
         result = fetch_single_record("discount_rules_config", str(rule_id))
-        
+
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Discount rule not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Discount rule not found"
             )
-        
+
         # Verify ownership
         if result.get("organizer_id") != str(user["id"]):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to access this rule"
+                detail="Not authorized to access this rule",
             )
-        
+
         return DiscountRuleResponse(**result)
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error fetching discount rule: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch discount rule: {str(e)}"
+            detail=f"Failed to fetch discount rule: {str(e)}",
         )
 
 
@@ -223,19 +246,18 @@ def update_discount_rule(
     try:
         # First verify the rule exists and user owns it
         existing = fetch_single_record("discount_rules_config", str(rule_id))
-        
+
         if not existing:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Discount rule not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Discount rule not found"
             )
-        
+
         if existing.get("organizer_id") != str(user["id"]):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to update this rule"
+                detail="Not authorized to update this rule",
             )
-        
+
         # Build update data (exclude None values)
         update_data = {}
         if rule.rule_name is not None:
@@ -256,28 +278,28 @@ def update_discount_rule(
             update_data["priority"] = rule.priority
         if rule.event_id is not None:
             update_data["event_id"] = str(rule.event_id)
-        
+
         if not update_data:
             return DiscountRuleResponse(**existing)
-        
+
         result = update_record("discount_rules_config", str(rule_id), update_data)
-        
+
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to update discount rule"
+                detail="Failed to update discount rule",
             )
-        
+
         logger.info(f"Updated discount rule {rule_id}")
         return DiscountRuleResponse(**result)
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error updating discount rule: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update discount rule: {str(e)}"
+            detail=f"Failed to update discount rule: {str(e)}",
         )
 
 
@@ -290,36 +312,36 @@ def delete_discount_rule(
     try:
         # First verify the rule exists and user owns it
         existing = fetch_single_record("discount_rules_config", str(rule_id))
-        
+
         if not existing:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Discount rule not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Discount rule not found"
             )
-        
+
         if existing.get("organizer_id") != str(user["id"]):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to delete this rule"
+                detail="Not authorized to delete this rule",
             )
-        
+
         delete_record("discount_rules_config", str(rule_id))
-        
+
         logger.info(f"Deleted discount rule {rule_id}")
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error deleting discount rule: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete discount rule: {str(e)}"
+            detail=f"Failed to delete discount rule: {str(e)}",
         )
 
 
 # ============================================================================
 # Evaluation Endpoint
 # ============================================================================
+
 
 @router.post("/evaluate", response_model=EvaluateRuleResponse)
 def evaluate_discount_rule(
@@ -332,28 +354,24 @@ def evaluate_discount_rule(
     """
     try:
         # Get all active rules for this user and event
-        filters = {
-            "organizer_id": str(user["id"]),
-            "is_active": True
-        }
-        
+        filters = {"organizer_id": str(user["id"]), "is_active": True}
+
         # Get event-specific rules
         event_filters = {**filters, "event_id": str(request.event_id)}
         event_rules = fetch_records("discount_rules_config", filters=event_filters)
-        
+
         # Get global rules (event_id is null)
         global_filters = {**filters, "event_id": None}
         global_rules = fetch_records("discount_rules_config", filters=global_filters)
-        
+
         # Combine rules
         all_rules = list(event_rules) + list(global_rules)
-        
+
         if not all_rules:
             return EvaluateRuleResponse(
-                rule_matched=False,
-                message="No active discount rules found"
+                rule_matched=False, message="No active discount rules found"
             )
-        
+
         # Find matching rules
         matching_rules = []
         for rule in all_rules:
@@ -361,36 +379,38 @@ def evaluate_discount_rule(
             threshold_hours = rule["time_threshold"]
             if rule["time_unit"] == "days":
                 threshold_hours *= 24
-            
+
             # Check if rule matches conditions
             # Occupancy must be BELOW threshold
             # Event must be within time window (hours_before <= threshold)
-            if (request.occupancy_percent < rule["occupancy_threshold"] and 
-                request.hours_before_event <= threshold_hours):
+            if (
+                request.occupancy_percent < rule["occupancy_threshold"]
+                and request.hours_before_event <= threshold_hours
+            ):
                 matching_rules.append(rule)
-        
+
         if not matching_rules:
             return EvaluateRuleResponse(
                 rule_matched=False,
-                message=f"No rules matched. Occupancy: {request.occupancy_percent}%, Hours before: {request.hours_before_event}"
+                message=f"No rules matched. Occupancy: {request.occupancy_percent}%, Hours before: {request.hours_before_event}",
             )
-        
+
         # Sort by priority (ascending) and pick the highest priority (lowest number)
         matching_rules.sort(key=lambda x: x.get("priority", 100))
         best_rule = matching_rules[0]
-        
+
         return EvaluateRuleResponse(
             rule_matched=True,
             rule_id=best_rule["id"],
             rule_name=best_rule["rule_name"],
             discount_percent=best_rule["discount_percent"],
             priority=best_rule.get("priority", 100),
-            message=f"Rule '{best_rule['rule_name']}' matched with {best_rule['discount_percent']}% discount"
+            message=f"Rule '{best_rule['rule_name']}' matched with {best_rule['discount_percent']}% discount",
         )
-        
+
     except Exception as e:
         logger.error(f"Error evaluating discount rules: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to evaluate rules: {str(e)}"
+            detail=f"Failed to evaluate rules: {str(e)}",
         )

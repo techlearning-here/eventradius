@@ -188,8 +188,8 @@ export function DiscountRulesConfig({ eventId, eventTitle, onRulesUpdated }: Dis
       const result = await apiClient.generateRuleBasedRecommendation(eventId);
       toast.success(`Generated ${result.recommended_discount_percent}% discount recommendation`);
       onRulesUpdated?.();
-    } catch (error: any) {
-      if (error.message?.includes('404')) {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message?.includes('404')) {
         toast.info('No rules matched current conditions. Update inventory or adjust rule thresholds.');
       } else {
         toast.error('Failed to generate recommendation');
